@@ -6,9 +6,9 @@
 
 - **Ngày cập nhật:** 16/11/2026
 - **Mốc đang ở:** M0 xong (đặc tả v3, thiết kế CSDL, đồ hoạ, khung repo).
-- **Việc tiếp theo:** **M1 — backend** (18–25/11). **Chưa bắt đầu, chờ chủ dự án đồng ý.**
+- **Việc tiếp theo:** **M1 — backend** (18–25/11). **Đã duyệt, đang làm** theo kế hoạch ở `docs/superpowers/plans/2026-11-16-m1-backend.md`.
 
-### Kế hoạch M1 (đề xuất, cần duyệt trước khi làm)
+### Kế hoạch M1 (đã duyệt 16/11; chi tiết trong file kế hoạch)
 
 Xem đặc tả mục 7, 8.1–8.5, 9.1–9.6 và `apps/server/src/routes/README.md`.
 
@@ -26,11 +26,11 @@ Chưa làm ở M1: giao diện web (M2–M3), trang quản trị (M3b), OG ảnh
 | Mốc | Thời gian | Nội dung | Trạng thái |
 |---|---|---|---|
 | M0 | 16–18/11 | Đặc tả v3, CSDL, đồ hoạ, khung repo | **Xong** |
-| M1 | 18–25/11 | Backend: migration, giai đoạn, xác thực, API phòng + lời nhắn, test | Chờ duyệt |
+| M1 | 18–25/11 | Backend: migration, giai đoạn, xác thực, API phòng + lời nhắn, test | **Đang làm** |
 | M2 | 25/11–02/12 | Frontend phòng tự do: kéo thả, xếp lớp, mũi tên ‹ ›, dải chọn, tự lưu | |
 | M3 | 02–07/12 | Bạn bè treo lời nhắn; chủ cây đọc, khoá, đếm ngược; chia sẻ, OG | |
 | M3b | 05–08/12 | Trang quản trị P0 | |
-| M4 | 07–10/12 | Hoàn thiện, triển khai Azure | |
+| M4 | 07–10/12 | Hoàn thiện, triển khai Azure (kèm Blob cho ảnh, câu trung thực về riêng tư trong chính sách) | |
 | M5 | 10–12/12 | Chạy thử kín | |
 | M6 | 15/12 | Ra mắt công khai | |
 | M7–M10 | 16/12–07/01/2027 | Theo dõi, mở quà 24/12, thông báo tải ảnh, kết thúc, xoá dữ liệu | |
@@ -50,6 +50,8 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 - Sửa trên điện thoại: phương án C (mũi tên ‹ › + dải chọn mỏng, camera tự lia). Máy tính: bảng bên cạnh.
 - Có trang quản trị `/quan-tri`: đăng nhập Google theo danh sách cho phép, vai trò admin/moderator, không đọc lời nhắn trừ bản chụp báo cáo, có nhật ký và nút tạm dừng khẩn cấp.
 - Dịch vụ chạy đến hết 31/12; từ 26/12 hiện thông báo tải ảnh; xoá dữ liệu 07/01/2027.
+- Chủ cây vào phòng: mặc định chế độ **"Xem"** (phòng như khách thấy + đếm ngược + số lời nhắn + nút chia sẻ), nút **"Sửa phòng"** mở khung chỉnh sửa.
+- **Hiện số lời nhắn** cho chủ cây (O10): trong app, kèm số mới kể từ lần vào trước; bật/tắt được, mặc định hiện. Không làm thông báo đẩy.
 
 **Đồ hoạ**
 - Phong cách màu nước dễ thương (từ ảnh tham khảo của chủ dự án — chỉ học phong cách, không sao chép).
@@ -62,6 +64,10 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 - TypeScript, React 19 + Vite, Fastify 5, PostgreSQL 16 + Drizzle, pnpm monorepo.
 - Azure: App Service B1 + PostgreSQL Flexible B1ms, credit ~50 USD, ước tính ~35 USD nếu chạy 01/12–07/01. Dev trên máy bằng Docker trước.
 - Chạy thử kín 10–12/12, ra mắt 15/12. Tên miền `*.azurewebsites.net`.
+- Migration: SQL viết tay là gốc, Drizzle chỉ để có kiểu. `packages/shared` giữ `.mjs` + JSDoc.
+- Giới hạn tần suất bằng PostgreSQL, **không Redis**.
+- Ảnh tĩnh: **Azure Blob Storage** cùng vùng (đã duyệt, < 1 USD), làm ở M4. Cloudflare không dùng được vì cần tên miền riêng.
+- Kế hoạch M1: `docs/superpowers/plans/2026-11-16-m1-backend.md`, thực hiện mỗi bước một subagent.
 
 **Còn mở:** email Google làm quản trị viên đầu tiên (`ADMIN_BOOTSTRAP_EMAIL`) — chủ dự án cung cấp khi triển khai.
 

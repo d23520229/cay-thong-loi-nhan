@@ -124,6 +124,7 @@ Ký hiệu: **P0** bắt buộc khi ra mắt · **P1** nên có · **P2** nếu 
 | O7 | Tải ảnh phòng (PNG) và ảnh thẻ lời nhắn | P1 |
 | O8 | Đổi mã PIN, liên kết thêm Google sau khi tạo | P1 |
 | O9 | Trả lời cảm ơn | P2 |
+| O10 | Hiện số lời nhắn đang có (và số mới kể từ lần vào trước); chủ cây bật/tắt được, **mặc định hiện**, lưu theo phòng | P0 |
 
 ### 3.4 Chia sẻ & lan truyền
 
@@ -385,6 +386,7 @@ CREATE TABLE trees (
   created_at          timestamptz NOT NULL DEFAULT now(),
   updated_at          timestamptz NOT NULL DEFAULT now(),
   last_owner_visit_at timestamptz,
+  show_message_count  boolean NOT NULL DEFAULT true,               -- O10; thêm ở migration 0001
 
   CONSTRAINT trees_has_recovery CHECK (pin_hash IS NOT NULL OR owner_account_id IS NOT NULL)
 );
@@ -665,7 +667,8 @@ JSON, UTF-8. Header `X-Device-Id` cho người viết. Quyền chủ cây qua co
 | GET | `/api/trees/:id` | Công khai | Phòng: phông, cấu hình cây, món đồ, trạng thái từng điểm nhắn `{ index, occupied, ornament? }` — không có nội dung, tên |
 | PUT | `/api/trees/:id/room` | Chủ cây | Lưu toàn bộ phòng kèm `roomVersion` (xem 7.5) |
 | DELETE | `/api/trees/:id` | Chủ cây | Xoá phòng và mọi dữ liệu |
-| GET | `/api/trees/:id/owner` | Chủ cây | Như GET công khai + `{ messageId, unread, locked }` cho từng điểm |
+| GET | `/api/trees/:id/owner` | Chủ cây | Như GET công khai + `{ messageId, unread, locked }` cho từng điểm + `{ messageCount, newSinceLastVisit, showMessageCount }` |
+| PUT | `/api/trees/:id/settings` | Chủ cây | `{ showMessageCount }` — bật/tắt hiện số lời nhắn (O10) |
 
 ### 8.4 Lời nhắn (người viết)
 | Phương thức | Đường dẫn | Mô tả |
@@ -878,6 +881,7 @@ Khi bị spam tạo phòng hoặc lời nhắn hàng loạt: quản trị viên 
 
 - **Điện thoại (phương án C):** chọn món → mũi tên ‹ › và nhãn kiểu ngay cạnh món; "Đổi kiểu" mở dải mỏng ở đáy, camera dời tới món; cây thông có tab Dáng · Màu · Thân · Gỗ · Điểm nhắn. Thanh công cụ dưới: nhỏ hơn, to hơn, lật, đổi kiểu, xoá. Nút trên: Thêm đồ, Phông nền.
 - **Máy tính:** trái là khay đồ + phông nền; giữa là phòng; phải là món đang chọn. Từ 900px trở lên.
+- **Chủ cây có hai chế độ (chốt 16/11):** mặc định **"Xem"** — phòng như khách thấy, cộng thêm đếm ngược, số lời nhắn (O10), nút chia sẻ; từ 0h 24/12 chạm phụ kiện để mở quà. Nút **"Sửa phòng"** vào khung chỉnh sửa (phương án C / hai bảng bên); nút ẩn từ 0h 26/12.
 - **Bạn bè:** lời nhắc chạm cây; zoom vào cây 0,9 giây; bảng viết trượt lên; hiệu ứng chạm đồ vật.
 - **Chuyển động lặp:** cây đung đưa, đèn lấp lánh, lửa, tuyết ngoài cửa sổ, thú cưng thở/chớp mắt/vẫy đuôi, phụ kiện treo đung đưa. Tôn trọng "giảm chuyển động".
 - **Hiệu ứng chạm:** quà 6 kiểu (nảy, lắc, xoay, bẹp, bung, rung + pháo giấy/tim/sao/tuyết/lấp lánh); thú cưng 6 kiểu (nhảy thả tim, nói, nhảy múa, xoay, ngủ gật, nhảy cao); lò sưởi bùng lửa.
@@ -906,7 +910,7 @@ Khi bị spam tạo phòng hoặc lời nhắn hàng loạt: quản trị viên 
 | Ứng dụng | App Service Linux **B1**, Node 22, 1 instance (có thể tăng lên 2 đêm 24/12) | ~13 USD |
 | Cơ sở dữ liệu | Azure Database for PostgreSQL – Flexible Server, **Burstable B1ms**, 32 GB | ~16 USD (máy chủ ~12 + lưu trữ ~4) |
 | Sao lưu | Tự động 7 ngày, đi kèm | 0 |
-| Ảnh tĩnh | Phục vụ từ App Service, cache dài hạn (thêm Cloudflare miễn phí nếu cần) | 0 |
+| Ảnh tĩnh | **Azure Blob Storage** cùng vùng (Southeast Asia), cache dài hạn — giảm tải cho App Service B1. Cloudflare không dùng được vì cần tên miền riêng | < 1 (trong 100 GB băng thông miễn phí/tháng) |
 
 **Tổng khoảng 29 USD/tháng.** Tạo tài nguyên khoảng 01/12, xoá ngày 07/01/2027 (khoảng 1,2 tháng) → **khoảng 35 USD**, còn dư so với credit 50 USD.
 
@@ -994,6 +998,10 @@ Giá trên chỉ là ước tính, cần kiểm tra lại bảng giá khi tạo 
 | 5 | Có cho chủ cây chọn "Phòng ngẫu nhiên" khi tạo? | Có (P1) |
 | 6 | Tên sản phẩm và tên miền | **Cây Thông Lời Nhắn**; tên miền dùng `*.azurewebsites.net` lúc đầu |
 | 7 | Có cần trang quản trị web? | **Có** — trang `/quan-tri` (mục 3.7, 8.7, 9.8–9.10, bảng quản trị ở 7.3) |
+| 8 | Giới hạn tần suất dùng Redis? | **Không** — dùng bảng `rate_counters` trong PostgreSQL |
+| 9 | Ảnh tĩnh phục vụ từ đâu? | **Azure Blob Storage** (làm ở M4) |
+| 10 | Hiện số lời nhắn cho chủ cây? | **Có**, trong app (không thông báo đẩy), bật/tắt được, mặc định hiện |
+| 11 | Chủ cây vào phòng thấy gì? | Chế độ **"Xem"** mặc định + nút **"Sửa phòng"** |
 
 **Còn mở:** email Google dùng làm quản trị viên đầu tiên (`ADMIN_BOOTSTRAP_EMAIL`) — bạn cung cấp khi triển khai.
 

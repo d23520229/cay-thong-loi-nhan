@@ -38,6 +38,7 @@ CREATE TABLE trees (
   created_at          timestamptz NOT NULL DEFAULT now(),
   updated_at          timestamptz NOT NULL DEFAULT now(),
   last_owner_visit_at timestamptz,
+  show_message_count  boolean NOT NULL DEFAULT true,               -- thêm ở migration 0001
 
   CONSTRAINT trees_has_recovery CHECK (pin_hash IS NOT NULL OR owner_account_id IS NOT NULL)
 );
