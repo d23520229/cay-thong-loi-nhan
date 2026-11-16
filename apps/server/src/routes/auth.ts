@@ -65,7 +65,15 @@ export async function authRoutes(app: FastifyInstance) {
       .set({ pinFailedCount: sql`${trees.pinFailedCount} + 1` })
       .where(and(eq(trees.id, t.id), or(isNull(trees.pinLockedUntil), lte(trees.pinLockedUntil, at))))
       .returning({ n: trees.pinFailedCount });
-    if (!reserved || reserved.n > PIN_MAX_FAILS) throw await locked();
+    if (!reserved) throw await locked();
+    if (reserved.n > PIN_MAX_FAILS) {
+      // Tràn: đã có ≥5 lượt đang chạy → khoá thật (tự hết sau 15 phút), tránh kẹt đếm mà không có mốc khoá.
+      await db.db
+        .update(trees)
+        .set({ pinFailedCount: 0, pinLockedUntil: new Date(at.getTime() + PIN_LOCK_MS) })
+        .where(and(eq(trees.id, t.id), or(isNull(trees.pinLockedUntil), lte(trees.pinLockedUntil, at))));
+      throw await locked();
+    }
 
     const refundTree = () =>
       db.db

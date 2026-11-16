@@ -107,6 +107,20 @@ describe('auth pin', () => {
     expect(after.json().error.code).toBe('pin_locked');
   });
 
+  it('đếm kẹt ≥ 5 mà chưa có khoá → lần sai kế tiếp tự khoá thật, hết 15 phút thì mở lại', async () => {
+    t = await makeTestApp();
+    const { id } = await create({ type: 'pin', pin: '123456' });
+    await t.h.db.update(trees).set({ pinFailedCount: 7, pinLockedUntil: null }).where(eq(trees.id, id));
+    const r = await pin(id, '000000');
+    expect(r.statusCode).toBe(429);
+    expect(r.json().error.code).toBe('pin_locked');
+    const [row] = await t.h.db.select().from(trees).where(eq(trees.id, id));
+    expect(row!.pinFailedCount).toBe(0);
+    expect(row!.pinLockedUntil).not.toBeNull();
+    t.clock.set('2026-12-01T10:15:01+07:00');
+    expect((await pin(id, '123456')).statusCode).toBe(204);
+  });
+
   it('20 lần sai trên 5 phòng từ cùng IP → lần 21 là 429 rate_limited', async () => {
     t = await makeTestApp();
     const ids: string[] = [];
