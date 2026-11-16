@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { connectPostgres, type DbHandle } from './client.js';
 
 const defaultDir = fileURLToPath(new URL('./migrations/', import.meta.url));
@@ -25,7 +25,11 @@ export async function runMigrations(h: DbHandle, dir: string = defaultDir): Prom
   });
 }
 
-if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
+// So sánh đường dẫn đã chuẩn hoá; Windows không phân biệt hoa thường.
+const samePath = (a: string, b: string) =>
+  process.platform === 'win32' ? resolve(a).toLowerCase() === resolve(b).toLowerCase() : resolve(a) === resolve(b);
+
+if (process.argv[1] && samePath(fileURLToPath(import.meta.url), process.argv[1])) {
   const url = process.env.DATABASE_URL;
   if (!url) throw new Error('Thiếu DATABASE_URL');
   const h = connectPostgres(url);

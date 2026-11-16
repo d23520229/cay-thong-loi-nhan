@@ -23,10 +23,15 @@ declare module 'fastify' {
 }
 
 const body = (code: string, message: string, extra?: Record<string, unknown>) => ({ error: { ...extra, code, message } });
+/** Serializer log request: chỉ method + đường dẫn (không query), tuyệt đối không có IP (đặc tả 10: không lưu IP thô). */
+export function reqSerializer(req: { method?: string; url?: string }) {
+  return { method: req.method, url: (req.url ?? '').split('?')[0] };
+}
+
 const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
-  const app = Fastify({ logger: !process.env.VITEST, bodyLimit: 65536, trustProxy: true });
+  const app = Fastify({ logger: process.env.VITEST ? false : { serializers: { req: reqSerializer } }, bodyLimit: 65536, trustProxy: true });
   app.decorate('deps', deps);
   await app.register(cookie);
   await app.register(helmet);

@@ -6,6 +6,7 @@ import { HttpError } from '../src/errors.js';
 import { ownerSessions, siteSettings, globalBlocks, events } from '../src/db/schema.js';
 import { deviceHash, hmac } from '../src/security.js';
 import { logEvent } from '../src/events.js';
+import { reqSerializer } from '../src/app.js';
 
 type T = Awaited<ReturnType<typeof makeTestApp>>;
 let t: T;
@@ -162,5 +163,14 @@ describe('guards', () => {
     await logEvent(t.h.db, 'cta_clicked');
     const rows = await t.h.db.select().from(events);
     expect(rows.map((r) => [r.type, r.treeId])).toEqual([['tree_created', 'abcd2345'], ['cta_clicked', null]]);
+  });
+});
+
+describe('log request', () => {
+  it('không chứa IP và bỏ query string', async () => {
+    t = await makeTestApp(); // afterEach đóng t
+    const out = reqSerializer({ method: 'GET', url: '/api/trees/abc?token=bi-mat', remoteAddress: '203.0.113.7', ip: '203.0.113.7' } as never);
+    expect(out).toEqual({ method: 'GET', url: '/api/trees/abc' });
+    expect(JSON.stringify(out)).not.toContain('203.0.113.7');
   });
 });
