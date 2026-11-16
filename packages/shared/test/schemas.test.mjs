@@ -92,3 +92,13 @@ test('CreateTreeBodySchema: PIN 6 số', () => {
   assert.equal(CreateTreeBodySchema.safeParse(body('12345')).success, false);
   assert.equal(CreateTreeBodySchema.safeParse(body('123456')).success, true);
 });
+
+test('validateRoom: variant/type kế thừa từ prototype bị từ chối', () => {
+  const room = defaultRoom();
+  for (const variant of ['constructor', 'toString', '__proto__']) {
+    const r = validateRoom({ ...room, items: [...room.items, item({ clientId: 'v', variant })] });
+    assert.equal(r.code, 'unknown_variant', variant);
+  }
+  const t = validateRoom({ ...room, items: [...room.items, item({ clientId: 'v', type: 'constructor' })] });
+  assert.equal(t.ok, false);
+});

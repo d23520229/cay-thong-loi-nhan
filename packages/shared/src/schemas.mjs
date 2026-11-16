@@ -92,8 +92,9 @@ export function validateRoom(room) {
   for (const it of room.items) {
     if (ids.has(it.clientId)) return fail('duplicate_client_id', 'Mã món đồ bị trùng.');
     ids.add(it.clientId);
+    if (!Object.hasOwn(catalog.items, it.type)) return fail('unknown_type', 'Loại đồ không hợp lệ.');
     const def = catalog.items[it.type];
-    if (!(it.variant in def.variants)) return fail('unknown_variant', `Kiểu "${it.variant}" không có cho ${def.name}.`);
+    if (!Object.hasOwn(def.variants, it.variant)) return fail('unknown_variant', `Kiểu "${it.variant}" không có cho ${def.name}.`);
     if (def.layer === 'wall' && it.y >= catalog.room.floorY) {
       return fail('wall_only', `${def.name} chỉ đặt được trên tường.`);
     }
