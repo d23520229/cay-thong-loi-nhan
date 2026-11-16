@@ -10,7 +10,11 @@ describe('env', () => {
   it('production thiếu hoặc PEPPER ngắn thì ném lỗi', () => {
     expect(() => loadEnv({ NODE_ENV: 'production' })).toThrow();
     expect(() => loadEnv({ NODE_ENV: 'production', PEPPER: 'short' })).toThrow();
-    expect(loadEnv({ NODE_ENV: 'production', PEPPER: 'x'.repeat(32) }).pepper).toBe('x'.repeat(32));
+    expect(() => loadEnv({ NODE_ENV: 'production', PEPPER: 'x'.repeat(32) })).toThrow();
+    expect(() => loadEnv({ NODE_ENV: 'production', PEPPER: 'x'.repeat(32), BLOCK_IP_KEY: 'short' })).toThrow();
+    const ok = loadEnv({ NODE_ENV: 'production', PEPPER: 'x'.repeat(32), BLOCK_IP_KEY: 'y'.repeat(32) });
+    expect(ok.pepper).toBe('x'.repeat(32));
+    expect(ok.blockIpKey).toBe('y'.repeat(32));
   });
   it('dev dùng giá trị cố định', () => {
     expect(env.pepper).toBe('dev-pepper-dev-pepper-dev-pepper!');

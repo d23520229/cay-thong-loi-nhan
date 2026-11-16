@@ -14,9 +14,13 @@ export function loadEnv(src: Record<string, string | undefined> = process.env): 
   if (production && (!pepper || pepper.length < 32)) {
     throw new Error('PEPPER là bắt buộc và phải có ít nhất 32 ký tự khi chạy production');
   }
+  const blockIpKey = src.BLOCK_IP_KEY;
+  if (production && (!blockIpKey || blockIpKey.length < 32)) {
+    throw new Error('BLOCK_IP_KEY là bắt buộc và phải có ít nhất 32 ký tự khi chạy production');
+  }
   const env: Env = {
     pepper: pepper && pepper.length >= 32 ? pepper : DEV_PEPPER,
-    blockIpKey: src.BLOCK_IP_KEY || (production ? '' : DEV_PEPPER),
+    blockIpKey: blockIpKey && blockIpKey.length >= 32 ? blockIpKey : DEV_PEPPER,
     baseUrl: src.BASE_URL || 'http://localhost:3000',
     production,
   };
