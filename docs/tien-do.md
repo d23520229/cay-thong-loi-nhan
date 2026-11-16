@@ -5,7 +5,7 @@
 ## Hiện tại
 
 - **Ngày cập nhật:** 17/11/2026
-- **Mốc đang ở:** M1 xong (backend: 6 nhóm route, 109 test server + 40 test shared). Chưa chạy thử với PostgreSQL thật (xem danh sách bên dưới).
+- **Mốc đang ở:** M1 xong trên nhánh `m1-backend` (backend: 6 nhóm route, 118 test server + 40 test shared). Chưa gộp vào `main`. Chưa chạy thử với PostgreSQL thật (xem danh sách bên dưới).
 - **Việc tiếp theo:** **M2 — frontend phòng tự do** — chờ chủ dự án duyệt.
 
 ### M1 — đã xong (kế hoạch duyệt 16/11; chi tiết trong file kế hoạch)
@@ -23,7 +23,7 @@ Xem đặc tả mục 7, 8.1–8.5, 9.1–9.6 và `apps/server/src/routes/README
 
 1. `pnpm db:up`
 2. Tạo `.env` từ `.env.example`; `PEPPER` và `BLOCK_IP_KEY` là chuỗi ngẫu nhiên ≥ 32 ký tự (ví dụ `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`).
-3. `pnpm db:migrate` hai lần: lần 1 liệt kê `0000_init.sql`, lần 2 in "Không có migration mới".
+3. `pnpm db:migrate` hai lần: lần 1 liệt kê `0000_init.sql`, `0001_show_message_count.sql`, `0002_pin_failed_at.sql`; lần 2 in "Không có migration mới".
 4. `pnpm --filter @ctln/server dev` (server tự chạy migration khi khởi động; khởi động lại không chạy lại).
 5. `curl localhost:3000/api/config` → JSON có `"phase":"BUILD"`.
 6. Tạo phòng, mong đợi 201:
@@ -36,6 +36,14 @@ Xem đặc tả mục 7, 8.1–8.5, 9.1–9.6 và `apps/server/src/routes/README
 10. **Sau khi triển khai Azure:** xác nhận `req.ip` là IP khách thật (gửi một request từ máy biết IP, so băm `ipHash`/`ipBlockHash` trong log tạm hoặc bằng script) và xem định dạng `X-Forwarded-For` thật (có `ip:port` không, có đúng 1 bước proxy không); chỉnh `TRUST_PROXY_HOPS` nếu khác 1.
 
 Chưa làm ở M1: giao diện web (M2–M3), trang quản trị (M3b), OG ảnh (M3), triển khai Azure (M4).
+
+**Việc nhỏ còn lại từ các lượt duyệt M1** (không ảnh hưởng đúng/sai hay riêng tư):
+- `clientIp` chưa bỏ cổng của IPv6 dạng `[2001:db8::1]:port` — kiểm ở mục 10 trên.
+- M3b: nút "mở khoá PIN" của quản trị phải xoá cả `pin_last_failed_at`.
+- Lưu phòng: nếu giao diện dùng lại cùng `clientId` cho món khác loại (cây ↔ món khác) có thể lỗi 500 — ở M2 sinh `clientId` ổn định cho từng món.
+- Cửa sổ PIN tính từ lần sai **cuối** (chặt hơn "5 lần / 15 phút" của đặc tả một chút) — chấp nhận.
+- Đặc tả mục 10 ghi khoá link riêng "base32", code dùng base64url — đề xuất sửa câu chữ đặc tả.
+- Một số test còn có thể bổ sung (thứ tự kiểm tra honeypot, thử khi giai đoạn BUILD cho kiểm duyệt…).
 
 ## Lịch mốc
 
