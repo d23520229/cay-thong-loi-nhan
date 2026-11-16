@@ -9,6 +9,7 @@ import { phaseOf } from './guards.js';
 import { authRoutes } from './routes/auth.js';
 import { configRoutes } from './routes/config.js';
 import { messagesRoutes } from './routes/messages.js';
+import { ownerRoutes } from './routes/owner.js';
 import { roomRoutes } from './routes/room.js';
 import { treesRoutes } from './routes/trees.js';
 
@@ -71,5 +72,6 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   await app.register(roomRoutes);
   await app.register(authRoutes);
   await app.register(messagesRoutes);
+  await app.register(ownerRoutes);
   return app;
 }

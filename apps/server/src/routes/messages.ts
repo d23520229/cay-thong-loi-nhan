@@ -19,7 +19,7 @@ const isUniqueViolation = (e: unknown) => {
   return x?.code === '23505' || x?.cause?.code === '23505';
 };
 
-const parseMid = (s: string): number => {
+export const parseMid = (s: string): number => {
   if (!/^\d{1,15}$/.test(s)) throw new HttpError(404, 'not_found', 'Không tìm thấy lời nhắn này.');
   return Number(s);
 };
