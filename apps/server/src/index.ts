@@ -1,14 +1,12 @@
-// Khung server Fastify — các route sẽ được thêm ở mốc M1 (xem docs/dac-ta-v3.md, mục 8).
-import Fastify from 'fastify';
-import { currentPhase } from './phase.js';
+// Khởi động server. DB thật được nối đầy đủ ở Task 10 (kết nối lười nên chưa cần DATABASE_URL để chạy /api/config).
+import { buildApp } from './app.js';
+import { connectPostgres } from './db/client.js';
+import { loadEnv } from './env.js';
+import { now } from './phase.js';
 
-const app = Fastify({ logger: true });
-
-app.get('/healthz', async () => ({ ok: true }));
-app.get('/api/config', async () => {
-  const p = currentPhase();
-  return { now: p.now.toISOString(), phase: p.phase, ...p.milestones };
-});
+const env = loadEnv();
+const db = connectPostgres(process.env.DATABASE_URL ?? 'postgres://localhost:5432/ctln');
+const app = await buildApp({ db, env, now, google: null });
 
 const port = Number(process.env.PORT ?? 3000);
 app.listen({ port, host: '0.0.0.0' }).catch((err) => {
