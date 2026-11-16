@@ -6,6 +6,7 @@ import type { DbHandle } from './db/client.js';
 import type { Env } from './env.js';
 import { HttpError } from './errors.js';
 import { phaseOf } from './guards.js';
+import { authRoutes } from './routes/auth.js';
 import { configRoutes } from './routes/config.js';
 import { treesRoutes } from './routes/trees.js';
 
@@ -18,7 +19,7 @@ declare module 'fastify' {
   }
 }
 
-const body = (code: string, message: string) => ({ error: { code, message } });
+const body = (code: string, message: string, extra?: Record<string, unknown>) => ({ error: { code, message, ...extra } });
 const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
@@ -45,7 +46,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   app.setNotFoundHandler((_req, reply) => reply.code(404).send(body('not_found', 'Không tìm thấy.')));
 
   app.setErrorHandler((err: Error & { code?: string; statusCode?: number; validation?: unknown }, req, reply) => {
-    if (err instanceof HttpError) return reply.code(err.status).send(body(err.code, err.message));
+    if (err instanceof HttpError) return reply.code(err.status).send(body(err.code, err.message, err.extra));
     if (err instanceof ZodError || err.validation) {
       return reply.code(400).send(body('invalid_body', 'Dữ liệu chưa hợp lệ.'));
     }
@@ -65,5 +66,6 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   app.get('/healthz', async () => ({ ok: true }));
   await app.register(configRoutes);
   await app.register(treesRoutes);
+  await app.register(authRoutes);
   return app;
 }
