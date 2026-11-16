@@ -34,7 +34,7 @@ export const loggerOptions = { serializers: { req: reqSerializer } };
 const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 export async function buildApp(deps: AppDeps, opts: { logStream?: { write(msg: string): void } } = {}): Promise<FastifyInstance> {
-  const app = Fastify({ logger: opts.logStream ? { ...loggerOptions, stream: opts.logStream } : process.env.VITEST ? false : loggerOptions, bodyLimit: 65536, trustProxy: true });
+  const app = Fastify({ logger: opts.logStream ? { ...loggerOptions, stream: opts.logStream } : process.env.VITEST ? false : loggerOptions, bodyLimit: 65536, trustProxy: (_addr: string, hop: number) => hop < deps.env.trustProxyHops });
   app.decorate('deps', deps);
   await app.register(cookie);
   await app.register(helmet);

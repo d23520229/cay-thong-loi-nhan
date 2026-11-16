@@ -5,7 +5,7 @@ import type { Db } from '../db/client.js';
 import { messages, ownerAccounts, roomItems, trees } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import { logEvent } from '../events.js';
-import { assertNotGloballyBlocked, assertNotPaused, assertWritable, phaseOf, setOwnerCookie } from '../guards.js';
+import { assertNotGloballyBlocked, assertNotPaused, assertWritable, clientIp, phaseOf, setOwnerCookie } from '../guards.js';
 import { hashPin, hmac, ipHash, newTreeId, randomToken, rateLimit } from '../security.js';
 
 export type PublicRoom = {
@@ -82,7 +82,7 @@ export async function treesRoutes(app: FastifyInstance) {
     await assertNotGloballyBlocked(app, req);
     const { db, env, now, google } = app.deps;
     const at = now();
-    const ipH = ipHash(env, req.ip, at);
+    const ipH = ipHash(env, clientIp(req), at);
     if (!(await rateLimit(db.db, 'create:ip:' + ipH, 5, at))) {
       throw new HttpError(429, 'rate_limited', 'Bạn thao tác nhanh quá, đợi một lát nhé.');
     }

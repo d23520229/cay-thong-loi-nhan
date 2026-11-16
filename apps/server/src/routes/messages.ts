@@ -7,6 +7,7 @@ import { HttpError } from '../errors.js';
 import { logEvent } from '../events.js';
 import {
   assertNotGloballyBlocked,
+  clientIp,
   assertNotPaused,
   assertWritable,
   getOwnerSession,
@@ -62,7 +63,7 @@ export async function messagesRoutes(app: FastifyInstance) {
       .limit(1);
     if (blocked) throw new HttpError(403, 'blocked', 'Bạn không thể gửi lời nhắn tới cây này.');
 
-    const iHash = ipHash(env, req.ip, at);
+    const iHash = ipHash(env, clientIp(req), at);
     if (!(await rateLimit(db.db, 'msg:ip:' + iHash, 20, at))) {
       throw new HttpError(429, 'rate_limited', 'Bạn thao tác nhanh quá, đợi một lát nhé.');
     }

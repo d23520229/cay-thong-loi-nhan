@@ -4,7 +4,7 @@ import { and, eq, isNull, lte, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { authAttempts, ownerAccounts, ownerSessions, rateCounters, trees } from '../db/schema.js';
 import { HttpError } from '../errors.js';
-import { getOwnerSession, setOwnerCookie } from '../guards.js';
+import { clientIp, getOwnerSession, setOwnerCookie } from '../guards.js';
 import { hmac, ipHash, rateLimit, verifyPin } from '../security.js';
 
 const LinkBody = z.object({ key: z.string().min(1).max(200) });
@@ -34,7 +34,7 @@ export async function authRoutes(app: FastifyInstance) {
     const ok = a.length === b.length && timingSafeEqual(a, b);
     await db.db.insert(authAttempts).values({
       treeId: t.id,
-      ipHash: ipHash(env, req.ip, at),
+      ipHash: ipHash(env, clientIp(req), at),
       method: 'link',
       success: ok,
       createdAt: at,
@@ -50,7 +50,7 @@ export async function authRoutes(app: FastifyInstance) {
     const { pin } = PinBody.parse(req.body);
     const at = now();
     if (!t.pinHash) throw new HttpError(400, 'pin_not_set', 'Cây này chưa đặt mã PIN.');
-    const ipH = ipHash(env, req.ip, at);
+    const ipH = ipHash(env, clientIp(req), at);
     const locked = async () => {
       const [cur] = await db.db.select({ until: trees.pinLockedUntil }).from(trees).where(eq(trees.id, t.id)).limit(1);
       const until = cur?.until && cur.until > at ? cur.until : new Date(at.getTime() + PIN_LOCK_MS);

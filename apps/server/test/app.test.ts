@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { makeTestApp, deviceHeaders, seedTree } from './helpers.js';
-import { assertNotPaused, assertNotGloballyBlocked, assertWritable, requireDeviceId, requireOwner, setOwnerCookie, getOwnerSession } from '../src/guards.js';
+import { clientIp, assertNotPaused, assertNotGloballyBlocked, assertWritable, requireDeviceId, requireOwner, setOwnerCookie, getOwnerSession } from '../src/guards.js';
 import { HttpError } from '../src/errors.js';
 import { ownerSessions, siteSettings, globalBlocks, events } from '../src/db/schema.js';
 import { deviceHash, hmac } from '../src/security.js';
@@ -78,6 +78,12 @@ describe('app', () => {
 });
 
 describe('guards', () => {
+  it('clientIp bỏ hậu tố :port của IPv4', async () => {
+    t = await makeTestApp();
+    expect(clientIp({ ip: '1.2.3.4:5678' } as never)).toBe('1.2.3.4');
+    expect(clientIp({ ip: '1.2.3.4' } as never)).toBe('1.2.3.4');
+    expect(clientIp({ ip: '2001:db8::1' } as never)).toBe('2001:db8::1');
+  });
   it('assertWritable theo giai đoạn', async () => {
     t = await makeTestApp();
     expect(() => assertWritable(t.app)).not.toThrow();

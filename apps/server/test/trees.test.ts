@@ -81,6 +81,17 @@ describe('POST /api/trees', () => {
     expect(r.json().error.code).toBe('rate_limited');
   });
 
+  it('XFF giả ở đầu danh sách không đổi nhóm giới hạn (chỉ tin 1 bước proxy)', async () => {
+    t = await makeTestApp();
+    const post = (i: number) =>
+      t.app.inject({
+        method: 'POST', url: '/api/trees', headers: { ...JSON_CT, 'x-forwarded-for': `6.6.6.${i}, 9.9.9.9` },
+        remoteAddress: '10.0.0.1', payload: pinBody() as object,
+      });
+    for (let i = 0; i < 5; i++) expect((await post(i)).statusCode).toBe(201);
+    expect((await post(99)).statusCode).toBe(429);
+  });
+
   it('write_closed ở NOTICE', async () => {
     t = await makeTestApp({ at: '2026-12-26T00:00:00+07:00' });
     const r = await create(pinBody());

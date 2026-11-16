@@ -16,6 +16,11 @@ describe('env', () => {
     expect(ok.pepper).toBe('x'.repeat(32));
     expect(ok.blockIpKey).toBe('y'.repeat(32));
   });
+  it('TRUST_PROXY_HOPS mặc định 1, đọc từ env, từ chối giá trị sai', () => {
+    expect(loadEnv({}).trustProxyHops).toBe(1);
+    expect(loadEnv({ TRUST_PROXY_HOPS: '2' }).trustProxyHops).toBe(2);
+    expect(() => loadEnv({ TRUST_PROXY_HOPS: 'abc' })).toThrow();
+  });
   it('dev dùng giá trị cố định', () => {
     expect(env.pepper).toBe('dev-pepper-dev-pepper-dev-pepper!');
     expect(env.production).toBe(false);

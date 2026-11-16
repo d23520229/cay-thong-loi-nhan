@@ -7,6 +7,11 @@ import { deviceHash, hmac, ipBlockHash, randomToken } from './security.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** IP khách: bỏ hậu tố `:port` của IPv4 (Azure có thể gửi `ip:port`) trước khi băm. */
+export function clientIp(req: FastifyRequest): string {
+  return req.ip.replace(/^(\d{1,3}(?:\.\d{1,3}){3}):\d+$/, '$1');
+}
+
 export function phaseOf(app: FastifyInstance) {
   return currentPhase(app.deps.now());
 }
@@ -47,7 +52,7 @@ export async function assertNotGloballyBlocked(app: FastifyInstance, req: Fastif
   }
   const { env } = app.deps;
   const hit =
-    c.value.has(`ip:${ipBlockHash(env, req.ip)}`) ||
+    c.value.has(`ip:${ipBlockHash(env, clientIp(req))}`) ||
     (deviceId !== undefined && c.value.has(`device:${deviceHash(env, deviceId)}`));
   if (hit) throw new HttpError(403, 'blocked', 'Truy cập của bạn đang bị chặn.');
 }
