@@ -1,5 +1,5 @@
 // Điểm vào của @ctln/shared.
-// M1 sẽ chuyển sang TypeScript và thêm: schemas.ts (Zod), types.ts, phases.ts.
+// Giữ JavaScript (.mjs), kiểu qua JSDoc (đặc tả 6.1). M1 thêm schemas.mjs (Zod).
 export { default as catalog } from './catalog.json' with { type: 'json' };
 export * from './geometry.mjs';
 export { layoutSlots, ornamentScale, SLOT_COUNTS } from './slots.mjs';

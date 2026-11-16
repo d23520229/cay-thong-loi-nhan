@@ -173,7 +173,7 @@ Chỉ dành cho bạn (và người bạn cấp quyền). Đăng nhập bằng G
 
 ### 3.6 Đã bỏ khỏi phạm vi
 
-Bảng xếp hạng công khai · nhiều phòng trên một tài khoản · song ngữ · nhạc ngoài · mở rộng Tết/Valentine · thu tiền · bố cục cố định theo vị trí (thay bằng phòng tự do).
+Bảng xếp hạng công khai · màn quản lý nhiều phòng trên một tài khoản (một tài khoản vẫn có thể sở hữu nhiều phòng, xem 8.2) · song ngữ · nhạc ngoài · mở rộng Tết/Valentine · thu tiền · bố cục cố định theo vị trí (thay bằng phòng tự do).
 
 ---
 
@@ -204,7 +204,7 @@ Mọi đồ hoạ vẽ bằng code (SVG có bộ lọc màu nước) rồi xuấ
 
 **20 phụ kiện treo (`ornament`):** sock, star, bulb, ball, candy, bell, gingerbread, heart, snowflake, mitten, minigift, pinecone, bow, snowman, moon, lantern, stripeball, cookie, reindeer, cocoa.
 
-**Danh mục là dữ liệu tĩnh trong code** (`catalog.js`, có `CATALOG_VERSION`), dùng chung cho trình duyệt và server để kiểm tra hợp lệ. Không lưu danh mục trong cơ sở dữ liệu vì nó không đổi khi chạy. Thêm kiểu mới chỉ cần thêm ảnh + một dòng danh mục.
+**Danh mục là dữ liệu tĩnh trong code** (`catalog.json`, có trường `version`), dùng chung cho trình duyệt và server để kiểm tra hợp lệ. Không lưu danh mục trong cơ sở dữ liệu vì nó không đổi khi chạy. Thêm kiểu mới chỉ cần thêm ảnh + một dòng danh mục.
 
 **Kích thước tải:** mỗi món 6–90 KB; phông nền 60–250 KB; tải lần đầu một phòng điển hình khoảng 0,5–0,8 MB.
 
@@ -234,15 +234,15 @@ Các mốc là biến môi trường (`UNLOCK_AT`, `WRITE_CLOSES_AT`, `SERVICE_E
 
 | Lớp | Lựa chọn | Lý do |
 |---|---|---|
-| Ngôn ngữ | **TypeScript** cho cả frontend và backend | Dùng chung kiểu dữ liệu, danh mục, xếp điểm nhắn, quy tắc kiểm tra |
+| Ngôn ngữ | **TypeScript** cho frontend và backend; riêng `packages/shared` là JavaScript (`.mjs`) có kiểu qua JSDoc, không cần bước build | Dùng chung kiểu dữ liệu, danh mục, xếp điểm nhắn, quy tắc kiểm tra; chạy giống nhau trên Node 22 (Azure) và máy phát triển |
 | Frontend | **React 19 + Vite** | Nhiều màn có trạng thái (trang trí, dải chọn, bảng bên, viết lời nhắn, đọc lời nhắn, quản trị) |
 | Định tuyến | React Router | `/`, `/tao`, `/c/:id`, `/quan-tri/*` |
 | Trạng thái phía trình duyệt | Zustand (phòng đang sửa) + TanStack Query (dữ liệu từ server) | Nhẹ, ít khuôn mẫu |
 | Kéo thả | Tự viết bằng Pointer Events, cập nhật thẳng `transform` khi đang kéo, chỉ ghi vào state khi thả tay | Giữ 60 khung hình trên điện thoại |
-| Backend | **Fastify 5** + plugin cookie, rate-limit (lưu PostgreSQL), helmet, static | Nhanh, có kiểm tra dữ liệu, log có cấu trúc |
+| Backend | **Fastify 5** + plugin cookie, helmet, static; giới hạn tần suất tự viết trên bảng `rate_counters` (7.4) | Nhanh, có kiểm tra dữ liệu, log có cấu trúc |
 | Kiểm tra dữ liệu | **Zod** (dùng chung frontend/backend) | Một bộ quy tắc cho form và API |
 | Cơ sở dữ liệu | **PostgreSQL 16** (Azure Database for PostgreSQL – Flexible Server) | Chạy được nhiều instance, sao lưu tự động |
-| Truy vấn | **Drizzle ORM** + driver `postgres` | Có kiểu TypeScript, gần SQL, sinh migration |
+| Truy vấn | **Drizzle ORM** + driver `postgres` | Có kiểu TypeScript, gần SQL; migration là file SQL viết tay (7.9) |
 | Xác thực | scrypt (Node), `google-auth-library`, cookie HttpOnly | Không lưu mật khẩu, không lưu email người dùng |
 | Ảnh OG | `sharp` ghép các lớp WebP | Đã dùng khi xuất đồ hoạ |
 | Biểu đồ quản trị | Recharts | |
@@ -288,6 +288,20 @@ Trình duyệt ──HTTPS──> Azure App Service (Fastify)
 
 Một tên miền cho cả trang và API: cookie đơn giản, không cần cấu hình chia sẻ giữa nhiều tên miền.
 
+### 6.4 Ghi chú cài đặt backend (chốt 16/11, cho M1)
+
+- **Cấu trúc:** `buildApp({ db, now })` dựng ứng dụng Fastify; test truyền PGlite + đồng hồ giả, chạy thật truyền PostgreSQL. Mọi kiểm tra giai đoạn vẫn qua `phase.ts`.
+- **Phiên chủ cây** hết hạn ở `PURGE_AT` (nhớ thiết bị suốt mùa).
+- **Băm IP:** muối theo ngày = HMAC(`PEPPER`, ngày giờ VN), mọi instance tính ra giống nhau; danh sách chặn IP dùng `BLOCK_IP_KEY` cố định.
+- **Honeypot** (`website` có giá trị): trả kết quả thành công giả, không lưu gì.
+- **Chủ cây không treo lời nhắn** lên cây của mình (8.8): có cookie chủ cây → 403.
+- **Giảm số điểm nhắn** (P0): còn lời nhắn ở chỉ số ≥ số điểm mới → 409 kèm lý do; tự dồn là R13 (P1).
+- **Vị trí khi lưu phòng:** món lớp `wall` có y < `floorY`, món khác y ≥ `floorY` (lấy từ `catalog.json`).
+- **Có ở M1:** kiểm tra `global_blocks` và `pause_*` trước thao tác ghi (bảng trống đến khi có trang quản trị). **Để M7:** lọc từ cấm.
+- **`events`:** M1 chỉ ghi sự kiện server tự biết (tạo phòng, lưu phòng, treo/sửa/gỡ, mở lời nhắn); sự kiện chỉ trình duyệt biết để M3.
+- **Google:** test dùng bộ xác minh giả; thiếu `GOOGLE_CLIENT_ID` thì API Google trả 503, PIN vẫn chạy.
+- **Chống giả mạo yêu cầu:** API ghi chỉ nhận `Content-Type: application/json`, kết hợp cookie `SameSite=Lax`.
+
 ---
 
 ## 7. Thiết kế cơ sở dữ liệu
@@ -296,12 +310,12 @@ Một tên miền cho cả trang và API: cookie đơn giản, không cần cấ
 
 - **Không lưu khoá thô.** Mọi mã bí mật (link riêng, PIN, phiên thiết bị, mã sửa lời nhắn) chỉ lưu dạng băm.
 - **Không lưu IP thô.** IP băm với muối đổi theo ngày, chỉ dùng chống lạm dụng.
-- **Vị trí điểm nhắn không lưu.** Chỉ lưu `slot_index`; toạ độ tính lại từ dáng tán + số điểm bằng `slots.js` (cùng code ở hai phía).
-- **Danh mục đồ hoạ không lưu.** Chỉ lưu mã loại và mã kiểu; server kiểm tra với `catalog.js`.
+- **Vị trí điểm nhắn không lưu.** Chỉ lưu `slot_index`; toạ độ tính lại từ dáng tán + số điểm bằng `slots.mjs` (cùng code ở hai phía).
+- **Danh mục đồ hoạ không lưu.** Chỉ lưu mã loại và mã kiểu; server kiểm tra với `catalog.json`.
 - **Xoá phòng là xoá thật** (`ON DELETE CASCADE`), không giữ bản ẩn.
 - Thời gian lưu kiểu `timestamptz` (UTC); mốc giai đoạn so sánh ở tầng ứng dụng theo giờ Việt Nam (UTC+7).
 - Mọi thao tác ghi nhiều bảng chạy trong **một giao dịch**; chỗ có tranh chấp (2 người cùng treo một điểm, lưu phòng) dựa vào ràng buộc UNIQUE và `room_version` thay vì khoá dài.
-- Truy cập qua **Drizzle ORM** (TypeScript); file migration SQL nằm trong `apps/server/drizzle/`.
+- Truy cập qua **Drizzle ORM** (TypeScript); file migration SQL viết tay nằm trong `apps/server/src/db/migrations/`.
 
 ### 7.2 Sơ đồ quan hệ
 
@@ -555,7 +569,7 @@ CREATE TRIGGER trg_messages_touch BEFORE UPDATE ON messages FOR EACH ROW EXECUTE
 | `slot_index` < số điểm nhắn hiện tại | Kiểm tra trong giao dịch ghi (CHECK không đọc được bảng khác) |
 | Mỗi phòng đúng 1 cây | Index duy nhất có điều kiện `uq_one_tree`; API không cho xoá cây |
 | Tối đa 25 món | Kiểm tra trong giao dịch lưu phòng |
-| Mã kiểu hợp lệ | Kiểm tra với `catalog.js` trước khi ghi |
+| Mã kiểu hợp lệ | Kiểm tra với `catalog.json` trước khi ghi |
 | Có ít nhất một cách khôi phục | `CHECK (pin_hash IS NOT NULL OR owner_account_id IS NOT NULL)` |
 | Ẩn danh không lưu tên | `CHECK` trên `messages` |
 | Sửa lời nhắn trong 15 phút | `edit_until` tính lúc tạo, không đổi khi sửa; so với giờ server |
@@ -619,7 +633,7 @@ Ghi chú: trình duyệt trong Zalo/Messenger có bộ nhớ riêng, nên chủ 
 ### 7.9 Kết nối, migration, sao lưu
 
 - **Kết nối:** driver `postgres` (postgres.js) qua Drizzle, nhóm kết nối 10 / instance, bắt buộc TLS tới Azure.
-- **Migration:** viết lược đồ bằng Drizzle, sinh file SQL vào `apps/server/drizzle/`, chạy tự động khi khởi động server (chỉ instance đầu tiên giữ khoá `pg_advisory_lock`).
+- **Migration:** file SQL viết tay trong `apps/server/src/db/migrations/` là gốc; `schema.ts` của Drizzle chỉ để có kiểu khi truy vấn, có test đối chiếu với CSDL. Script tự viết chạy các file theo thứ tự khi khởi động server (giữ khoá `pg_advisory_lock`), ghi file đã chạy vào bảng `meta.migrations` (schema riêng, không tính vào 16 bảng).
 - **Sao lưu:** Azure tự sao lưu hằng ngày, giữ 7 ngày, khôi phục về một thời điểm bất kỳ. Không cần tự viết script sao lưu như SQLite.
 - **Môi trường phát triển:** PostgreSQL chạy bằng Docker trên máy; kiểm thử tự động dùng PGlite (PostgreSQL chạy trong tiến trình, không cần cài).
 - **Xoá cuối mùa:** sau 07/01/2027 xoá luôn máy chủ PostgreSQL, toàn bộ dữ liệu và bản sao lưu biến mất cùng lúc.
@@ -641,7 +655,7 @@ JSON, UTF-8. Header `X-Device-Id` cho người viết. Quyền chủ cây qua co
 | POST | `/api/trees` | Tạo phòng. Body: `ownerName, title?, recovery: { type: 'pin', pin } \| { type: 'google', idToken }, room, ref?`. Trả `{ id, publicUrl, privateUrl, roomVersion }` và đặt cookie phiên. `privateUrl` chỉ trả một lần |
 | POST | `/api/trees/:id/auth/link` | Đăng nhập bằng khoá trong link riêng (`#k=...`) → đặt cookie |
 | POST | `/api/trees/:id/auth/pin` | Body `{ pin }` → đặt cookie; sai 5 lần thì khoá 15 phút |
-| POST | `/api/auth/google` | Body `{ idToken }` → trả danh sách phòng của tài khoản, đặt cookie cho phòng được chọn |
+| POST | `/api/auth/google` | Body `{ idToken, treeId? }`. Có `treeId` → đặt cookie nếu tài khoản sở hữu phòng đó. Không có → trả danh sách phòng `{ id, title }` của tài khoản để chọn rồi gọi lại kèm `treeId` |
 | POST | `/api/trees/:id/auth/logout` | Thu hồi phiên trên thiết bị này |
 | PUT | `/api/trees/:id/recovery` | Đổi PIN / liên kết Google (P1) |
 
@@ -909,7 +923,7 @@ Giá trên chỉ là ước tính, cần kiểm tra lại bảng giá khi tạo 
 
 | Loại | Nội dung chính |
 |---|---|
-| Đơn vị | Giai đoạn theo giờ (biên 24/12, 26/12, 01/01); `slots.js` (đủ điểm, nằm trong tán); kiểm tra danh mục; băm và so sánh khoá |
+| Đơn vị | Giai đoạn theo giờ (biên 24/12, 26/12, 01/01); `slots.mjs` (đủ điểm, nằm trong tán); kiểm tra danh mục; băm và so sánh khoá |
 | Cơ sở dữ liệu | Chạy trên PGlite: ràng buộc UNIQUE/CHECK, cascade, `uq_one_tree_per_room`, dồn chỉ số khi giảm điểm nhắn, `rate_counters` khi nhiều yêu cầu đồng thời |
 | API | Tạo phòng với PIN / Google; đăng nhập bằng link, PIN (khoá sau 5 lần); lưu phòng với `roomVersion` lệch; treo / sửa / gỡ trong và sau 15 phút; mở trước và sau 24/12; 410 sau khi kết thúc |
 | Giao diện | Kéo thả chuột và cảm ứng; mũi tên và dải chọn; camera dời; bố cục máy tính; bảng viết 20 phụ kiện |
@@ -1004,7 +1018,7 @@ Giá trên chỉ là ước tính, cần kiểm tra lại bảng giá khi tạo 
 | v2 | v3 |
 |---|---|
 | Trình thiết kế cây kéo thả phụ kiện quanh cây | Phòng tự do với danh mục đồ màu nước, xếp lớp tự động |
-| Bảng `slots` lưu toạ độ điểm nhắn | Bỏ bảng; chỉ lưu `slot_index`, toạ độ tính bằng `slots.js` |
+| Bảng `slots` lưu toạ độ điểm nhắn | Bỏ bảng; chỉ lưu `slot_index`, toạ độ tính bằng `slots.mjs` |
 | `design_json` một cột | Bảng `room_items` + cột cấu hình cây trên `trees`, có `room_version` |
 | Node + Express + SQLite, JavaScript thuần | TypeScript; React + Vite; Fastify; PostgreSQL + Drizzle; pnpm monorepo |
 | Chủ cây chỉ có link riêng | Thêm cookie phiên, Google, PIN; bảng `owner_accounts`, `owner_sessions`, `auth_attempts` |
