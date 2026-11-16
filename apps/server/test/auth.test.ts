@@ -94,6 +94,19 @@ describe('auth pin', () => {
     for (let i = 0; i < 4; i++) expect((await pin(id, '000000')).statusCode).toBe(401);
   });
 
+  it('10 lần sai song song trên một phòng → tối đa 5 lần 401, còn lại 429 pin_locked; PIN đúng sau đó cũng 429', async () => {
+    t = await makeTestApp();
+    const { id } = await create({ type: 'pin', pin: '123456' });
+    const rs = await Promise.all(Array.from({ length: 10 }, () => pin(id, '000000')));
+    const bad = rs.filter((r) => r.statusCode === 401 && r.json().error.code === 'bad_pin');
+    const lockedRs = rs.filter((r) => r.statusCode === 429 && r.json().error.code === 'pin_locked');
+    expect(bad.length).toBeLessThanOrEqual(5);
+    expect(bad.length + lockedRs.length).toBe(10);
+    const after = await pin(id, '123456');
+    expect(after.statusCode).toBe(429);
+    expect(after.json().error.code).toBe('pin_locked');
+  });
+
   it('20 lần sai trên 5 phòng từ cùng IP → lần 21 là 429 rate_limited', async () => {
     t = await makeTestApp();
     const ids: string[] = [];

@@ -1,11 +1,11 @@
 import { timingSafeEqual } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
-import { and, count, eq, gt } from 'drizzle-orm';
+import { and, eq, isNull, lte, or, sql } from 'drizzle-orm';
 import { z } from 'zod';
-import { authAttempts, ownerAccounts, ownerSessions, trees } from '../db/schema.js';
+import { authAttempts, ownerAccounts, ownerSessions, rateCounters, trees } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import { getOwnerSession, setOwnerCookie } from '../guards.js';
-import { hmac, ipHash, verifyPin } from '../security.js';
+import { hmac, ipHash, rateLimit, verifyPin } from '../security.js';
 
 const LinkBody = z.object({ key: z.string().min(1).max(200) });
 const PinBody = z.object({ pin: z.string().regex(/^\d{6}$/) });
@@ -50,36 +50,50 @@ export async function authRoutes(app: FastifyInstance) {
     const { pin } = PinBody.parse(req.body);
     const at = now();
     if (!t.pinHash) throw new HttpError(400, 'pin_not_set', 'Cây này chưa đặt mã PIN.');
-    if (t.pinLockedUntil && t.pinLockedUntil > at) {
-      throw new HttpError(429, 'pin_locked', 'Nhập sai quá nhiều lần, thử lại sau 15 phút.', {
-        retryAt: t.pinLockedUntil.toISOString(),
-      });
-    }
     const ipH = ipHash(env, req.ip, at);
-    const [{ n } = { n: 0 }] = await db.db
-      .select({ n: count() })
-      .from(authAttempts)
-      .where(
-        and(
-          eq(authAttempts.method, 'pin'),
-          eq(authAttempts.success, false),
-          eq(authAttempts.ipHash, ipH),
-          gt(authAttempts.createdAt, new Date(at.getTime() - 3600_000)),
-        ),
-      );
-    if (n >= IP_FAIL_LIMIT) throw new HttpError(429, 'rate_limited', 'Bạn thao tác nhanh quá, đợi một lát nhé.');
+    const locked = async () => {
+      const [cur] = await db.db.select({ until: trees.pinLockedUntil }).from(trees).where(eq(trees.id, t.id)).limit(1);
+      const until = cur?.until && cur.until > at ? cur.until : new Date(at.getTime() + PIN_LOCK_MS);
+      return new HttpError(429, 'pin_locked', 'Nhập sai quá nhiều lần, thử lại sau 15 phút.', {
+        retryAt: until.toISOString(),
+      });
+    };
+
+    // Giữ chỗ lượt thử nguyên tử TRƯỚC khi chạy scrypt, để các yêu cầu song song không vượt giới hạn.
+    const [reserved] = await db.db
+      .update(trees)
+      .set({ pinFailedCount: sql`${trees.pinFailedCount} + 1` })
+      .where(and(eq(trees.id, t.id), or(isNull(trees.pinLockedUntil), lte(trees.pinLockedUntil, at))))
+      .returning({ n: trees.pinFailedCount });
+    if (!reserved || reserved.n > PIN_MAX_FAILS) throw await locked();
+
+    const refundTree = () =>
+      db.db
+        .update(trees)
+        .set({ pinFailedCount: sql`greatest(${trees.pinFailedCount} - 1, 0)` })
+        .where(eq(trees.id, t.id));
+    const bucket = 'pinfail:ip:' + ipH;
+    if (!(await rateLimit(db.db, bucket, IP_FAIL_LIMIT, at))) {
+      await refundTree();
+      throw new HttpError(429, 'rate_limited', 'Bạn thao tác nhanh quá, đợi một lát nhé.');
+    }
 
     const ok = await verifyPin(pin, t.pinHash);
     await db.db.insert(authAttempts).values({ treeId: t.id, ipHash: ipH, method: 'pin', success: ok, createdAt: at });
     if (!ok) {
-      const failed = t.pinFailedCount + 1;
-      const lock = failed >= PIN_MAX_FAILS;
-      await db.db
-        .update(trees)
-        .set(lock ? { pinFailedCount: 0, pinLockedUntil: new Date(at.getTime() + PIN_LOCK_MS) } : { pinFailedCount: failed })
-        .where(eq(trees.id, t.id));
+      if (reserved.n === PIN_MAX_FAILS) {
+        await db.db
+          .update(trees)
+          .set({ pinFailedCount: 0, pinLockedUntil: new Date(at.getTime() + PIN_LOCK_MS) })
+          .where(eq(trees.id, t.id));
+      }
       throw new HttpError(401, 'bad_pin', 'Mã PIN không đúng.');
     }
+    // Đúng PIN: không tính vào giới hạn IP (chỉ đếm lần sai) nên trả lại lượt đã giữ.
+    await db.db
+      .update(rateCounters)
+      .set({ hits: sql`greatest(${rateCounters.hits} - 1, 0)` })
+      .where(and(eq(rateCounters.bucket, bucket), eq(rateCounters.windowStart, new Date(Math.floor(at.getTime() / 3600_000) * 3600_000))));
     await db.db.update(trees).set({ pinFailedCount: 0, pinLockedUntil: null }).where(eq(trees.id, t.id));
     await setOwnerCookie(app, reply, t.id, 'pin');
     return reply.code(204).send();

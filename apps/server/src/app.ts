@@ -19,7 +19,7 @@ declare module 'fastify' {
   }
 }
 
-const body = (code: string, message: string, extra?: Record<string, unknown>) => ({ error: { code, message, ...extra } });
+const body = (code: string, message: string, extra?: Record<string, unknown>) => ({ error: { ...extra, code, message } });
 const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
