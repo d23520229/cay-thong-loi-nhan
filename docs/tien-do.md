@@ -5,7 +5,7 @@
 ## Hiện tại
 
 - **Ngày cập nhật:** 17/11/2026
-- **Mốc đang ở:** M1 xong trên nhánh `m1-backend` (backend: 6 nhóm route, 118 test server + 40 test shared). Chưa gộp vào `main`. Chưa chạy thử với PostgreSQL thật (xem danh sách bên dưới).
+- **Mốc đang ở:** M1 xong trên nhánh `m1-backend` (backend: 6 nhóm route, 118 test server + 40 test shared). Chưa gộp vào `main`. Đã chạy thử với PostgreSQL 16 thật trong Docker ngày 17/11 (mục 1–9 bên dưới đều đạt); mục 10 làm khi lên Azure.
 - **Việc tiếp theo:** **M2 — frontend phòng tự do** — chờ chủ dự án duyệt.
 
 ### M1 — đã xong (kế hoạch duyệt 16/11; chi tiết trong file kế hoạch)
@@ -19,18 +19,18 @@ Xem đặc tả mục 7, 8.1–8.5, 9.1–9.6 và `apps/server/src/routes/README
 5. Lời nhắn: treo, sửa trong 15 phút cùng thiết bị, gỡ, tối đa 3/thiết bị/phòng, khoá đến 0h 24/12 → kiểm: test với `FAKE_NOW` trước và sau mốc.
 6. API chủ cây: đọc, mở, chặn, báo cáo → kiểm: test quyền (khách không đọc được, admin không đọc được).
 
-**Chưa chạy thử với PostgreSQL thật** (máy dev chưa có Docker; test dùng PGlite). Chủ dự án chạy khi có Docker:
+**Danh sách thử với PostgreSQL thật** (test tự động dùng PGlite). **17/11/2026: mục 1–9 đều đạt** — 4 lời nhắn song song cùng thiết bị → 3 × 201 + 1 × `device_limit`; 10 thiết bị tranh một điểm → 1 × 201 + 9 × `slot_taken`; 2 lần lưu phòng song song → 200 + `version_conflict`; 2 migration cùng lúc trên CSDL trống → một bên chạy 3 file, bên kia "Không có migration mới"; log server không có IP khách hay nội dung lời nhắn. Lưu ý trên Windows: Docker Desktop phải đang chạy và `docker` phải có trong PATH.
 
 1. `pnpm db:up`
 2. Tạo `.env` từ `.env.example`; `PEPPER` và `BLOCK_IP_KEY` là chuỗi ngẫu nhiên ≥ 32 ký tự (ví dụ `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`).
 3. `pnpm db:migrate` hai lần: lần 1 liệt kê `0000_init.sql`, `0001_show_message_count.sql`, `0002_pin_failed_at.sql`; lần 2 in "Không có migration mới".
 4. `pnpm --filter @ctln/server dev` (server tự chạy migration khi khởi động; khởi động lại không chạy lại).
 5. `curl localhost:3000/api/config` → JSON có `"phase":"BUILD"`.
-6. Tạo phòng, mong đợi 201:
+6. Tạo phòng, mong đợi 201 (phòng phải có đúng một cây thông, thiếu cây sẽ trả 400 `tree_count`):
    ```bash
-   curl -i -X POST localhost:3000/api/trees -H "content-type: application/json" -H "x-device-id: 11111111-1111-4111-8111-111111111111" -d '{"ownerName":"Thử","recovery":{"type":"pin","pin":"123456"},"room":{"background":"night","tree":{"shape":"cloud3","palette":"teal","trunkShape":"straight","wood":"oak","slotCount":12},"items":[]}}'
+   curl -i -X POST localhost:3000/api/trees -H "content-type: application/json" -H "x-device-id: 11111111-1111-4111-8111-111111111111" -d '{"ownerName":"Thử","recovery":{"type":"pin","pin":"123456"},"room":{"background":"night","tree":{"shape":"cloud3","palette":"teal","trunkShape":"straight","wood":"oak","slotCount":12},"items":[{"clientId":"t","type":"tree","variant":"main","x":492,"y":912,"scale":1,"flip":false}]}}'
    ```
-7. Chạy hai lệnh `pnpm db:migrate` cùng lúc trên CSDL trống (xoá volume trước) để xác nhận khoá advisory: không lệnh nào lỗi, tổng cộng `0000_init.sql` chỉ chạy một lần.
+7. Chạy hai lệnh `pnpm db:migrate` cùng lúc trên CSDL trống (tạo database trống riêng rồi đặt `DATABASE_URL` tới nó, không cần xoá volume) để xác nhận khoá advisory: không lệnh nào lỗi, tổng cộng `0000_init.sql` chỉ chạy một lần.
 8. **Song song** (cần Postgres thật): 4 lời nhắn đồng thời từ một thiết bị tới 4 điểm khác nhau → đúng 3 × 201 và 1 × 409 `device_limit`.
 9. **Song song:** 2 `PUT /api/trees/:id/room` cùng `roomVersion` → một 200, một 409.
 10. **Sau khi triển khai Azure:** xác nhận `req.ip` là IP khách thật (gửi một request từ máy biết IP, so băm `ipHash`/`ipBlockHash` trong log tạm hoặc bằng script) và xem định dạng `X-Forwarded-For` thật (có `ip:port` không, có đúng 1 bước proxy không); chỉnh `TRUST_PROXY_HOPS` nếu khác 1.

@@ -17,7 +17,7 @@ export type DbHandle = {
 };
 
 export function connectPostgres(url: string): DbHandle {
-  const sql = postgres(url, { max: 10, ssl: process.env.NODE_ENV === 'production' ? 'require' : false });
+  const sql = postgres(url, { max: 10, ssl: process.env.NODE_ENV === 'production' ? 'require' : false, onnotice: () => {} }); // bỏ NOTICE kiểu "already exists, skipping"
   const wrap = (s: postgres.Sql | postgres.TransactionSql): RawConn => ({
     async exec(text) { await s.unsafe(text); },
     async query<T>(text: string, params: unknown[] = []) {
