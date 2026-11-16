@@ -207,7 +207,7 @@ describe('migration 0001', () => {
     copyFileSync(fileURLToPath(new URL('../src/db/migrations/0000_init.sql', import.meta.url)), join(dir, '0000_init.sql'));
     const h = await connectPglite();
     expect(await runMigrations(h, dir)).toEqual(['0000_init.sql']);
-    expect(await runMigrations(h)).toEqual(['0001_show_message_count.sql']);
+    expect(await runMigrations(h)).toEqual(['0001_show_message_count.sql', '0002_pin_failed_at.sql']);
     await h.close();
   });
 });
