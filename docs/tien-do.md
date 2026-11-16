@@ -31,6 +31,9 @@ Xem đặc tả mục 7, 8.1–8.5, 9.1–9.6 và `apps/server/src/routes/README
    curl -i -X POST localhost:3000/api/trees -H "content-type: application/json" -H "x-device-id: 11111111-1111-4111-8111-111111111111" -d '{"ownerName":"Thử","recovery":{"type":"pin","pin":"123456"},"room":{"background":"night","tree":{"shape":"cloud3","palette":"teal","trunkShape":"straight","wood":"oak","slotCount":12},"items":[]}}'
    ```
 7. Chạy hai lệnh `pnpm db:migrate` cùng lúc trên CSDL trống (xoá volume trước) để xác nhận khoá advisory: không lệnh nào lỗi, tổng cộng `0000_init.sql` chỉ chạy một lần.
+8. **Song song** (cần Postgres thật): 4 lời nhắn đồng thời từ một thiết bị tới 4 điểm khác nhau → đúng 3 × 201 và 1 × 409 `device_limit`.
+9. **Song song:** 2 `PUT /api/trees/:id/room` cùng `roomVersion` → một 200, một 409.
+10. **Sau khi triển khai Azure:** xác nhận `req.ip` là IP khách thật (gửi một request từ máy biết IP, so băm `ipHash`/`ipBlockHash` trong log tạm hoặc bằng script) và xem định dạng `X-Forwarded-For` thật (có `ip:port` không, có đúng 1 bước proxy không); chỉnh `TRUST_PROXY_HOPS` nếu khác 1.
 
 Chưa làm ở M1: giao diện web (M2–M3), trang quản trị (M3b), OG ảnh (M3), triển khai Azure (M4).
 
@@ -97,6 +100,9 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 - **Khoá advisory phải đứng trước mọi DDL** (kể cả `CREATE SCHEMA/TABLE IF NOT EXISTS meta...`), nếu không hai instance khởi động cùng lúc trên DB trống vẫn va nhau.
 - **Lưu phòng / đăng lời nhắn:** khoá dòng (`SELECT ... FOR UPDATE`) trong giao dịch trước khi kiểm `room_version` và đếm giới hạn; kiểm-rồi-ghi không khoá thì hai request đồng thời cùng qua.
 - **Log request không được chứa IP:** Fastify mặc định ghi `remoteAddress`; đã đè serializer `req` (`reqSerializer` trong `app.ts`), chỉ giữ method + đường dẫn không query.
+- **`trustProxy` phải là số bước proxy, không bao giờ là `true`:** `true` lấy mục trái nhất của `X-Forwarded-For` (do khách tự đặt) làm `req.ip`, một header là qua mặt mọi giới hạn theo IP và chặn IP. Dùng `TRUST_PROXY_HOPS` (mặc định 1 cho Azure App Service) và `clientIp(req)` (bỏ `:port`).
+- **Không log nguyên `DrizzleQueryError`:** `message`, `query`, `params` chứa nội dung người dùng (lời nhắn, tên, băm). Chỉ log `{ name, code }`.
+- **`tsc` không chép file `.sql`:** script `build` phải chép `src/db/migrations` sang `dist/db/migrations`, nếu không `pnpm start` không tìm thấy migration.
 - Server dev/migrate nạp `.env` bằng `tsx --env-file-if-exists=../../.env` (Node ≥ 22.9); không có thư viện dotenv.
 - `node --test` không nhận thư mục trên mọi máy → dùng glob `"test/*.test.mjs"`.
 
