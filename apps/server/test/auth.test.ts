@@ -121,6 +121,22 @@ describe('auth pin', () => {
     expect((await pin(id, '123456')).statusCode).toBe(204);
   });
 
+  it('cửa sổ 15 phút: 4 sai, +16 phút, 4 sai nữa vẫn 401 (chưa khoá); lần 5 của cửa sổ mới thì khoá', async () => {
+    t = await makeTestApp();
+    const { id } = await create({ type: 'pin', pin: '123456' });
+    for (let i = 0; i < 4; i++) expect((await pin(id, '000000')).statusCode).toBe(401);
+    t.clock.set('2026-12-01T10:16:00+07:00');
+    for (let i = 0; i < 4; i++) {
+      const r = await pin(id, '000000');
+      expect(r.statusCode).toBe(401);
+      expect(r.json().error.code).toBe('bad_pin');
+    }
+    expect((await pin(id, '000000')).statusCode).toBe(401);
+    const locked = await pin(id, '123456');
+    expect(locked.statusCode).toBe(429);
+    expect(locked.json().error.code).toBe('pin_locked');
+  });
+
   it('20 lần sai trên 5 phòng từ cùng IP → lần 21 là 429 rate_limited', async () => {
     t = await makeTestApp();
     const ids: string[] = [];

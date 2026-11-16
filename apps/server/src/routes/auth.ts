@@ -62,7 +62,11 @@ export async function authRoutes(app: FastifyInstance) {
     // Giữ chỗ lượt thử nguyên tử TRƯỚC khi chạy scrypt, để các yêu cầu song song không vượt giới hạn.
     const [reserved] = await db.db
       .update(trees)
-      .set({ pinFailedCount: sql`${trees.pinFailedCount} + 1` })
+      .set({
+        // Cửa sổ 15 phút: lần sai cuối đã quá 15 phút thì đếm lại từ 1.
+        pinFailedCount: sql`CASE WHEN ${trees.pinLastFailedAt} IS NOT NULL AND ${trees.pinLastFailedAt} <= ${new Date(at.getTime() - PIN_LOCK_MS)} THEN 1 ELSE ${trees.pinFailedCount} + 1 END`,
+        pinLastFailedAt: at,
+      })
       .where(and(eq(trees.id, t.id), or(isNull(trees.pinLockedUntil), lte(trees.pinLockedUntil, at))))
       .returning({ n: trees.pinFailedCount });
     if (!reserved) throw await locked();
@@ -102,7 +106,7 @@ export async function authRoutes(app: FastifyInstance) {
       .update(rateCounters)
       .set({ hits: sql`greatest(${rateCounters.hits} - 1, 0)` })
       .where(and(eq(rateCounters.bucket, bucket), eq(rateCounters.windowStart, new Date(Math.floor(at.getTime() / 3600_000) * 3600_000))));
-    await db.db.update(trees).set({ pinFailedCount: 0, pinLockedUntil: null }).where(eq(trees.id, t.id));
+    await db.db.update(trees).set({ pinFailedCount: 0, pinLockedUntil: null, pinLastFailedAt: null }).where(eq(trees.id, t.id));
     await setOwnerCookie(app, reply, t.id, 'pin');
     return reply.code(204).send();
   });
