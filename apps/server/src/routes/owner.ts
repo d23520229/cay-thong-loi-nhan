@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { blockedDevices, messages, reports, trees } from '../db/schema.js';
 import { HttpError } from '../errors.js';
@@ -38,13 +38,15 @@ export async function ownerRoutes(app: FastifyInstance) {
     if (!ph.canRead) {
       throw new HttpError(423, 'locked', 'Chưa đến 0h 24/12, quà vẫn còn gói.', { unlockAt: ph.milestones.unlockAt });
     }
-    const m = await findMessage(treeId, mid);
-    const set = await db.db
+    const at = app.deps.now();
+    // Một câu lệnh duy nhất: đánh dấu đã đọc và trả nội dung hiện tại (không đọc cũ rồi mới ghi).
+    const [m] = await db.db
       .update(messages)
-      .set({ readAt: app.deps.now() })
-      .where(and(eq(messages.id, mid), isNull(messages.readAt)))
-      .returning({ id: messages.id });
-    if (set.length > 0) await logEvent(db.db, 'message_opened', treeId);
+      .set({ readAt: sql`coalesce(${messages.readAt}, ${at.toISOString()}::timestamptz)` })
+      .where(and(eq(messages.id, mid), eq(messages.treeId, treeId)))
+      .returning();
+    if (!m) throw notFound();
+    if (m.readAt!.getTime() === at.getTime()) await logEvent(db.db, 'message_opened', treeId);
     return {
       messageId: String(m.id),
       slotIndex: m.slotIndex,

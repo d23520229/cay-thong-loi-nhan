@@ -1,7 +1,8 @@
 import { describe, it, expect, afterEach } from 'vitest';
+import { eq } from 'drizzle-orm';
 import { catalog } from '@ctln/shared';
 import { makeTestApp, deviceHeaders } from './helpers.js';
-import { blockedDevices, messages, reports } from '../src/db/schema.js';
+import { blockedDevices, events, messages, reports } from '../src/db/schema.js';
 
 type T = Awaited<ReturnType<typeof makeTestApp>>;
 let t: T;
@@ -93,6 +94,8 @@ describe('open', () => {
     expect((await open(id, p.messageId, cookies)).statusCode).toBe(200);
     const [b] = await t.h.db.select().from(messages);
     expect(b!.readAt).toEqual(a!.readAt);
+    const ev = await t.h.db.select().from(events).where(eq(events.type, 'message_opened'));
+    expect(ev).toHaveLength(1);
   });
 
   it('NOTICE: 200', async () => {
