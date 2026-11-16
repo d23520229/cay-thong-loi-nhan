@@ -3,3 +3,4 @@
 export { default as catalog } from './catalog.json' with { type: 'json' };
 export * from './geometry.mjs';
 export { layoutSlots, ornamentScale, SLOT_COUNTS } from './slots.mjs';
+export * from './schemas.mjs';

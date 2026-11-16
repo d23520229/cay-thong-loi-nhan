@@ -5,10 +5,20 @@
   "type": "module",
   "description": "Dùng chung cho web và server: danh mục đồ hoạ, hình học tán cây, xếp điểm nhắn, (sắp có) schema Zod và kiểu dữ liệu",
   "exports": {
-    ".": "./src/index.mjs",
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.mjs"
+    },
     "./catalog.json": "./src/catalog.json",
     "./geometry": "./src/geometry.mjs",
-    "./slots": "./src/slots.mjs"
+    "./slots": "./src/slots.mjs",
+    "./schemas": "./src/schemas.mjs"
   },
-  "scripts": { "test": "node --test \"test/*.test.mjs\"" }
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "dependencies": {
+    "zod": "^3.24.0"
+  },
+  "types": "./src/index.d.ts"
 }
