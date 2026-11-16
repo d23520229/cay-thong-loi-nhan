@@ -9,9 +9,10 @@ const defaultDir = fileURLToPath(new URL('./migrations/', import.meta.url));
 export async function runMigrations(h: DbHandle, dir: string = defaultDir): Promise<string[]> {
   const files = readdirSync(dir).filter((f) => f.endsWith('.sql')).sort();
   return h.transaction(async (c) => {
+    // Khoá trước mọi DDL: CREATE ... IF NOT EXISTS không an toàn khi hai instance khởi động đồng thời trên DB trống.
+    await c.query('SELECT pg_advisory_xact_lock(727201)');
     await c.exec(`CREATE SCHEMA IF NOT EXISTS meta;
       CREATE TABLE IF NOT EXISTS meta.migrations(name text PRIMARY KEY, applied_at timestamptz NOT NULL DEFAULT now())`);
-    await c.query('SELECT pg_advisory_xact_lock(727201)');
     const done = new Set((await c.query<{ name: string }>('SELECT name FROM meta.migrations')).map((r) => r.name));
     const ran: string[] = [];
     for (const f of files) {
