@@ -7,6 +7,7 @@ import type { Env } from './env.js';
 import { HttpError } from './errors.js';
 import { phaseOf } from './guards.js';
 import { configRoutes } from './routes/config.js';
+import { treesRoutes } from './routes/trees.js';
 
 export type GoogleVerifier = (idToken: string) => Promise<{ sub: string; name?: string }>;
 export type AppDeps = { db: DbHandle; env: Env; now: () => Date; google: GoogleVerifier | null };
@@ -63,5 +64,6 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
   app.get('/healthz', async () => ({ ok: true }));
   await app.register(configRoutes);
+  await app.register(treesRoutes);
   return app;
 }

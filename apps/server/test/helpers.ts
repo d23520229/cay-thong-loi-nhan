@@ -11,13 +11,14 @@ export const FakeGoogle: GoogleVerifier = async (token) => {
 
 export const deviceHeaders = (id: string = randomUUID()) => ({ 'x-device-id': id });
 
-export async function makeTestApp(opts: { at?: string } = {}) {
+export async function makeTestApp(opts: { at?: string; google?: GoogleVerifier | null } = {}) {
   let t = new Date(opts.at ?? '2026-12-01T10:00:00+07:00');
   const clock = { set(iso: string) { t = new Date(iso); } };
   const h = await connectPglite();
   await runMigrations(h);
-  const app = await buildApp({ db: h, env: loadEnv({}), now: () => t, google: FakeGoogle });
-  return { app, h, clock, google: FakeGoogle };
+  const google = opts.google === undefined ? FakeGoogle : opts.google;
+  const app = await buildApp({ db: h, env: loadEnv({}), now: () => t, google });
+  return { app, h, clock, google };
 }
 
 export async function seedTree(h: { db: import('../src/db/client.js').Db }, id: string) {
