@@ -16,6 +16,7 @@ export function loadEnv(src: Record<string, string | undefined> = process.env): 
   if (production && (!pepper || pepper.length < 32)) {
     throw new Error('PEPPER là bắt buộc và phải có ít nhất 32 ký tự khi chạy production');
   }
+  if (production && src.FAKE_NOW) throw new Error('FAKE_NOW không được đặt khi chạy production');
   const blockIpKey = src.BLOCK_IP_KEY;
   if (production && (!blockIpKey || blockIpKey.length < 32)) {
     throw new Error('BLOCK_IP_KEY là bắt buộc và phải có ít nhất 32 ký tự khi chạy production');

@@ -21,6 +21,12 @@ describe('env', () => {
     expect(loadEnv({ TRUST_PROXY_HOPS: '2' }).trustProxyHops).toBe(2);
     expect(() => loadEnv({ TRUST_PROXY_HOPS: 'abc' })).toThrow();
   });
+  it('production không cho đặt FAKE_NOW', () => {
+    const base = { NODE_ENV: 'production', PEPPER: 'x'.repeat(32), BLOCK_IP_KEY: 'y'.repeat(32) };
+    expect(() => loadEnv({ ...base, FAKE_NOW: '2026-12-24T00:00:00+07:00' })).toThrow(/FAKE_NOW/);
+    expect(() => loadEnv(base)).not.toThrow();
+    expect(() => loadEnv({ FAKE_NOW: '2026-12-24T00:00:00+07:00' })).not.toThrow();
+  });
   it('dev dùng giá trị cố định', () => {
     expect(env.pepper).toBe('dev-pepper-dev-pepper-dev-pepper!');
     expect(env.production).toBe(false);
