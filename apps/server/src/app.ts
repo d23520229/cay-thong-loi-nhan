@@ -8,6 +8,7 @@ import { HttpError } from './errors.js';
 import { phaseOf } from './guards.js';
 import { authRoutes } from './routes/auth.js';
 import { configRoutes } from './routes/config.js';
+import { roomRoutes } from './routes/room.js';
 import { treesRoutes } from './routes/trees.js';
 
 export type GoogleVerifier = (idToken: string) => Promise<{ sub: string; name?: string }>;
@@ -66,6 +67,7 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   app.get('/healthz', async () => ({ ok: true }));
   await app.register(configRoutes);
   await app.register(treesRoutes);
+  await app.register(roomRoutes);
   await app.register(authRoutes);
   return app;
 }

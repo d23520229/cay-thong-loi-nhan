@@ -59,6 +59,17 @@ export async function buildPublicRoom(db: Db, treeId: string): Promise<Omit<Publ
   };
 }
 
+export const roomItemRow = (treeId: string, i: RoomItem) => ({
+  treeId,
+  clientId: i.clientId,
+  itemType: i.type,
+  variant: i.variant,
+  x: i.x,
+  y: i.y,
+  scale: i.scale,
+  flip: i.flip,
+});
+
 const isUniqueViolation = (e: unknown): boolean => {
   const err = e as { code?: string; cause?: { code?: string } } | null;
   return err?.code === '23505' || err?.cause?.code === '23505';
@@ -132,16 +143,7 @@ export async function treesRoutes(app: FastifyInstance) {
           });
           if (room.items.length > 0) {
             await tx.insert(roomItems).values(
-              room.items.map((i) => ({
-                treeId: id,
-                clientId: i.clientId,
-                itemType: i.type,
-                variant: i.variant,
-                x: i.x,
-                y: i.y,
-                scale: i.scale,
-                flip: i.flip,
-              })),
+              room.items.map((i) => roomItemRow(id, i)),
             );
           }
         });

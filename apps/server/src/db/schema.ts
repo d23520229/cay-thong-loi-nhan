@@ -35,6 +35,7 @@ export const trees = pgTable('trees', {
   createdAt: createdAt(),
   updatedAt: ts('updated_at').notNull().defaultNow(),
   lastOwnerVisitAt: ts('last_owner_visit_at'),
+  showMessageCount: boolean('show_message_count').notNull().default(true),
 });
 
 export const roomItems = pgTable('room_items', {

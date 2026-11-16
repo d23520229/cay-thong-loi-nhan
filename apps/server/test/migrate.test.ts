@@ -5,9 +5,9 @@ import { runMigrations } from '../src/db/migrate.js';
 import * as schema from '../src/db/schema.js';
 
 describe('runMigrations', () => {
-  it('chạy 0000_init.sql lần đầu, lần hai không chạy lại', async () => {
+  it('chạy mọi migration lần đầu, lần hai không chạy lại', async () => {
     const h = await connectPglite();
-    expect(await runMigrations(h)).toEqual(['0000_init.sql']);
+    expect(await runMigrations(h)).toEqual(['0000_init.sql', '0001_show_message_count.sql']);
     expect(await runMigrations(h)).toEqual([]);
     await h.close();
   });
