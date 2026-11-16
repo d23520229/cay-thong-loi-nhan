@@ -25,6 +25,14 @@ export const parseMid = (s: string): number => {
   return Number(s);
 };
 
+const optionalDeviceId = (req: FastifyRequest): string | undefined => {
+  try {
+    return requireDeviceId(req);
+  } catch {
+    return undefined;
+  }
+};
+
 const editToken = (req: FastifyRequest): string => {
   const v = req.headers['x-edit-token'];
   if (typeof v !== 'string' || v === '') throw new HttpError(403, 'bad_token', 'Bạn không có quyền với lời nhắn này.');
@@ -159,6 +167,7 @@ export async function messagesRoutes(app: FastifyInstance) {
 
   app.put<{ Params: { mid: string } }>('/api/messages/:mid', async (req) => {
     assertWritable(app);
+    await assertNotGloballyBlocked(app, req, optionalDeviceId(req));
     const mid = parseMid(req.params.mid);
     const token = editToken(req);
     const body = MessageEditSchema.parse(req.body);
@@ -182,6 +191,7 @@ export async function messagesRoutes(app: FastifyInstance) {
 
   app.delete<{ Params: { mid: string } }>('/api/messages/:mid', async (req, reply) => {
     assertWritable(app);
+    await assertNotGloballyBlocked(app, req, optionalDeviceId(req));
     const mid = parseMid(req.params.mid);
     const token = editToken(req);
     const { db, now } = app.deps;

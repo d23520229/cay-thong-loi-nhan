@@ -40,6 +40,20 @@ const block = (id: string, payload: object, cookies?: Record<string, string>) =>
 const report = (id: string, payload: object, headers: object = {}, cookies?: Record<string, string>) =>
   t.app.inject({ method: 'POST', url: `/api/trees/${id}/reports`, headers: { ...JSON_CT, ...headers }, cookies, payload });
 
+describe('global block', () => {
+  it('khách bị chặn toàn cục không báo cáo được', async () => {
+    const { id } = await setup();
+    const dev = '123e4567-e89b-42d3-a456-426614174000';
+    const { globalBlocks } = await import('../src/db/schema.js');
+    const { deviceHash } = await import('../src/security.js');
+    await t.h.db.insert(globalBlocks).values({ kind: 'device', valueHash: deviceHash(t.app.deps.env, dev) });
+    t.clock.set('2026-12-01T10:02:00+07:00');
+    const r = await report(id, { reason: 'x' }, deviceHeaders(dev));
+    expect(r.statusCode).toBe(403);
+    expect(r.json().error.code).toBe('blocked');
+  });
+});
+
 describe('open', () => {
   it('trước 0h 24/12: 423 locked kèm unlockAt; đúng 0h: 200 có content, unread:false, tác giả không sửa được', async () => {
     const { id, cookies } = await setup();

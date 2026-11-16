@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { blockedDevices, messages, reports, trees } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import { logEvent } from '../events.js';
-import { clientIp, getOwnerSession, phaseOf, requireDeviceId, requireOwner } from '../guards.js';
+import { assertNotGloballyBlocked, clientIp, getOwnerSession, phaseOf, requireDeviceId, requireOwner } from '../guards.js';
 import { deviceHash, ipHash, rateLimit } from '../security.js';
 import { parseMid } from './messages.js';
 
@@ -106,6 +106,7 @@ export async function ownerRoutes(app: FastifyInstance) {
       values = { treeId, messageId, messageSnapshot: snapshot, reason, reporter: 'owner', reporterHash: null };
     } else {
       const deviceId = requireDeviceId(req);
+      await assertNotGloballyBlocked(app, req, deviceId);
       if (body.messageId !== undefined) throw new HttpError(400, 'invalid_body', 'Dữ liệu chưa hợp lệ.');
       const at = app.deps.now();
       if (!(await rateLimit(db.db, 'report:ip:' + ipHash(app.deps.env, clientIp(req), at), 10, at))) {

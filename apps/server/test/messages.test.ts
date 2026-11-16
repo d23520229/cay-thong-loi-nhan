@@ -187,6 +187,23 @@ describe('PUT/DELETE /api/messages/:mid', () => {
     expect((await del(messageId, editToken)).json().error.code).toBe('edit_expired');
   });
 
+  it('thiết bị bị chặn toàn cục: sửa/xoá đều 403 blocked', async () => {
+    const { id } = await setup();
+    const dev = randomUUID();
+    const { messageId, editToken } = (await post(id, body(1), deviceHeaders(dev))).json();
+    const { globalBlocks } = await import('../src/db/schema.js');
+    const { deviceHash } = await import('../src/security.js');
+    await t.h.db.insert(globalBlocks).values({ kind: 'device', valueHash: deviceHash(t.app.deps.env, dev) });
+    t.clock.set('2026-12-01T10:02:00+07:00'); // quá đệm 60 giây
+    const h = { ...JSON_CT, ...tok(editToken), ...deviceHeaders(dev) };
+    const e = await t.app.inject({ method: 'PUT', url: `/api/messages/${messageId}`, headers: h, payload: body(1) });
+    expect(e.statusCode).toBe(403);
+    expect(e.json().error.code).toBe('blocked');
+    const d = await t.app.inject({ method: 'DELETE', url: `/api/messages/${messageId}`, headers: { ...tok(editToken), ...deviceHeaders(dev) } });
+    expect(d.statusCode).toBe(403);
+    expect(d.json().error.code).toBe('blocked');
+  });
+
   it('token sai/thiếu: 403 bad_token; không có: 404', async () => {
     const { id } = await setup();
     const { messageId } = (await post(id, body(1))).json();
