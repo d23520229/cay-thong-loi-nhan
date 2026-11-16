@@ -860,7 +860,7 @@ Khi bị spam tạo phòng hoặc lời nhắn hàng loạt: quản trị viên 
 
 | Đối tượng | Tạo | Lưu | Truyền |
 |---|---|---|---|
-| Khoá link riêng | 128 bit ngẫu nhiên, base32 | HMAC-SHA256 + `PEPPER` | Phần `#k=` của link (không vào log server), gửi trong body |
+| Khoá link riêng | 128 bit ngẫu nhiên, base64url (22 ký tự) | HMAC-SHA256 + `PEPPER` | Phần `#k=` của link (không vào log server), gửi trong body |
 | PIN 6 số | Người dùng đặt | `scrypt` + muối riêng | Body POST qua HTTPS |
 | Phiên chủ cây | 256 bit | HMAC | Cookie HttpOnly, Secure, SameSite=Lax |
 | Token sửa lời nhắn | 128 bit | HMAC | Header `X-Edit-Token` |
