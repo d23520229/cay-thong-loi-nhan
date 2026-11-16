@@ -70,7 +70,9 @@ export async function buildApp(deps: AppDeps, opts: { logStream?: { write(msg: s
     if (err.statusCode && err.statusCode >= 400 && err.statusCode < 500) {
       return reply.code(400).send(body('invalid_body', 'Dữ liệu chưa hợp lệ.'));
     }
-    req.log.error(err);
+    // KHÔNG log nguyên err: DrizzleQueryError mang message/query/params chứa nội dung người dùng.
+    const cause = (err as { cause?: { code?: string } }).cause;
+    req.log.error({ name: err.name, code: cause?.code ?? err.code }, 'unhandled error');
     return reply.code(500).send(body('internal', 'Có lỗi xảy ra, thử lại sau nhé.'));
   });
 

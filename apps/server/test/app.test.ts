@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { makeTestApp, deviceHeaders, seedTree } from './helpers.js';
 import { clientIp, assertNotPaused, assertNotGloballyBlocked, assertWritable, requireDeviceId, requireOwner, setOwnerCookie, getOwnerSession } from '../src/guards.js';
 import { HttpError } from '../src/errors.js';
-import { ownerSessions, siteSettings, globalBlocks, events } from '../src/db/schema.js';
+import { messages, ownerSessions, siteSettings, globalBlocks, events } from '../src/db/schema.js';
 import { deviceHash, hmac } from '../src/security.js';
 import { logEvent } from '../src/events.js';
 import { buildApp } from '../src/app.js';
@@ -176,6 +176,30 @@ describe('guards', () => {
 });
 
 describe('log request', () => {
+  it('lỗi CSDL 500 không ghi nội dung người dùng vào log', async () => {
+    const lines: string[] = [];
+    const h = await connectPglite();
+    await runMigrations(h);
+    const app = await buildApp(
+      { db: h, env: loadEnv({}), now: () => new Date('2026-12-01T10:00:00+07:00'), google: null },
+      { logStream: { write: (m) => void lines.push(m) } },
+    );
+    t = { app, h } as T;
+    app.get('/api/leak', async () => {
+      await h.db.insert(messages).values({
+        treeId: 'khongco01', slotIndex: 0, ornament: 'ball', isAnonymous: false, authorName: 'TÁC GIẢ xyz',
+        content: 'BÍ MẬT xyz', deviceHash: 'd', editTokenHash: 'e', editUntil: new Date(), readAt: null,
+      } as never);
+      return {};
+    });
+    const r = await app.inject('/api/leak');
+    expect(r.statusCode).toBe(500);
+    expect(r.json()).toEqual({ error: { code: 'internal', message: 'Có lỗi xảy ra, thử lại sau nhé.' } });
+    const out = lines.join('');
+    expect(out).toContain('"level":50');
+    expect(out).not.toContain('BÍ MẬT xyz');
+    expect(out).not.toContain('TÁC GIẢ xyz');
+  });
   it('log của Fastify không chứa IP khách', async () => {
     const lines: string[] = [];
     const h = await connectPglite();
