@@ -29,6 +29,9 @@ export async function authRoutes(app: FastifyInstance) {
     const t = await loadTree(req.params.id);
     const { key } = LinkBody.parse(req.body);
     const at = now();
+    if (!(await rateLimit(db.db, 'link:ip:' + ipHash(env, clientIp(req), at), 20, at))) {
+      throw new HttpError(429, 'rate_limited', 'Bạn thao tác nhanh quá, đợi một lát nhé.');
+    }
     const a = Buffer.from(hmac(env, 'link', key));
     const b = Buffer.from(t.privateKeyHash);
     const ok = a.length === b.length && timingSafeEqual(a, b);
@@ -64,7 +67,7 @@ export async function authRoutes(app: FastifyInstance) {
       .update(trees)
       .set({
         // Cửa sổ 15 phút: lần sai cuối đã quá 15 phút thì đếm lại từ 1.
-        pinFailedCount: sql`CASE WHEN ${trees.pinLastFailedAt} IS NOT NULL AND ${trees.pinLastFailedAt} <= ${new Date(at.getTime() - PIN_LOCK_MS)} THEN 1 ELSE ${trees.pinFailedCount} + 1 END`,
+        pinFailedCount: sql`CASE WHEN ${trees.pinLastFailedAt} IS NOT NULL AND ${trees.pinLastFailedAt} <= ${new Date(at.getTime() - PIN_LOCK_MS).toISOString()}::timestamptz THEN 1 ELSE ${trees.pinFailedCount} + 1 END`,
         pinLastFailedAt: at,
       })
       .where(and(eq(trees.id, t.id), or(isNull(trees.pinLockedUntil), lte(trees.pinLockedUntil, at))))

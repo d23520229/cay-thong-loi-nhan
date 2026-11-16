@@ -41,6 +41,16 @@ describe('auth link', () => {
     expect(rows.map((r) => r.success).sort()).toEqual([false, true]);
   });
 
+  it('lần thứ 21 trong giờ từ cùng IP → 429 rate_limited, không ghi thêm auth_attempts', async () => {
+    t = await makeTestApp();
+    const { id } = await create({ type: 'pin', pin: '123456' });
+    for (let i = 0; i < 20; i++) expect((await post(`/api/trees/${id}/auth/link`, { key: 'sai' })).statusCode).toBe(401);
+    const r = await post(`/api/trees/${id}/auth/link`, { key: 'sai' });
+    expect(r.statusCode).toBe(429);
+    expect(r.json().error.code).toBe('rate_limited');
+    expect(await t.h.db.select().from(authAttempts).where(eq(authAttempts.method, 'link'))).toHaveLength(20);
+  });
+
   it('cây không tồn tại → 404', async () => {
     t = await makeTestApp();
     const r = await post('/api/trees/khongco1/auth/link', { key: 'x' });
