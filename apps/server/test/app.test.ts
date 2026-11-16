@@ -6,7 +6,10 @@ import { HttpError } from '../src/errors.js';
 import { ownerSessions, siteSettings, globalBlocks, events } from '../src/db/schema.js';
 import { deviceHash, hmac } from '../src/security.js';
 import { logEvent } from '../src/events.js';
-import { reqSerializer } from '../src/app.js';
+import { buildApp } from '../src/app.js';
+import { connectPglite } from '../src/db/client.js';
+import { runMigrations } from '../src/db/migrate.js';
+import { loadEnv } from '../src/env.js';
 
 type T = Awaited<ReturnType<typeof makeTestApp>>;
 let t: T;
@@ -167,10 +170,19 @@ describe('guards', () => {
 });
 
 describe('log request', () => {
-  it('không chứa IP và bỏ query string', async () => {
-    t = await makeTestApp(); // afterEach đóng t
-    const out = reqSerializer({ method: 'GET', url: '/api/trees/abc?token=bi-mat', remoteAddress: '203.0.113.7', ip: '203.0.113.7' } as never);
-    expect(out).toEqual({ method: 'GET', url: '/api/trees/abc' });
-    expect(JSON.stringify(out)).not.toContain('203.0.113.7');
+  it('log của Fastify không chứa IP khách', async () => {
+    const lines: string[] = [];
+    const h = await connectPglite();
+    await runMigrations(h);
+    const app = await buildApp(
+      { db: h, env: loadEnv({}), now: () => new Date('2026-12-01T10:00:00+07:00'), google: null },
+      { logStream: { write: (m) => void lines.push(m) } },
+    );
+    t = { app, h } as T; // afterEach đóng app + db
+    await app.inject({ url: '/api/config?x=1', remoteAddress: '203.0.113.7', headers: { 'x-forwarded-for': '203.0.113.7' } });
+    const out = lines.join('');
+    expect(out).toContain('/api/config');
+    expect(out).not.toContain('203.0.113.7');
+    expect(out).not.toContain('x=1');
   });
 });

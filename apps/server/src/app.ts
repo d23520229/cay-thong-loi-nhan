@@ -28,10 +28,13 @@ export function reqSerializer(req: { method?: string; url?: string }) {
   return { method: req.method, url: (req.url ?? '').split('?')[0] };
 }
 
+/** Cấu hình logger production: dùng reqSerializer để không ghi IP. */
+export const loggerOptions = { serializers: { req: reqSerializer } };
+
 const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
-export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
-  const app = Fastify({ logger: process.env.VITEST ? false : { serializers: { req: reqSerializer } }, bodyLimit: 65536, trustProxy: true });
+export async function buildApp(deps: AppDeps, opts: { logStream?: { write(msg: string): void } } = {}): Promise<FastifyInstance> {
+  const app = Fastify({ logger: opts.logStream ? { ...loggerOptions, stream: opts.logStream } : process.env.VITEST ? false : loggerOptions, bodyLimit: 65536, trustProxy: true });
   app.decorate('deps', deps);
   await app.register(cookie);
   await app.register(helmet);
