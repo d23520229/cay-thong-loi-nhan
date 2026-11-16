@@ -1,0 +1,665 @@
+{
+  "version": 1,
+  "room": {
+    "w": 720,
+    "h": 1080,
+    "floorY": 770
+  },
+  "limits": {
+    "maxItems": 25,
+    "scaleMin": 0.5,
+    "scaleMax": 1.6,
+    "messageMax": 300,
+    "nameMax": 30,
+    "titleMax": 40,
+    "perDeviceMessages": 3,
+    "editMinutes": 15
+  },
+  "backgrounds": {
+    "night": {
+      "name": "Đêm ấm",
+      "asset": "room/bg-night.webp"
+    },
+    "wood": {
+      "name": "Nhà gỗ",
+      "asset": "room/bg-wood.webp"
+    },
+    "stone": {
+      "name": "Tường đá",
+      "asset": "room/bg-stone.webp"
+    },
+    "home": {
+      "name": "Nhà xinh",
+      "asset": "room/bg-home.webp"
+    },
+    "sage": {
+      "name": "Xanh rêu",
+      "asset": "room/bg-sage.webp"
+    },
+    "rose": {
+      "name": "Hồng phấn sọc",
+      "asset": "room/bg-rose.webp"
+    },
+    "navy": {
+      "name": "Xanh đêm sao",
+      "asset": "room/bg-navy.webp"
+    },
+    "whitebrick": {
+      "name": "Gạch trắng",
+      "asset": "room/bg-whitebrick.webp"
+    },
+    "shiplap": {
+      "name": "Ván trắng",
+      "asset": "room/bg-shiplap.webp"
+    }
+  },
+  "tree": {
+    "frame": {
+      "w": 400,
+      "h": 600,
+      "baseY": 538,
+      "scaleInRoom": 1.2
+    },
+    "shapes": {
+      "cloud3": {
+        "name": "3 tầng mây"
+      },
+      "cloud4": {
+        "name": "Thon cao 4 tầng"
+      },
+      "puffy": {
+        "name": "Bông tròn"
+      },
+      "snowy": {
+        "name": "3 tầng phủ tuyết"
+      }
+    },
+    "palettes": {
+      "teal": {
+        "name": "Xanh ngọc",
+        "swatch": "#86DCCD"
+      },
+      "green": {
+        "name": "Xanh lá",
+        "swatch": "#9AD587"
+      },
+      "pine": {
+        "name": "Xanh thông",
+        "swatch": "#5AAA82"
+      },
+      "pink": {
+        "name": "Hồng phấn",
+        "swatch": "#F8BACD"
+      },
+      "lavender": {
+        "name": "Oải hương",
+        "swatch": "#C4B6F2"
+      },
+      "frost": {
+        "name": "Trắng sương",
+        "swatch": "#E6F3F8"
+      }
+    },
+    "trunkShapes": {
+      "straight": {
+        "name": "Thẳng"
+      },
+      "flared": {
+        "name": "Loe rễ"
+      },
+      "stout": {
+        "name": "Mập lùn"
+      }
+    },
+    "woods": {
+      "oak": {
+        "name": "Gỗ sồi sáng",
+        "swatch": "#DDBE90"
+      },
+      "walnut": {
+        "name": "Óc chó",
+        "swatch": "#956840"
+      },
+      "cedar": {
+        "name": "Tuyết tùng",
+        "swatch": "#BF6C4C"
+      },
+      "birch": {
+        "name": "Bạch dương",
+        "swatch": "#EFE9DC"
+      }
+    },
+    "slotCounts": [
+      6,
+      9,
+      12,
+      16,
+      20,
+      25,
+      30
+    ],
+    "assets": {
+      "canopy": "tree/canopy-{shape}-{palette}.webp",
+      "trunk": "tree/trunk-{trunkShape}-{wood}.webp"
+    }
+  },
+  "items": {
+    "tree": {
+      "name": "Cây thông",
+      "layer": "floor",
+      "render": "tree",
+      "deletable": false,
+      "variants": {
+        "main": {
+          "name": "Cây thông",
+          "w": 480,
+          "h": 720,
+          "ax": 240,
+          "ay": 645.6
+        }
+      }
+    },
+    "window": {
+      "name": "Cửa sổ",
+      "layer": "wall",
+      "render": "image",
+      "overlay": "snow",
+      "variants": {
+        "wood": {
+          "name": "Cửa sổ gỗ",
+          "asset": "room/window-wood.webp",
+          "w": 264.7,
+          "h": 307.3,
+          "ax": 131.3,
+          "ay": 307.3,
+          "crop": {
+            "left": 390.7,
+            "top": 80.7
+          }
+        },
+        "white": {
+          "name": "Cửa sổ trắng",
+          "asset": "room/window-white.webp",
+          "w": 264.7,
+          "h": 307.3,
+          "ax": 131.3,
+          "ay": 307.3,
+          "crop": {
+            "left": 390.7,
+            "top": 80.7
+          }
+        },
+        "honey": {
+          "name": "Cửa sổ gỗ sáng",
+          "asset": "room/window-honey.webp",
+          "w": 264.7,
+          "h": 307.3,
+          "ax": 131.3,
+          "ay": 307.3,
+          "crop": {
+            "left": 390.7,
+            "top": 80.7
+          }
+        }
+      }
+    },
+    "fireplace": {
+      "name": "Lò sưởi",
+      "layer": "floor",
+      "render": "image",
+      "overlay": "fire",
+      "tapEffects": "fire",
+      "variants": {
+        "classic": {
+          "name": "Cổ điển vòm gạch",
+          "asset": "room/fp2-classic.webp",
+          "w": 316,
+          "h": 407.3,
+          "ax": 158,
+          "ay": 393.3,
+          "crop": {
+            "left": 42,
+            "top": 456.7
+          }
+        },
+        "stove": {
+          "name": "Lò gang bụng tròn",
+          "asset": "room/fp2-stove.webp",
+          "w": 240,
+          "h": 330,
+          "ax": 120,
+          "ay": 316,
+          "crop": {
+            "left": 80,
+            "top": 534
+          }
+        },
+        "rustic": {
+          "name": "Lò đá dầm gỗ",
+          "asset": "room/fp2-rustic.webp",
+          "w": 400,
+          "h": 376,
+          "ax": 189.3,
+          "ay": 346,
+          "crop": {
+            "left": 10.7,
+            "top": 504
+          }
+        },
+        "victorian": {
+          "name": "Lò Victoria cột trắng",
+          "asset": "room/fp2-victorian.webp",
+          "w": 301.3,
+          "h": 417.3,
+          "ax": 150,
+          "ay": 403.3,
+          "crop": {
+            "left": 50,
+            "top": 446.7
+          }
+        },
+        "modern": {
+          "name": "Lò hiện đại dài",
+          "asset": "room/fp2-modern.webp",
+          "w": 350,
+          "h": 374,
+          "ax": 175.3,
+          "ay": 360,
+          "crop": {
+            "left": 24.7,
+            "top": 490
+          }
+        },
+        "dome": {
+          "name": "Lò vòm bánh mì",
+          "asset": "room/fp2-dome.webp",
+          "w": 307.3,
+          "h": 360.7,
+          "ax": 140,
+          "ay": 346.7,
+          "crop": {
+            "left": 60,
+            "top": 503.3
+          }
+        },
+        "cabinet": {
+          "name": "Lò tủ sách gỗ",
+          "asset": "room/fp2-cabinet.webp",
+          "w": 372.7,
+          "h": 418,
+          "ax": 186,
+          "ay": 404,
+          "crop": {
+            "left": 14,
+            "top": 446
+          }
+        },
+        "tiled": {
+          "name": "Lò sứ Bắc Âu",
+          "asset": "room/fp2-tiled.webp",
+          "w": 221.3,
+          "h": 512.7,
+          "ax": 111.3,
+          "ay": 498.7,
+          "crop": {
+            "left": 88.7,
+            "top": 351.3
+          }
+        }
+      }
+    },
+    "rug": {
+      "name": "Thảm",
+      "layer": "rug",
+      "render": "image",
+      "variants": {
+        "plaid": {
+          "name": "Thảm kẻ đỏ",
+          "asset": "room/rug-plaid.webp",
+          "w": 471.3,
+          "h": 164,
+          "ax": 243.3,
+          "ay": 72,
+          "crop": {
+            "left": 248.7,
+            "top": 836
+          }
+        },
+        "knit": {
+          "name": "Thảm len kem",
+          "asset": "room/rug-knit.webp",
+          "w": 452,
+          "h": 136,
+          "ax": 226,
+          "ay": 58,
+          "crop": {
+            "left": 266,
+            "top": 850
+          }
+        }
+      }
+    },
+    "stack": {
+      "name": "Chồng quà",
+      "layer": "floor",
+      "render": "image",
+      "tapEffects": "gift",
+      "variants": {
+        "warm": {
+          "name": "Chồng quà đỏ xanh",
+          "asset": "room/stack-warm.webp",
+          "w": 293.3,
+          "h": 234.7,
+          "ax": 163.3,
+          "ay": 216.7,
+          "crop": {
+            "left": 426.7,
+            "top": 797.3
+          }
+        },
+        "pastel": {
+          "name": "Chồng quà pastel",
+          "asset": "room/stack-pastel.webp",
+          "w": 293.3,
+          "h": 234.7,
+          "ax": 163.3,
+          "ay": 216.7,
+          "crop": {
+            "left": 426.7,
+            "top": 797.3
+          }
+        }
+      }
+    },
+    "gift": {
+      "name": "Hộp quà",
+      "layer": "floor",
+      "render": "image",
+      "tapEffects": "gift",
+      "variants": {
+        "red": {
+          "name": "Hộp đỏ chấm bi",
+          "asset": "room/gift-red.webp",
+          "w": 158,
+          "h": 141.3,
+          "ax": 78.7,
+          "ay": 131.3,
+          "crop": {
+            "left": 281.3,
+            "top": 872.7
+          }
+        },
+        "green": {
+          "name": "Hộp xanh sọc",
+          "asset": "room/gift-green.webp",
+          "w": 122.7,
+          "h": 118,
+          "ax": 61.3,
+          "ay": 108,
+          "crop": {
+            "left": 298.7,
+            "top": 896
+          }
+        },
+        "gold": {
+          "name": "Hộp vàng nhỏ",
+          "asset": "room/gift-gold.webp",
+          "w": 83.3,
+          "h": 99.3,
+          "ax": 42,
+          "ay": 89.3,
+          "crop": {
+            "left": 318,
+            "top": 914.7
+          }
+        },
+        "blue": {
+          "name": "Hộp xanh dương",
+          "asset": "room/gift-blue.webp",
+          "w": 112,
+          "h": 118,
+          "ax": 56,
+          "ay": 108,
+          "crop": {
+            "left": 304,
+            "top": 896
+          }
+        },
+        "cream": {
+          "name": "Hộp kem",
+          "asset": "room/gift-cream.webp",
+          "w": 88.7,
+          "h": 107.3,
+          "ax": 44.7,
+          "ay": 97.3,
+          "crop": {
+            "left": 315.3,
+            "top": 906.7
+          }
+        },
+        "pink": {
+          "name": "Hộp hồng cao",
+          "asset": "room/gift-pink.webp",
+          "w": 94,
+          "h": 159.3,
+          "ax": 47.3,
+          "ay": 149.3,
+          "crop": {
+            "left": 312.7,
+            "top": 854.7
+          }
+        },
+        "mint": {
+          "name": "Hộp bạc hà",
+          "asset": "room/gift-mint.webp",
+          "w": 117.3,
+          "h": 123.3,
+          "ax": 58.7,
+          "ay": 113.3,
+          "crop": {
+            "left": 301.3,
+            "top": 890.7
+          }
+        },
+        "lilac": {
+          "name": "Hộp tím nhạt",
+          "asset": "room/gift-lilac.webp",
+          "w": 99.3,
+          "h": 110,
+          "ax": 50,
+          "ay": 100,
+          "crop": {
+            "left": 310,
+            "top": 904
+          }
+        }
+      }
+    },
+    "pet": {
+      "name": "Thú cưng",
+      "layer": "floor",
+      "render": "svg-pet",
+      "tapEffects": "pet",
+      "variants": {
+        "cat": {
+          "name": "Mèo cam",
+          "asset": "room/pet-cat.webp",
+          "w": 196,
+          "h": 273,
+          "ax": 98,
+          "ay": 251.99999999999997
+        },
+        "dog": {
+          "name": "Cún",
+          "asset": "room/pet-dog.webp",
+          "w": 196,
+          "h": 273,
+          "ax": 98,
+          "ay": 251.99999999999997
+        },
+        "deer": {
+          "name": "Tuần lộc",
+          "asset": "room/pet-deer.webp",
+          "w": 196,
+          "h": 273,
+          "ax": 98,
+          "ay": 251.99999999999997
+        },
+        "bear": {
+          "name": "Gấu bông",
+          "asset": "room/pet-bear.webp",
+          "w": 196,
+          "h": 273,
+          "ax": 98,
+          "ay": 251.99999999999997
+        },
+        "owl": {
+          "name": "Cú mèo",
+          "asset": "room/pet-owl.webp",
+          "w": 196,
+          "h": 273,
+          "ax": 98,
+          "ay": 251.99999999999997
+        },
+        "penguin": {
+          "name": "Chim cánh cụt",
+          "asset": "room/pet-penguin.webp",
+          "w": 196,
+          "h": 273,
+          "ax": 98,
+          "ay": 251.99999999999997
+        }
+      }
+    }
+  },
+  "ornaments": {
+    "sock": {
+      "name": "Tất Noel"
+    },
+    "star": {
+      "name": "Ngôi sao"
+    },
+    "bulb": {
+      "name": "Bóng đèn"
+    },
+    "ball": {
+      "name": "Quả châu"
+    },
+    "candy": {
+      "name": "Kẹo gậy"
+    },
+    "bell": {
+      "name": "Chuông"
+    },
+    "gingerbread": {
+      "name": "Bánh gừng"
+    },
+    "heart": {
+      "name": "Trái tim"
+    },
+    "snowflake": {
+      "name": "Bông tuyết"
+    },
+    "mitten": {
+      "name": "Găng tay len"
+    },
+    "minigift": {
+      "name": "Hộp quà nhỏ"
+    },
+    "pinecone": {
+      "name": "Quả thông"
+    },
+    "bow": {
+      "name": "Nơ đỏ"
+    },
+    "snowman": {
+      "name": "Người tuyết"
+    },
+    "moon": {
+      "name": "Trăng khuyết"
+    },
+    "lantern": {
+      "name": "Đèn lồng"
+    },
+    "stripeball": {
+      "name": "Châu sọc kẹo"
+    },
+    "cookie": {
+      "name": "Bánh quy sao"
+    },
+    "reindeer": {
+      "name": "Tuần lộc nhỏ"
+    },
+    "cocoa": {
+      "name": "Cốc ca cao"
+    }
+  },
+  "defaultRoom": {
+    "background": "night",
+    "tree": {
+      "shape": "cloud3",
+      "palette": "teal",
+      "trunkShape": "straight",
+      "wood": "oak",
+      "slotCount": 12
+    },
+    "items": [
+      {
+        "type": "window",
+        "variant": "wood",
+        "x": 522,
+        "y": 388,
+        "scale": 1,
+        "flip": false
+      },
+      {
+        "type": "fireplace",
+        "variant": "classic",
+        "x": 172,
+        "y": 850,
+        "scale": 1,
+        "flip": false
+      },
+      {
+        "type": "rug",
+        "variant": "plaid",
+        "x": 492,
+        "y": 908,
+        "scale": 1,
+        "flip": false
+      },
+      {
+        "type": "tree",
+        "variant": "main",
+        "x": 492,
+        "y": 912,
+        "scale": 1,
+        "flip": false
+      },
+      {
+        "type": "stack",
+        "variant": "warm",
+        "x": 590,
+        "y": 1014,
+        "scale": 1,
+        "flip": false
+      },
+      {
+        "type": "gift",
+        "variant": "blue",
+        "x": 356,
+        "y": 990,
+        "scale": 0.85,
+        "flip": false
+      },
+      {
+        "type": "pet",
+        "variant": "cat",
+        "x": 236,
+        "y": 966,
+        "scale": 1,
+        "flip": false
+      }
+    ]
+  }
+}

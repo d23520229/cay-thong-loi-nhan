@@ -1,0 +1,326 @@
+/* Chuyển động căn phòng — gom từ bản thiết kế canvas.
+   Nguồn: packages/art (cây, phòng, thú cưng, phụ kiện treo) và bảng "Phòng tự do" (hiệu ứng chạm).
+   Mọi chuyển động chỉ dùng transform/opacity để mượt trên điện thoại. */
+
+/* ===== Cây thông: đung đưa, đèn, ngôi sao ===== */
+
+.glow-light{animation:glow-tw 2.8s ease-in-out infinite;animation-delay:var(--d,0s)}
+@keyframes glow-tw{0%,100%{opacity:1}50%{opacity:.3}}
+.top-star2{transform-box:view-box;animation:star2 3.2s ease-in-out infinite}
+.star-halo{transform-box:view-box;animation:halo2 3.2s ease-in-out infinite}
+@keyframes star2{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg) scale(1.04)}}
+@keyframes halo2{0%,100%{transform:scale(.85);opacity:.6}50%{transform:scale(1.15);opacity:1}}
+.sway2{transform-origin:50% 90%;animation:sway2 6s ease-in-out infinite}
+@keyframes sway2{0%,100%{transform:rotate(-.7deg)}50%{transform:rotate(.7deg)}}
+.shake .sway2{animation:shake2 .8s ease-in-out}
+@keyframes shake2{0%,100%{transform:rotate(0)}15%{transform:rotate(-3.5deg)}35%{transform:rotate(3deg)}55%{transform:rotate(-2deg)}75%{transform:rotate(1deg)}}
+.shake .glow-light{animation:glow-flash .9s ease-out}
+@keyframes glow-flash{0%{opacity:.2}30%{opacity:1;filter:brightness(1.6)}100%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.glow-light,.top-star2,.star-halo,.sway2{animation:none}}
+
+/* ===== Phòng: lửa lò sưởi, tuyết ngoài cửa sổ ===== */
+
+.fire2 .fl-a,.fire2 .fl-b,.fire2 .fl-c{transform-box:fill-box;transform-origin:50% 100%}
+.fire2 .fl-a{animation:fl 1.1s ease-in-out infinite alternate}
+.fire2 .fl-b{animation:fl .8s ease-in-out infinite alternate-reverse}
+.fire2 .fl-c{animation:fl .6s ease-in-out infinite alternate}
+@keyframes fl{from{transform:scale(1,1) skewX(-4deg)}to{transform:scale(.9,1.14) skewX(4deg)}}
+.fire-glow2{transform-box:fill-box;transform-origin:center;animation:fglow 1.8s ease-in-out infinite}
+@keyframes fglow{0%,100%{opacity:.75;transform:scale(1)}50%{opacity:1;transform:scale(1.07)}}
+.sparks2 circle{opacity:0}
+.fx-fire .fl-a,.fx-fire .fl-b{animation:fburst 1.1s ease-out}
+@keyframes fburst{30%{transform:scale(1.25,1.6)}}
+.fx-fire .sparks2 circle{animation:spark2 1.2s ease-out;animation-delay:var(--d,0s)}
+@keyframes spark2{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-80px)}}
+.cat-breath{transform-origin:236px 958px;animation:catb 3.4s ease-in-out infinite}
+@keyframes catb{0%,100%{transform:scale(1,1)}50%{transform:scale(1.012,.985)}}
+.cat-tail{transform-origin:261px 936px;animation:catt 2.6s ease-in-out infinite}
+@keyframes catt{0%,100%{transform:rotate(0)}50%{transform:rotate(-5deg)}}
+.cat-eye{transform-box:view-box;animation:blink2 5s infinite}
+@keyframes blink2{0%,93%,100%{transform:scaleY(1)}96%{transform:scaleY(.08)}}
+.fx-cat .cat-breath{animation:cathop .6s cubic-bezier(.3,1.6,.5,1)}
+@keyframes cathop{40%{transform:translateY(-14px) scale(1.02,.98)}}
+.fx-cat .cat-tail{animation:catt .2s ease-in-out 6}
+.gift-bounce{transform-origin:600px 1000px}
+.fx-gifts .gift-bounce{animation:gb .7s cubic-bezier(.3,1.6,.5,1)}
+@keyframes gb{30%{transform:scale(1.04,.94)}60%{transform:translateY(-10px)}}
+.win-snow circle{animation:wsnow linear infinite}
+@keyframes wsnow{from{transform:translate(0,-300px)}to{transform:translate(12px,0)}}
+@media (prefers-reduced-motion:reduce){.fire2 *,.cat-breath,.cat-tail,.cat-eye,.win-snow circle{animation:none}}
+
+/* ===== Thú cưng: thở, chớp mắt, vẫy đuôi, nhảy khi chạm ===== */
+
+.pet{transform-box:fill-box;transform-origin:50% 100%}
+.pet .breath{transform-box:fill-box;transform-origin:50% 100%;animation:pet-breath 3.2s ease-in-out infinite}
+@keyframes pet-breath{0%,100%{transform:scale(1,1)}50%{transform:scale(1.025,.975)}}
+.pet .head{transform-box:fill-box;transform-origin:50% 90%;animation:pet-head 4.5s ease-in-out infinite}
+@keyframes pet-head{0%,100%{transform:rotate(0)}50%{transform:rotate(-3deg)}}
+.pet .eyes{transform-box:fill-box;transform-origin:center;animation:blink 4.8s infinite}
+.pet-cat .eyes{animation-delay:.8s}.pet-owl .eyes{animation-delay:2s}.pet-bear .eyes{animation-delay:1.4s}
+.pet .tail{transform-box:fill-box;transform-origin:0% 100%;animation:pet-tail 1.6s ease-in-out infinite}
+@keyframes pet-tail{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(10deg)}}
+.pet-dog .tail{animation-duration:.8s}
+.pet .ear{transform-box:fill-box;transform-origin:50% 0%}
+.pet .flip-l{transform-box:fill-box;transform-origin:100% 0%}
+.pet .flip-r{transform-box:fill-box;transform-origin:0% 0%}
+.pet .arm-r{transform-box:fill-box;transform-origin:20% 10%}
+.pet-hearts{opacity:0;transform-box:fill-box;transform-origin:50% 100%}
+.pop .pet{animation:pet-hop .65s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pet-hop{0%{transform:translateY(0) scale(1,1)}25%{transform:translateY(0) scale(1.08,.9)}55%{transform:translateY(-22px) scale(.95,1.06)}100%{transform:translateY(0) scale(1,1)}}
+.pop .pet-hearts{animation:hearts 1.3s ease-out}
+@keyframes hearts{0%{opacity:0;transform:translateY(10px) scale(.6)}25%{opacity:1}100%{opacity:0;transform:translateY(-26px) scale(1.1)}}
+.pop .pet .tail{animation:pet-tail .18s ease-in-out 7}
+.pop .pet-dog .ear-l{animation:ear-flop-l .25s ease-in-out 4}
+.pop .pet-dog .ear-r{animation:ear-flop-r .25s ease-in-out 4}
+@keyframes ear-flop-l{50%{transform:rotate(18deg)}}
+@keyframes ear-flop-r{50%{transform:rotate(-18deg)}}
+.pop .pet-owl .head{animation:owl-turn 1.1s ease-in-out}
+@keyframes owl-turn{0%,100%{transform:rotate(0)}35%{transform:rotate(-24deg)}70%{transform:rotate(18deg)}}
+.pop .pet-deer .head{animation:deer-nod .35s ease-in-out 3}
+@keyframes deer-nod{50%{transform:rotate(8deg)}}
+.pop .pet-bear .arm-r{animation:bear-wave .35s ease-in-out 4}
+@keyframes bear-wave{0%,100%{transform:rotate(0)}50%{transform:rotate(-130deg)}}
+.pop .pet-penguin .flip-l{animation:flap-l .18s ease-in-out 7}
+.pop .pet-penguin .flip-r{animation:flap-r .18s ease-in-out 7}
+@keyframes flap-l{50%{transform:rotate(30deg)}}
+@keyframes flap-r{50%{transform:rotate(-30deg)}}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+@media (prefers-reduced-motion:reduce){.pet .breath,.pet .head,.pet .eyes,.pet .tail{animation:none}}
+
+/* ===== Phụ kiện treo & bong bóng điểm nhắn ===== */
+
+.ornament{transform-box:fill-box;transform-origin:50% 0%;animation:orn-swing 3.4s ease-in-out infinite;animation-delay:var(--d,0s)}
+@keyframes orn-swing{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+.ornament.st-locked .orn-body{filter:saturate(.25) brightness(1.08);opacity:.75}
+.ornament.st-unread .orn-body{animation:orn-shine 1.6s ease-in-out infinite}
+@keyframes orn-shine{0%,100%{filter:brightness(1)}50%{filter:brightness(1.35) drop-shadow(0 0 4px #FFE27A)}}
+.glint path{transform-box:fill-box;transform-origin:center;animation:glint 1.4s ease-in-out infinite}
+.glint path:nth-child(2){animation-delay:.7s}
+@keyframes glint{0%,100%{transform:scale(.3);opacity:0}50%{transform:scale(1.1);opacity:1}}
+.slot-bubble{transform-box:fill-box;transform-origin:50% 60%;animation:bubble 2.6s ease-in-out infinite;animation-delay:var(--d,0s)}
+@keyframes bubble{0%,100%{transform:scale(.92);opacity:.75}50%{transform:scale(1.06);opacity:1}}
+.slot-bubble .bubble-glow{transform-box:fill-box;transform-origin:center;animation:glow 2.6s ease-in-out infinite;animation-delay:var(--d,0s)}
+.slot-bubble.dim{opacity:.45;animation:none}
+.pop .ornament{animation:orn-ring .9s ease-in-out}
+@keyframes orn-ring{0%,100%{transform:rotate(0)}15%{transform:rotate(-26deg)}35%{transform:rotate(20deg)}55%{transform:rotate(-12deg)}75%{transform:rotate(6deg)}}
+.pop .slot-bubble{animation:bubble-pop .5s ease-out}
+@keyframes bubble-pop{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
+.drop-in .ornament{animation:orn-drop .9s cubic-bezier(.3,1.5,.5,1)}
+@keyframes orn-drop{0%{transform:translateY(-60px);opacity:0}60%{transform:translateY(4px);opacity:1}100%{transform:translateY(0)}}
+@media (prefers-reduced-motion:reduce){.ornament,.slot-bubble,.slot-bubble .bubble-glow,.glint path,.ornament.st-unread .orn-body{animation:none}}
+
+/* ===== Hiệu ứng chạm: hạt bay, bong bóng thoại, quà, thú cưng ===== */
+.burst{position:absolute;left:50%;width:0;height:0;pointer-events:none;z-index:5}
+
+.pt{position:absolute;left:-14px;top:-14px;width:28px;height:28px;opacity:0;animation:pt 1.3s cubic-bezier(.15,.7,.3,1) forwards;animation-delay:var(--d)}
+
+.pt svg{width:100%;height:100%;display:block}
+
+.pt.confetti{width:12px;height:20px;border-radius:3px;background:var(--c)}
+
+.pt.snow{width:14px;height:14px;border-radius:50%;background:var(--c);box-shadow:0 0 0 2px rgba(88,121,138,.3)}
+
+.pt.spark{width:30px;height:30px}
+
+@keyframes pt{0%{transform:translate(0,0) scale(.2) rotate(0);opacity:0}
+12%{opacity:1}
+70%{opacity:1}
+100%{transform:translate(var(--dx),var(--dy)) scale(1) rotate(var(--r));opacity:0}
+}
+
+.say{position:absolute;left:50%;bottom:100%;margin-bottom:6px;padding:10px 20px;border-radius:24px;background:#FFF6E5;color:#3A2E2A;font-size:32px;white-space:nowrap;box-shadow:0 6px 14px rgba(0,0,0,.3);z-index:6;pointer-events:none;animation:say 1.7s ease-out forwards}
+
+.say::after{content:'';position:absolute;left:50%;top:100%;margin-left:-10px;border:10px solid transparent;border-top-color:#FFF6E5}
+
+@keyframes say{0%{opacity:0;transform:translate(-50%,12px) scale(.6)}
+14%{opacity:1;transform:translate(-50%,0) scale(1.06)}
+24%{transform:translate(-50%,0) scale(1)}
+80%{opacity:1;transform:translate(-50%,0)}
+100%{opacity:0;transform:translate(-50%,-14px)}
+}
+
+.g-hop .hop{animation:ghop .8s cubic-bezier(.3,1.4,.5,1)}
+
+@keyframes ghop{0%{transform:none}
+20%{transform:scale(1.08,.9)}
+50%{transform:translateY(-40px) scale(.95,1.06)}
+80%{transform:translateY(0) scale(1.05,.95)}
+100%{transform:none}
+}
+
+.g-shake .hop{animation:gshake 1s ease-in-out}
+
+@keyframes gshake{0%,100%{transform:rotate(0)}
+10%,50%,90%{transform:rotate(-7deg)}
+30%,70%{transform:rotate(7deg)}
+}
+
+.g-spin .hop{animation:gspin 1s ease-in-out}
+
+@keyframes gspin{0%{transform:none}
+45%{transform:translateY(-60px) rotate(180deg)}
+85%{transform:translateY(0) rotate(360deg) scale(1.06,.94)}
+100%{transform:rotate(360deg)}
+}
+
+.g-squash .hop{animation:gsq .7s ease-in-out}
+
+@keyframes gsq{0%,100%{transform:none}
+30%{transform:scale(1.25,.7)}
+60%{transform:scale(.88,1.18)}
+}
+
+.g-pop .hop{animation:gpop .6s cubic-bezier(.3,1.6,.5,1)}
+
+@keyframes gpop{0%{transform:none}
+35%{transform:scale(1.25)}
+65%{transform:scale(.92)}
+100%{transform:none}
+}
+
+.g-wobble .hop{animation:gwob .9s ease-in-out}
+
+@keyframes gwob{0%,100%{transform:skewX(0)}
+20%{transform:skewX(-14deg) scaleY(.95)}
+40%{transform:skewX(11deg)}
+60%{transform:skewX(-6deg)}
+80%{transform:skewX(3deg)}
+}
+
+.p-spin .pet{transform-origin:50% 60%;animation:pspin .95s ease-in-out}
+
+@keyframes pspin{0%{transform:none}
+50%{transform:translateY(-30px) rotate(180deg)}
+100%{transform:rotate(360deg)}
+}
+
+.p-dance .pet{animation:pdance 1.3s ease-in-out}
+
+@keyframes pdance{0%,100%{transform:rotate(0)}
+12%{transform:rotate(-12deg) translateY(-8px)}
+25%{transform:rotate(12deg)}
+37%{transform:rotate(-12deg) translateY(-8px)}
+50%{transform:rotate(12deg)}
+62%{transform:rotate(-8deg) translateY(-6px)}
+75%{transform:rotate(6deg)}
+}
+
+.p-talk .pet .head{animation:ptalk .24s ease-in-out 6}
+
+@keyframes ptalk{50%{transform:rotate(-7deg) translateY(-4px)}
+}
+
+.p-sleep .pet .eyes{animation:none;transform:scaleY(.12)}
+
+.p-sleep .pet{animation:psleep 1.7s ease-in-out}
+
+@keyframes psleep{0%,100%{transform:none}
+50%{transform:scale(1.05,.93)}
+}
+
+.p-jump .pet{animation:pjump .85s cubic-bezier(.3,1.5,.5,1)}
+
+@keyframes pjump{0%{transform:none}
+25%{transform:scale(1.12,.84)}
+55%{transform:translateY(-70px) scale(.92,1.1)}
+85%{transform:translateY(0) scale(1.06,.94)}
+100%{transform:none}
+}
+
+.compose{max-height:86%}
+
+.stage{flex:1;min-height:0;display:flex;flex-direction:column;align-items:flex-start}
+
+.stage-row{display:flex;gap:32px;align-items:flex-start}
+
+.stage.phone-mode .phone{border-radius:36px;box-shadow:0 0 0 10px #17121B,0 20px 50px rgba(0,0,0,.45);margin:10px}
+
+.stage.desk-mode{align-items:stretch;background:#1E1923;border-radius:18px;box-shadow:0 20px 50px rgba(0,0,0,.45);overflow:hidden}
+
+.stage.desk-mode .stage-row{gap:0;justify-content:center;background:#241D2A;height:648px}
+
+.stage.desk-mode .phone{border-radius:0}
+
+.browserbar{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#17121B}
+
+.browserbar span{width:12px;height:12px;border-radius:50%;background:#4E4258}
+
+.browserbar .url{margin-left:12px;flex:1;max-width:420px;padding:5px 12px;border-radius:8px;background:#2C2633;color:#B9AEC2;font-family:system-ui,sans-serif;font-size:13px}
+
+.panel{width:280px;height:648px;box-sizing:border-box;padding:16px 14px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;background:#2C2633;border-left:1px solid #3A3044;border-right:1px solid #3A3044}
+
+.panel-title{font-family:'Amatic SC',cursive;font-size:32px;line-height:1;color:#FFD86B}
+
+.panel-note{margin:0;font-size:16px;line-height:1.45;color:#B9AEC2}
+
+.sizeval{min-width:52px;text-align:center;font-size:16px;color:#E9DCCB}
+
+.grid{display:flex;flex-wrap:wrap;gap:8px}
+
+.desc{width:560px;font-size:17px;line-height:1.5;color:#E9DCCB}
+
+.desc p{margin:0 0 12px}
+.desc b{color:#FFD86B}
+
+.opt{flex:none;min-height:44px;min-width:44px;padding:6px 12px;border-radius:14px;border:2px solid #4E4258;background:#3A3044;color:#F6EBDD;font:inherit;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+.opt.img{width:72px;height:72px;padding:5px}
+
+.opt.img img{max-width:100%;max-height:100%;object-fit:contain}
+
+.opt.sw{width:44px;height:44px;padding:0;border-radius:50%}
+
+.opt.tab{min-height:36px;padding:4px 12px;border-radius:999px;font-size:14px}
+
+.opt[aria-pressed="true"]{border-color:#FFD86B;box-shadow:0 0 0 2px rgba(255,216,107,.35)}
+
+.arrow{position:absolute;width:76px;height:76px;border-radius:50%;border:0;background:rgba(255,246,229,.95);color:#3A2E2A;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(0,0,0,.35);z-index:900;transform-origin:center}
+
+.arrow svg{width:40px;height:40px}
+
+.vlabel{position:absolute;padding:8px 16px;border-radius:999px;background:rgba(23,18,27,.82);color:#FFF6E5;font-size:26px;white-space:nowrap;z-index:900;pointer-events:none;transform-origin:top center}
+
+.strip{position:absolute;left:0;right:0;bottom:0;padding:10px 0 12px;border-radius:22px 22px 0 0;background:rgba(36,29,42,.97);box-shadow:0 -8px 24px rgba(0,0,0,.4);display:flex;flex-direction:column;gap:8px;animation:sheetin .3s cubic-bezier(.2,.9,.3,1)}
+
+.strip-head{display:flex;justify-content:space-between;align-items:center;padding:0 14px}
+
+.strip-title{font-family:'Grape Nuts',cursive;font-size:18px;color:#FFD86B}
+
+.chip.sm{min-height:36px;padding:4px 14px;font-size:15px}
+
+.strip-tabs,.strip-row{display:flex;gap:8px;overflow-x:auto;padding:2px 14px;scrollbar-width:none;-webkit-mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 14px),transparent);mask-image:linear-gradient(90deg,transparent,#000 14px,#000 calc(100% - 14px),transparent)}
+
+.strip-tabs::-webkit-scrollbar,.strip-row::-webkit-scrollbar{display:none}
+
+.strip-row.wrap{flex-wrap:wrap;overflow:visible;-webkit-mask-image:none;mask-image:none;padding:0}
+
+.sheet-body,.panel{scrollbar-width:thin;scrollbar-color:#6A5C74 transparent}
+
+.sheet-body::-webkit-scrollbar,.panel::-webkit-scrollbar{width:8px}
+
+.sheet-body::-webkit-scrollbar-track,.panel::-webkit-scrollbar-track{background:transparent}
+
+.sheet-body::-webkit-scrollbar-thumb,.panel::-webkit-scrollbar-thumb{background:#6A5C74;border-radius:8px;border:2px solid transparent;background-clip:padding-box}
+
+.sheet-body::-webkit-scrollbar-thumb:hover,.panel::-webkit-scrollbar-thumb:hover{background:#8C7CA0;background-clip:padding-box}
+
+.world{transition:transform .8s cubic-bezier(.65,0,.35,1)}
+
+.orn-pick{width:58px;height:58px;padding:4px;border-radius:16px;border:2px solid #4E4258;background:#3A3044;cursor:pointer;display:flex;align-items:center;justify-content:center}
+
+.field{display:flex;flex-direction:column;gap:6px}
+
+.field input,.field textarea{font:inherit;font-family:'Mynerve',cursive;font-size:18px;color:#3A2E2A;background:#FFF6E5;border:2px solid #E9DCCB;border-radius:14px;padding:10px 12px;resize:none;outline:none}
+
+.field input:focus,.field textarea:focus{border-color:#FFD86B}
+
+.count{font-family:'Mynerve',cursive;font-size:14px;color:#B9AEC2;margin-left:6px}
+
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+
+.note{font-size:15px;line-height:1.4;color:#E9DCCB;background:rgba(255,216,107,.12);border-radius:12px;padding:8px 10px}
+
+.primary{font:inherit;cursor:pointer;min-height:46px;padding:8px 20px;border-radius:999px;border:0;background:#FFD86B;color:#2C2633;font-size:18px}
+
+.toast2{position:absolute;left:50%;top:70px;transform:translateX(-50%);max-width:88%;padding:10px 16px;border-radius:16px;background:#FFF6E5;color:#3A2E2A;font-size:16px;line-height:1.35;text-align:center;box-shadow:0 8px 20px rgba(0,0,0,.35);animation:say 3.2s ease-out forwards;z-index:30}
+

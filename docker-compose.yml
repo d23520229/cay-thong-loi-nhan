@@ -1,0 +1,14 @@
+# PostgreSQL 16 cho môi trường phát triển trên máy (chưa cần tạo tài nguyên Azure)
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ctln
+      POSTGRES_PASSWORD: ctln_dev
+      POSTGRES_DB: caythong
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+volumes:
+  pgdata:

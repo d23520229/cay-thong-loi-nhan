@@ -1,0 +1,27 @@
+{
+  "name": "@ctln/art",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Mã nguồn đồ hoạ màu nước (SVG) và script xuất WebP + catalog.json",
+  "exports": {
+    "./pets": "./src/animated/pets.mjs",
+    "./ornaments": "./src/animated/ornaments.mjs",
+    "./tree": "./src/tree.mjs",
+    "./room": "./src/room.mjs",
+    "./fireplaces": "./src/fireplaces.mjs"
+  },
+  "scripts": {
+    "export": "node scripts/export.mjs && node scripts/export-pet-thumbs.mjs",
+    "export:tree": "node scripts/export.mjs --only=tree",
+    "export:room": "node scripts/export.mjs --only=room",
+    "export:catalog": "node scripts/export.mjs --only=catalog"
+  },
+  "dependencies": {
+    "@ctln/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
+    "sharp": "^0.34.0"
+  }
+}

@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Cây thông màu nước – phối thử</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Grape+Nuts&family=Mynerve&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+
+.glow-light{animation:glow-tw 2.8s ease-in-out infinite;animation-delay:var(--d,0s)}
+@keyframes glow-tw{0%,100%{opacity:1}50%{opacity:.3}}
+.top-star2{transform-box:view-box;animation:star2 3.2s ease-in-out infinite}
+.star-halo{transform-box:view-box;animation:halo2 3.2s ease-in-out infinite}
+@keyframes star2{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg) scale(1.04)}}
+@keyframes halo2{0%,100%{transform:scale(.85);opacity:.6}50%{transform:scale(1.15);opacity:1}}
+.sway2{transform-origin:50% 90%;animation:sway2 6s ease-in-out infinite}
+@keyframes sway2{0%,100%{transform:rotate(-.7deg)}50%{transform:rotate(.7deg)}}
+.shake .sway2{animation:shake2 .8s ease-in-out}
+@keyframes shake2{0%,100%{transform:rotate(0)}15%{transform:rotate(-3.5deg)}35%{transform:rotate(3deg)}55%{transform:rotate(-2deg)}75%{transform:rotate(1deg)}}
+.shake .glow-light{animation:glow-flash .9s ease-out}
+@keyframes glow-flash{0%{opacity:.2}30%{opacity:1;filter:brightness(1.6)}100%{opacity:1}}
+@media (prefers-reduced-motion:reduce){.glow-light,.top-star2,.star-halo,.sway2{animation:none}}
+
+.pill{font:inherit;cursor:pointer;min-height:44px;padding:8px 18px;border-radius:999px;border:2px solid #E9DCCB;background:transparent;color:#F6EBDD;font-size:19px}
+.pill:hover{background:rgba(255,255,255,.08)}
+.sw{cursor:pointer;width:46px;height:46px;border-radius:50%;border:2px solid rgba(255,255,255,.5);padding:0}
+
+</style>
+</helmet>
+<div style="width: 1120px; height: 760px; box-sizing: border-box; padding: 56px; display: flex; gap: 56px; align-items: flex-start; background: #2C2633; font-family: 'Mynerve', cursive; color: #F6EBDD">
+<button type="button" onClick="{{shakeTree}}" aria-label="Chạm vào cây để thử hiệu ứng" class="{{stageCls}}" style="position: relative; flex: none; width: 400px; height: 600px; padding: 0; border: 0; border-radius: 32px; overflow: hidden; cursor: pointer; background: #4A4152">
+<div style="position: absolute; left: 0; right: 0; bottom: 0; height: 104px; background: #3A3038"></div>
+<div style="position: absolute; left: 70px; top: 512px; width: 260px; height: 56px; border-radius: 50%; background: #9C3B3B; box-shadow: inset 0 0 0 5px #C9A88A"></div>
+<sc-if value="{{tk_straight_oak}}" hint-placeholder-val="{{true}}"><img src="/_blob/457b34d7163f396c03e90ededb1b43d8" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{tk_straight_walnut}}" hint-placeholder-val="{{false}}"><img src="/_blob/ed63dc57c757e1a66acb13ab0de92023" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{tk_straight_cedar}}" hint-placeholder-val="{{false}}"><img src="/_blob/dfff66b08c3de1290c19e7d86af97e6e" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{tk_straight_birch}}" hint-placeholder-val="{{false}}"><img src="/_blob/274146d0e117706829e19e4844cd061f" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{tk_flared_oak}}" hint-placeholder-val="{{false}}"><img src="/_blob/22dd3f6488f726eeffa65414c3bb4e9d" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{tk_flared_walnut}}" hint-placeholder-val="{{false}}"><img src="/_blob/2feb8bd3c69dec767dcea087a29edf2e" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{tk_flared_cedar}}" hint-placeholder-val="{{false}}"><img src="/_blob/520177a93a1dbc88b070117669345326" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{tk_flared_birch}}" hint-placeholder-val="{{false}}"><img src="/_blob/97198c2dba047e3a7880e5c472e455e2" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{tk_stout_oak}}" hint-placeholder-val="{{false}}"><img src="/_blob/8a961595ceccbd1dec69dfca14b16e85" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{tk_stout_walnut}}" hint-placeholder-val="{{false}}"><img src="/_blob/3563b2d7430e84b8e5247781582edfb9" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{tk_stout_cedar}}" hint-placeholder-val="{{false}}"><img src="/_blob/d0da272ddc285fabc5c6d9df47623321" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{tk_stout_birch}}" hint-placeholder-val="{{false}}"><img src="/_blob/07437207c79c589b5703b0e3e60da175" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+
+<div class="sway2" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px">
+<sc-if value="{{cn_cloud3_teal}}" hint-placeholder-val="{{true}}"><img src="/_blob/5e598f9e3d0f9ff17367f67dee733018" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{cn_cloud3_green}}" hint-placeholder-val="{{false}}"><img src="/_blob/291f5d52f6125d56369e4e1e0dcc5a05" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{cn_cloud3_pine}}" hint-placeholder-val="{{false}}"><img src="/_blob/42c65ced2a53192e9d64357f79acfba4" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{cn_cloud3_pink}}" hint-placeholder-val="{{false}}"><img src="/_blob/1d8fe38dbaa829366c832bc0020ffc14" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{cn_cloud3_lavender}}" hint-placeholder-val="{{false}}"><img src="/_blob/6815ffe6b2adadfbec673adc7dc49115" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{cn_cloud3_frost}}" hint-placeholder-val="{{false}}"><img src="/_blob/2fe02b94f2599cdfd7d12844d24495f2" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{cn_cloud4_teal}}" hint-placeholder-val="{{false}}"><img src="/_blob/46be09e7daa3d6c89b3f64d7aae1aa2c" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{cn_cloud4_green}}" hint-placeholder-val="{{false}}"><img src="/_blob/2059d30c209c0976decbef19ecf70ec7" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{cn_cloud4_pine}}" hint-placeholder-val="{{false}}"><img src="/_blob/ee037fc9e3f9069e109b43c0369455b4" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{cn_cloud4_pink}}" hint-placeholder-val="{{false}}"><img src="/_blob/bded2cca7134a96abd609840bd65cedf" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{cn_cloud4_lavender}}" hint-placeholder-val="{{false}}"><img src="/_blob/af63165d6b28ba341c571249106e2b0a" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{cn_cloud4_frost}}" hint-placeholder-val="{{false}}"><img src="/_blob/e7b5159da9fa52a2ff7dbd45f1349524" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{cn_puffy_teal}}" hint-placeholder-val="{{false}}"><img src="/_blob/1f9cb5e8d997cff7588bd4c487c46a2e" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{cn_puffy_green}}" hint-placeholder-val="{{false}}"><img src="/_blob/62828014ab7c6687cf067cc9092a6156" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{cn_puffy_pine}}" hint-placeholder-val="{{false}}"><img src="/_blob/0792c04069a3607b9f116edc271d5dba" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{cn_puffy_pink}}" hint-placeholder-val="{{false}}"><img src="/_blob/3271095e686b94d48a5f40b51f542e91" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{cn_puffy_lavender}}" hint-placeholder-val="{{false}}"><img src="/_blob/bc44e36de5daaf0caf519375fb731f17" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{cn_puffy_frost}}" hint-placeholder-val="{{false}}"><img src="/_blob/e1d6e12a6a74919de4eed1f6519917b7" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{cn_snowy_teal}}" hint-placeholder-val="{{false}}"><img src="/_blob/ae5468ecf31510c32cdd91154e718cf8" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{cn_snowy_green}}" hint-placeholder-val="{{false}}"><img src="/_blob/e627ceeeec52f5805a53a1d5283d646f" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{cn_snowy_pine}}" hint-placeholder-val="{{false}}"><img src="/_blob/2a62d18bd0d7d5b84cfcd569608ff98f" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{cn_snowy_pink}}" hint-placeholder-val="{{false}}"><img src="/_blob/9f3e6b78fade9921cebd5410f2b4953f" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{cn_snowy_lavender}}" hint-placeholder-val="{{false}}"><img src="/_blob/b876e82c132705ce400dbe9bae76de06" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{cn_snowy_frost}}" hint-placeholder-val="{{false}}"><img src="/_blob/615d3ee9a745e3c12ecc43b80fab3997" alt="" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px"></sc-if>
+<sc-if value="{{sh_cloud3}}" hint-placeholder-val="{{true}}"><svg viewBox="0 0 400 600" width="400" height="600" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px; overflow: visible" aria-hidden="true"><defs><radialGradient id="lg"><stop offset="0" stop-color="#FFF8D6" stop-opacity=".95"/><stop offset=".4" stop-color="#FFF1B0" stop-opacity=".45"/><stop offset="1" stop-color="#FFF1B0" stop-opacity="0"/></radialGradient></defs><g class="glow-light" style="--d:0.00s">
+      <circle cx="100.8" cy="309" r="16" fill="url(#lg)"/>
+      <path d="M 100.8 302 Q 101.8 308 107.8 309 Q 101.8 310 100.8 316 Q 99.8 310 93.8 309 Q 99.8 308 100.8 302 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:0.53s">
+      <circle cx="154.9" cy="261.2" r="11" fill="url(#lg)"/>
+      <path d="M 154.9 256.2 Q 155.9 260.2 159.9 261.2 Q 155.9 262.2 154.9 266.2 Q 153.9 262.2 149.9 261.2 Q 153.9 260.2 154.9 256.2 Z" fill="#FFE9A8"/>
+    </g><g class="glow-light" style="--d:1.06s">
+      <circle cx="216.5" cy="216.6" r="11" fill="url(#lg)"/>
+      <path d="M 216.5 211.6 Q 217.5 215.6 221.5 216.6 Q 217.5 217.6 216.5 221.6 Q 215.5 217.6 211.5 216.6 Q 215.5 215.6 216.5 211.6 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:1.59s">
+      <circle cx="141.6" cy="402.8" r="16" fill="url(#lg)"/>
+      <path d="M 141.6 395.8 Q 142.6 401.8 148.6 402.8 Q 142.6 403.8 141.6 409.8 Q 140.6 403.8 134.6 402.8 Q 140.6 401.8 141.6 395.8 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:2.12s">
+      <circle cx="262.1" cy="204.8" r="11" fill="url(#lg)"/>
+      <path d="M 262.1 199.8 Q 263.1 203.8 267.1 204.8 Q 263.1 205.8 262.1 209.8 Q 261.1 205.8 257.1 204.8 Q 261.1 203.8 262.1 199.8 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:0.05s">
+      <circle cx="188.6" cy="308.7" r="11" fill="url(#lg)"/>
+      <path d="M 188.6 303.7 Q 189.6 307.7 193.6 308.7 Q 189.6 309.7 188.6 313.7 Q 187.6 309.7 183.6 308.7 Q 187.6 307.7 188.6 303.7 Z" fill="#FFE9A8"/>
+    </g><g class="glow-light" style="--d:0.58s">
+      <circle cx="194.3" cy="430" r="16" fill="url(#lg)"/>
+      <path d="M 194.3 423 Q 195.3 429 201.3 430 Q 195.3 431 194.3 437 Q 193.3 431 187.3 430 Q 193.3 429 194.3 423 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:1.11s">
+      <circle cx="260.9" cy="302" r="11" fill="url(#lg)"/>
+      <path d="M 260.9 297 Q 261.9 301 265.9 302 Q 261.9 303 260.9 307 Q 259.9 303 255.9 302 Q 259.9 301 260.9 297 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:1.64s">
+      <circle cx="142.2" cy="198.5" r="11" fill="url(#lg)"/>
+      <path d="M 142.2 193.5 Q 143.2 197.5 147.2 198.5 Q 143.2 199.5 142.2 203.5 Q 141.2 199.5 137.2 198.5 Q 141.2 197.5 142.2 193.5 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:2.17s">
+      <circle cx="207.2" cy="376.8" r="16" fill="url(#lg)"/>
+      <path d="M 207.2 369.8 Q 208.2 375.8 214.2 376.8 Q 208.2 377.8 207.2 383.8 Q 206.2 377.8 200.2 376.8 Q 206.2 375.8 207.2 369.8 Z" fill="#FFE9A8"/>
+    </g><g class="glow-light" style="--d:0.10s">
+      <circle cx="316.4" cy="352" r="11" fill="url(#lg)"/>
+      <path d="M 316.4 347 Q 317.4 351 321.4 352 Q 317.4 353 316.4 357 Q 315.4 353 311.4 352 Q 315.4 351 316.4 347 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:0.63s">
+      <circle cx="254.7" cy="441.3" r="11" fill="url(#lg)"/>
+      <path d="M 254.7 436.3 Q 255.7 440.3 259.7 441.3 Q 255.7 442.3 254.7 446.3 Q 253.7 442.3 249.7 441.3 Q 253.7 440.3 254.7 436.3 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:1.16s">
+      <circle cx="222.3" cy="168.8" r="16" fill="url(#lg)"/>
+      <path d="M 222.3 161.8 Q 223.3 167.8 229.3 168.8 Q 223.3 169.8 222.3 175.8 Q 221.3 169.8 215.3 168.8 Q 221.3 167.8 222.3 161.8 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:1.69s">
+      <circle cx="253.8" cy="376.1" r="11" fill="url(#lg)"/>
+      <path d="M 253.8 371.1 Q 254.8 375.1 258.8 376.1 Q 254.8 377.1 253.8 381.1 Q 252.8 377.1 248.8 376.1 Q 252.8 375.1 253.8 371.1 Z" fill="#FFE9A8"/>
+    </g><defs>
+    <radialGradient id="sg" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#FFF4B8"/><stop offset=".45" stop-color="#FFD24A"/><stop offset="1" stop-color="#F0A21E"/></radialGradient>
+    <radialGradient id="sh"><stop offset="0" stop-color="#FFE48A" stop-opacity=".75"/><stop offset="1" stop-color="#FFE48A" stop-opacity="0"/></radialGradient>
+  </defs>
+  <g class="top-star2" style="transform-origin:200px 90px">
+    <circle class="star-halo" cx="200" cy="90" r="62" fill="url(#sh)" style="transform-origin:200px 90px"/>
+    <path d="M 205 64.1 Q 210 76.2 223.1 77.3 Q 236.1 78.3 226.2 86.8 Q 216.2 95.3 219.3 108 Q 222.3 120.7 211.2 113.9 Q 200 107 188.8 113.9 Q 177.7 120.7 180.7 108 Q 183.8 95.3 173.8 86.8 Q 163.9 78.3 176.9 77.3 Q 190 76.2 195 64.1 Q 200 52 205 64.1 Z" fill="url(#sg)" stroke="#D88A12" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M 188 80 Q 192 70 198 68" stroke="#FFFBE6" stroke-width="4" stroke-linecap="round" fill="none" opacity=".9"/>
+  </g></svg></sc-if>
+<sc-if value="{{sh_cloud4}}" hint-placeholder-val="{{false}}"><svg viewBox="0 0 400 600" width="400" height="600" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px; overflow: visible" aria-hidden="true"><defs><radialGradient id="lg"><stop offset="0" stop-color="#FFF8D6" stop-opacity=".95"/><stop offset=".4" stop-color="#FFF1B0" stop-opacity=".45"/><stop offset="1" stop-color="#FFF1B0" stop-opacity="0"/></radialGradient></defs><g class="glow-light" style="--d:0.00s">
+      <circle cx="136" cy="297.8" r="16" fill="url(#lg)"/>
+      <path d="M 136 290.8 Q 137 296.8 143 297.8 Q 137 298.8 136 304.8 Q 135 298.8 129 297.8 Q 135 296.8 136 290.8 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:0.53s">
+      <circle cx="158.1" cy="246" r="11" fill="url(#lg)"/>
+      <path d="M 158.1 241 Q 159.1 245 163.1 246 Q 159.1 247 158.1 251 Q 157.1 247 153.1 246 Q 157.1 245 158.1 241 Z" fill="#FFE9A8"/>
+    </g><g class="glow-light" style="--d:1.06s">
+      <circle cx="213" cy="197.7" r="11" fill="url(#lg)"/>
+      <path d="M 213 192.7 Q 214 196.7 218 197.7 Q 214 198.7 213 202.7 Q 212 198.7 208 197.7 Q 212 196.7 213 192.7 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:1.59s">
+      <circle cx="156.6" cy="399.4" r="16" fill="url(#lg)"/>
+      <path d="M 156.6 392.4 Q 157.6 398.4 163.6 399.4 Q 157.6 400.4 156.6 406.4 Q 155.6 400.4 149.6 399.4 Q 155.6 398.4 156.6 392.4 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:2.12s">
+      <circle cx="192.7" cy="297.4" r="11" fill="url(#lg)"/>
+      <path d="M 192.7 292.4 Q 193.7 296.4 197.7 297.4 Q 193.7 298.4 192.7 302.4 Q 191.7 298.4 187.7 297.4 Q 191.7 296.4 192.7 292.4 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:0.05s">
+      <circle cx="195.5" cy="428.8" r="11" fill="url(#lg)"/>
+      <path d="M 195.5 423.8 Q 196.5 427.8 200.5 428.8 Q 196.5 429.8 195.5 433.8 Q 194.5 429.8 190.5 428.8 Q 194.5 427.8 195.5 423.8 Z" fill="#FFE9A8"/>
+    </g><g class="glow-light" style="--d:0.58s">
+      <circle cx="154.8" cy="178.1" r="16" fill="url(#lg)"/>
+      <path d="M 154.8 171.1 Q 155.8 177.1 161.8 178.1 Q 155.8 179.1 154.8 185.1 Q 153.8 179.1 147.8 178.1 Q 153.8 177.1 154.8 171.1 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:1.11s">
+      <circle cx="204.8" cy="371.2" r="11" fill="url(#lg)"/>
+      <path d="M 204.8 366.2 Q 205.8 370.2 209.8 371.2 Q 205.8 372.2 204.8 376.2 Q 203.8 372.2 199.8 371.2 Q 203.8 370.2 204.8 366.2 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:1.64s">
+      <circle cx="241.2" cy="292.9" r="11" fill="url(#lg)"/>
+      <path d="M 241.2 287.9 Q 242.2 291.9 246.2 292.9 Q 242.2 293.9 241.2 297.9 Q 240.2 293.9 236.2 292.9 Q 240.2 291.9 241.2 287.9 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:2.17s">
+      <circle cx="287.5" cy="344.3" r="16" fill="url(#lg)"/>
+      <path d="M 287.5 337.3 Q 288.5 343.3 294.5 344.3 Q 288.5 345.3 287.5 351.3 Q 286.5 345.3 280.5 344.3 Q 286.5 343.3 287.5 337.3 Z" fill="#FFE9A8"/>
+    </g><g class="glow-light" style="--d:0.10s">
+      <circle cx="266.6" cy="248.3" r="11" fill="url(#lg)"/>
+      <path d="M 266.6 243.3 Q 267.6 247.3 271.6 248.3 Q 267.6 249.3 266.6 253.3 Q 265.6 249.3 261.6 248.3 Q 265.6 247.3 266.6 243.3 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:0.63s">
+      <circle cx="244.1" cy="441" r="11" fill="url(#lg)"/>
+      <path d="M 244.1 436 Q 245.1 440 249.1 441 Q 245.1 442 244.1 446 Q 243.1 442 239.1 441 Q 243.1 440 244.1 436 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:1.16s">
+      <circle cx="217.2" cy="145.9" r="16" fill="url(#lg)"/>
+      <path d="M 217.2 138.9 Q 218.2 144.9 224.2 145.9 Q 218.2 146.9 217.2 152.9 Q 216.2 146.9 210.2 145.9 Q 216.2 144.9 217.2 138.9 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:1.69s">
+      <circle cx="115.6" cy="350.2" r="11" fill="url(#lg)"/>
+      <path d="M 115.6 345.2 Q 116.6 349.2 120.6 350.2 Q 116.6 351.2 115.6 355.2 Q 114.6 351.2 110.6 350.2 Q 114.6 349.2 115.6 345.2 Z" fill="#FFE9A8"/>
+    </g><defs>
+    <radialGradient id="sg" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#FFF4B8"/><stop offset=".45" stop-color="#FFD24A"/><stop offset="1" stop-color="#F0A21E"/></radialGradient>
+    <radialGradient id="sh"><stop offset="0" stop-color="#FFE48A" stop-opacity=".75"/><stop offset="1" stop-color="#FFE48A" stop-opacity="0"/></radialGradient>
+  </defs>
+  <g class="top-star2" style="transform-origin:200px 66px">
+    <circle class="star-halo" cx="200" cy="66" r="62" fill="url(#sh)" style="transform-origin:200px 66px"/>
+    <path d="M 205 40.1 Q 210 52.2 223.1 53.3 Q 236.1 54.3 226.2 62.8 Q 216.2 71.3 219.3 84 Q 222.3 96.7 211.2 89.9 Q 200 83 188.8 89.9 Q 177.7 96.7 180.7 84 Q 183.8 71.3 173.8 62.8 Q 163.9 54.3 176.9 53.3 Q 190 52.2 195 40.1 Q 200 28 205 40.1 Z" fill="url(#sg)" stroke="#D88A12" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M 188 56 Q 192 46 198 44" stroke="#FFFBE6" stroke-width="4" stroke-linecap="round" fill="none" opacity=".9"/>
+  </g></svg></sc-if>
+<sc-if value="{{sh_puffy}}" hint-placeholder-val="{{false}}"><svg viewBox="0 0 400 600" width="400" height="600" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px; overflow: visible" aria-hidden="true"><defs><radialGradient id="lg"><stop offset="0" stop-color="#FFF8D6" stop-opacity=".95"/><stop offset=".4" stop-color="#FFF1B0" stop-opacity=".45"/><stop offset="1" stop-color="#FFF1B0" stop-opacity="0"/></radialGradient></defs><g class="glow-light" style="--d:0.00s">
+      <circle cx="130.2" cy="282.5" r="16" fill="url(#lg)"/>
+      <path d="M 130.2 275.5 Q 131.2 281.5 137.2 282.5 Q 131.2 283.5 130.2 289.5 Q 129.2 283.5 123.2 282.5 Q 129.2 281.5 130.2 275.5 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:0.53s">
+      <circle cx="310.1" cy="305.2" r="11" fill="url(#lg)"/>
+      <path d="M 310.1 300.2 Q 311.1 304.2 315.1 305.2 Q 311.1 306.2 310.1 310.2 Q 309.1 306.2 305.1 305.2 Q 309.1 304.2 310.1 300.2 Z" fill="#FFE9A8"/>
+    </g><g class="glow-light" style="--d:1.06s">
+      <circle cx="206.4" cy="216.6" r="11" fill="url(#lg)"/>
+      <path d="M 206.4 211.6 Q 207.4 215.6 211.4 216.6 Q 207.4 217.6 206.4 221.6 Q 205.4 217.6 201.4 216.6 Q 205.4 215.6 206.4 211.6 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:1.59s">
+      <circle cx="286.2" cy="246.2" r="16" fill="url(#lg)"/>
+      <path d="M 286.2 239.2 Q 287.2 245.2 293.2 246.2 Q 287.2 247.2 286.2 253.2 Q 285.2 247.2 279.2 246.2 Q 285.2 245.2 286.2 239.2 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:2.12s">
+      <circle cx="179" cy="414.5" r="11" fill="url(#lg)"/>
+      <path d="M 179 409.5 Q 180 413.5 184 414.5 Q 180 415.5 179 419.5 Q 178 415.5 174 414.5 Q 178 413.5 179 409.5 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:0.05s">
+      <circle cx="248.7" cy="184.5" r="11" fill="url(#lg)"/>
+      <path d="M 248.7 179.5 Q 249.7 183.5 253.7 184.5 Q 249.7 185.5 248.7 189.5 Q 247.7 185.5 243.7 184.5 Q 247.7 183.5 248.7 179.5 Z" fill="#FFE9A8"/>
+    </g><g class="glow-light" style="--d:0.58s">
+      <circle cx="140.8" cy="216.8" r="16" fill="url(#lg)"/>
+      <path d="M 140.8 209.8 Q 141.8 215.8 147.8 216.8 Q 141.8 217.8 140.8 223.8 Q 139.8 217.8 133.8 216.8 Q 139.8 215.8 140.8 209.8 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:1.11s">
+      <circle cx="213.5" cy="149.7" r="11" fill="url(#lg)"/>
+      <path d="M 213.5 144.7 Q 214.5 148.7 218.5 149.7 Q 214.5 150.7 213.5 154.7 Q 212.5 150.7 208.5 149.7 Q 212.5 148.7 213.5 144.7 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:1.64s">
+      <circle cx="171.5" cy="179.8" r="11" fill="url(#lg)"/>
+      <path d="M 171.5 174.8 Q 172.5 178.8 176.5 179.8 Q 172.5 180.8 171.5 184.8 Q 170.5 180.8 166.5 179.8 Q 170.5 178.8 171.5 174.8 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:2.17s">
+      <circle cx="124.9" cy="369.9" r="16" fill="url(#lg)"/>
+      <path d="M 124.9 362.9 Q 125.9 368.9 131.9 369.9 Q 125.9 370.9 124.9 376.9 Q 123.9 370.9 117.9 369.9 Q 123.9 368.9 124.9 362.9 Z" fill="#FFE9A8"/>
+    </g><g class="glow-light" style="--d:0.10s">
+      <circle cx="342" cy="394.1" r="11" fill="url(#lg)"/>
+      <path d="M 342 389.1 Q 343 393.1 347 394.1 Q 343 395.1 342 399.1 Q 341 395.1 337 394.1 Q 341 393.1 342 389.1 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:0.63s">
+      <circle cx="195.4" cy="281.1" r="11" fill="url(#lg)"/>
+      <path d="M 195.4 276.1 Q 196.4 280.1 200.4 281.1 Q 196.4 282.1 195.4 286.1 Q 194.4 282.1 190.4 281.1 Q 194.4 280.1 195.4 276.1 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:1.16s">
+      <circle cx="79.1" cy="376" r="16" fill="url(#lg)"/>
+      <path d="M 79.1 369 Q 80.1 375 86.1 376 Q 80.1 377 79.1 383 Q 78.1 377 72.1 376 Q 78.1 375 79.1 369 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:1.69s">
+      <circle cx="264.1" cy="339.4" r="11" fill="url(#lg)"/>
+      <path d="M 264.1 334.4 Q 265.1 338.4 269.1 339.4 Q 265.1 340.4 264.1 344.4 Q 263.1 340.4 259.1 339.4 Q 263.1 338.4 264.1 334.4 Z" fill="#FFE9A8"/>
+    </g><defs>
+    <radialGradient id="sg" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#FFF4B8"/><stop offset=".45" stop-color="#FFD24A"/><stop offset="1" stop-color="#F0A21E"/></radialGradient>
+    <radialGradient id="sh"><stop offset="0" stop-color="#FFE48A" stop-opacity=".75"/><stop offset="1" stop-color="#FFE48A" stop-opacity="0"/></radialGradient>
+  </defs>
+  <g class="top-star2" style="transform-origin:200px 74px">
+    <circle class="star-halo" cx="200" cy="74" r="62" fill="url(#sh)" style="transform-origin:200px 74px"/>
+    <path d="M 205 48.1 Q 210 60.2 223.1 61.3 Q 236.1 62.3 226.2 70.8 Q 216.2 79.3 219.3 92 Q 222.3 104.7 211.2 97.9 Q 200 91 188.8 97.9 Q 177.7 104.7 180.7 92 Q 183.8 79.3 173.8 70.8 Q 163.9 62.3 176.9 61.3 Q 190 60.2 195 48.1 Q 200 36 205 48.1 Z" fill="url(#sg)" stroke="#D88A12" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M 188 64 Q 192 54 198 52" stroke="#FFFBE6" stroke-width="4" stroke-linecap="round" fill="none" opacity=".9"/>
+  </g></svg></sc-if>
+<sc-if value="{{sh_snowy}}" hint-placeholder-val="{{false}}"><svg viewBox="0 0 400 600" width="400" height="600" style="position: absolute; left: 0; top: 0; width: 400px; height: 600px; overflow: visible" aria-hidden="true"><defs><radialGradient id="lg"><stop offset="0" stop-color="#FFF8D6" stop-opacity=".95"/><stop offset=".4" stop-color="#FFF1B0" stop-opacity=".45"/><stop offset="1" stop-color="#FFF1B0" stop-opacity="0"/></radialGradient></defs><g class="glow-light" style="--d:0.00s">
+      <circle cx="138.2" cy="297.5" r="16" fill="url(#lg)"/>
+      <path d="M 138.2 290.5 Q 139.2 296.5 145.2 297.5 Q 139.2 298.5 138.2 304.5 Q 137.2 298.5 131.2 297.5 Q 137.2 296.5 138.2 290.5 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:0.53s">
+      <circle cx="299.4" cy="320.1" r="11" fill="url(#lg)"/>
+      <path d="M 299.4 315.1 Q 300.4 319.1 304.4 320.1 Q 300.4 321.1 299.4 325.1 Q 298.4 321.1 294.4 320.1 Q 298.4 319.1 299.4 315.1 Z" fill="#FFE9A8"/>
+    </g><g class="glow-light" style="--d:1.06s">
+      <circle cx="208.3" cy="232.1" r="11" fill="url(#lg)"/>
+      <path d="M 208.3 227.1 Q 209.3 231.1 213.3 232.1 Q 209.3 233.1 208.3 237.1 Q 207.3 233.1 203.3 232.1 Q 207.3 231.1 208.3 227.1 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:1.59s">
+      <circle cx="270" cy="261.5" r="16" fill="url(#lg)"/>
+      <path d="M 270 254.5 Q 271 260.5 277 261.5 Q 271 262.5 270 268.5 Q 269 262.5 263 261.5 Q 269 260.5 270 254.5 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:2.12s">
+      <circle cx="181.1" cy="428.6" r="11" fill="url(#lg)"/>
+      <path d="M 181.1 423.6 Q 182.1 427.6 186.1 428.6 Q 182.1 429.6 181.1 433.6 Q 180.1 429.6 176.1 428.6 Q 180.1 427.6 181.1 423.6 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:0.05s">
+      <circle cx="250.2" cy="200.2" r="11" fill="url(#lg)"/>
+      <path d="M 250.2 195.2 Q 251.2 199.2 255.2 200.2 Q 251.2 201.2 250.2 205.2 Q 249.2 201.2 245.2 200.2 Q 249.2 199.2 250.2 195.2 Z" fill="#FFE9A8"/>
+    </g><g class="glow-light" style="--d:0.58s">
+      <circle cx="123.5" cy="232.2" r="16" fill="url(#lg)"/>
+      <path d="M 123.5 225.2 Q 124.5 231.2 130.5 232.2 Q 124.5 233.2 123.5 239.2 Q 122.5 233.2 116.5 232.2 Q 122.5 231.2 123.5 225.2 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:1.11s">
+      <circle cx="215.7" cy="165.6" r="11" fill="url(#lg)"/>
+      <path d="M 215.7 160.6 Q 216.7 164.6 220.7 165.6 Q 216.7 166.6 215.7 170.6 Q 214.7 166.6 210.7 165.6 Q 214.7 164.6 215.7 160.6 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:1.64s">
+      <circle cx="171.2" cy="195.6" r="11" fill="url(#lg)"/>
+      <path d="M 171.2 190.6 Q 172.2 194.6 176.2 195.6 Q 172.2 196.6 171.2 200.6 Q 170.2 196.6 166.2 195.6 Q 170.2 194.6 171.2 190.6 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:2.17s">
+      <circle cx="143.7" cy="384.3" r="16" fill="url(#lg)"/>
+      <path d="M 143.7 377.3 Q 144.7 383.3 150.7 384.3 Q 144.7 385.3 143.7 391.3 Q 142.7 385.3 136.7 384.3 Q 142.7 383.3 143.7 377.3 Z" fill="#FFE9A8"/>
+    </g><g class="glow-light" style="--d:0.10s">
+      <circle cx="315.1" cy="408.4" r="11" fill="url(#lg)"/>
+      <path d="M 315.1 403.4 Q 316.1 407.4 320.1 408.4 Q 316.1 409.4 315.1 413.4 Q 314.1 409.4 310.1 408.4 Q 314.1 407.4 315.1 403.4 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:0.63s">
+      <circle cx="195.9" cy="296.1" r="11" fill="url(#lg)"/>
+      <path d="M 195.9 291.1 Q 196.9 295.1 200.9 296.1 Q 196.9 297.1 195.9 301.1 Q 194.9 297.1 190.9 296.1 Q 194.9 295.1 195.9 291.1 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:1.16s">
+      <circle cx="245" cy="354" r="16" fill="url(#lg)"/>
+      <path d="M 245 347 Q 246 353 252 354 Q 246 355 245 361 Q 244 355 238 354 Q 244 353 245 347 Z" fill="#FFFFFF"/>
+    </g><g class="glow-light" style="--d:1.69s">
+      <circle cx="239.2" cy="400.7" r="11" fill="url(#lg)"/>
+      <path d="M 239.2 395.7 Q 240.2 399.7 244.2 400.7 Q 240.2 401.7 239.2 405.7 Q 238.2 401.7 234.2 400.7 Q 238.2 399.7 239.2 395.7 Z" fill="#FFE9A8"/>
+    </g><defs>
+    <radialGradient id="sg" cx=".4" cy=".35" r=".7"><stop offset="0" stop-color="#FFF4B8"/><stop offset=".45" stop-color="#FFD24A"/><stop offset="1" stop-color="#F0A21E"/></radialGradient>
+    <radialGradient id="sh"><stop offset="0" stop-color="#FFE48A" stop-opacity=".75"/><stop offset="1" stop-color="#FFE48A" stop-opacity="0"/></radialGradient>
+  </defs>
+  <g class="top-star2" style="transform-origin:200px 90px">
+    <circle class="star-halo" cx="200" cy="90" r="62" fill="url(#sh)" style="transform-origin:200px 90px"/>
+    <path d="M 205 64.1 Q 210 76.2 223.1 77.3 Q 236.1 78.3 226.2 86.8 Q 216.2 95.3 219.3 108 Q 222.3 120.7 211.2 113.9 Q 200 107 188.8 113.9 Q 177.7 120.7 180.7 108 Q 183.8 95.3 173.8 86.8 Q 163.9 78.3 176.9 77.3 Q 190 76.2 195 64.1 Q 200 52 205 64.1 Z" fill="url(#sg)" stroke="#D88A12" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M 188 80 Q 192 70 198 68" stroke="#FFFBE6" stroke-width="4" stroke-linecap="round" fill="none" opacity=".9"/>
+  </g></svg></sc-if>
+
+</div>
+</button>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 22px; min-width: 0">
+<div>
+<h1 style="margin: 0; font-family: 'Amatic SC', cursive; font-size: 72px; line-height: 1; color: #FFD86B">Cây thông màu nước</h1>
+<p style="margin: 6px 0 0; font-size: 19px; line-height: 1.45">Tán và thân là ảnh vẽ sẵn (WebP, khoảng 40–70 KB mỗi lớp). Đèn và ngôi sao là lớp nhẹ chạy hiệu ứng riêng. Chạm vào cây để thấy cây rung và đèn loé sáng.</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px"><h2 style="margin: 0; font-family: 'Grape Nuts', cursive; font-size: 22px; font-weight: 400; color: #F3D9A4">Dáng tán</h2><div style="display: flex; flex-wrap: wrap; gap: 10px"><sc-for list="{{shapeList}}" as="it" hint-placeholder-count="4"><button type="button" class="pill" onClick="{{it.pick}}" aria-pressed="{{it.on}}" style="{{it.css}}">{{it.name}}</button></sc-for></div></div>
+<div style="display: flex; flex-direction: column; gap: 10px"><h2 style="margin: 0; font-family: 'Grape Nuts', cursive; font-size: 22px; font-weight: 400; color: #F3D9A4">Màu tán: {{paletteName}}</h2><div style="display: flex; flex-wrap: wrap; gap: 12px"><sc-for list="{{paletteList}}" as="it" hint-placeholder-count="6"><button type="button" class="sw" onClick="{{it.pick}}" aria-label="{{it.name}}" aria-pressed="{{it.on}}" title="{{it.name}}" style="{{it.css}}"></button></sc-for></div></div>
+<div style="display: flex; flex-direction: column; gap: 10px"><h2 style="margin: 0; font-family: 'Grape Nuts', cursive; font-size: 22px; font-weight: 400; color: #F3D9A4">Dáng thân</h2><div style="display: flex; flex-wrap: wrap; gap: 10px"><sc-for list="{{trunkList}}" as="it" hint-placeholder-count="3"><button type="button" class="pill" onClick="{{it.pick}}" aria-pressed="{{it.on}}" style="{{it.css}}">{{it.name}}</button></sc-for></div></div>
+<div style="display: flex; flex-direction: column; gap: 10px"><h2 style="margin: 0; font-family: 'Grape Nuts', cursive; font-size: 22px; font-weight: 400; color: #F3D9A4">Màu gỗ: {{woodName}}</h2><div style="display: flex; flex-wrap: wrap; gap: 12px"><sc-for list="{{woodList}}" as="it" hint-placeholder-count="4"><button type="button" class="sw" onClick="{{it.pick}}" aria-label="{{it.name}}" aria-pressed="{{it.on}}" title="{{it.name}}" style="{{it.css}}"></button></sc-for></div></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1120,"height":760}}'>
+var SHAPES = {"cloud3":{"name":"3 tầng mây"},"cloud4":{"name":"Thon cao 4 tầng"},"puffy":{"name":"Bông tròn"},"snowy":{"name":"3 tầng phủ tuyết"}};
+var PALS = {"teal":{"name":"Xanh ngọc","c":"#86DCCD"},"green":{"name":"Xanh lá","c":"#9AD587"},"pine":{"name":"Xanh thông","c":"#5AAA82"},"pink":{"name":"Hồng phấn","c":"#F8BACD"},"lavender":{"name":"Oải hương","c":"#C4B6F2"},"frost":{"name":"Trắng sương","c":"#E6F3F8"}};
+var TRUNKS = {"straight":{"name":"Thẳng"},"flared":{"name":"Loe rễ"},"stout":{"name":"Mập lùn"}};
+var WOODS = {"oak":{"name":"Gỗ sồi sáng","c":"#DDBE90"},"walnut":{"name":"Óc chó","c":"#956840"},"cedar":{"name":"Tuyết tùng","c":"#BF6C4C"},"birch":{"name":"Bạch dương","c":"#EFE9DC"}};
+var ON = 'background: #F6EBDD; color: #2C2633; border-color: #F6EBDD';
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { shape: 'cloud3', pal: 'teal', trunk: 'straight', wood: 'oak', shaking: false }; }
+  componentWillUnmount() { clearTimeout(this.t); }
+  renderVals() {
+    var s = this.state, self = this, v = {};
+    function pills(obj, key) { return Object.keys(obj).map(function (k) { var on = s[key] === k; return { name: obj[k].name, on: on ? 'true' : 'false', css: on ? ON : '', pick: function () { var o = {}; o[key] = k; self.setState(o); } }; }); }
+    function sws(obj, key) { return Object.keys(obj).map(function (k) { var on = s[key] === k; return { name: obj[k].name, on: on ? 'true' : 'false', css: 'background: ' + obj[k].c + (on ? '; box-shadow: 0 0 0 4px #2C2633, 0 0 0 7px #F6EBDD' : ''), pick: function () { var o = {}; o[key] = k; self.setState(o); } }; }); }
+    v.shapeList = pills(SHAPES, 'shape'); v.trunkList = pills(TRUNKS, 'trunk');
+    v.paletteList = sws(PALS, 'pal'); v.woodList = sws(WOODS, 'wood');
+    v.paletteName = PALS[s.pal].name; v.woodName = WOODS[s.wood].name;
+    Object.keys(SHAPES).forEach(function (a) { v['sh_' + a] = s.shape === a; Object.keys(PALS).forEach(function (b) { v['cn_' + a + '_' + b] = s.shape === a && s.pal === b; }); });
+    Object.keys(TRUNKS).forEach(function (a) { Object.keys(WOODS).forEach(function (b) { v['tk_' + a + '_' + b] = s.trunk === a && s.wood === b; }); });
+    v.stageCls = s.shaking ? 'shake' : '';
+    v.shakeTree = function () { clearTimeout(self.t); self.setState({ shaking: false }, function () { requestAnimationFrame(function () { self.setState({ shaking: true }); self.t = setTimeout(function () { self.setState({ shaking: false }); }, 1000); }); }); };
+    return v;
+  }
+}
+</script>
+</body>
+</html>

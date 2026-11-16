@@ -1,0 +1,79 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Bo-cay-thong.dc.html": {
+      "h": 1900,
+      "title": "Bộ cây thông màu nước – tất cả biến thể",
+      "w": 1480,
+      "x": 1200,
+      "y": 0
+    },
+    "Bo-phu-kien.dc.html": {
+      "h": 3000,
+      "title": "Bộ phụ kiện căn phòng",
+      "w": 1400,
+      "x": 5520,
+      "y": 0
+    },
+    "Main.dc.html": {
+      "h": 760,
+      "is_interactive": true,
+      "title": "Cây thông màu nước – phối thử (bấm Play)",
+      "w": 1120,
+      "x": 0,
+      "y": 0
+    },
+    "Phong-tu-do.dc.html": {
+      "h": 920,
+      "is_interactive": true,
+      "title": "Phòng tự do – kéo thả (bấm Play)",
+      "w": 1180,
+      "x": 2760,
+      "y": 0
+    },
+    "Phu-kien-treo.dc.html": {
+      "h": 1250,
+      "is_interactive": true,
+      "title": "Phụ kiện treo & trạng thái – 20 phụ kiện màu nước (bấm Play)",
+      "w": 1720,
+      "x": 0,
+      "y": 2160
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-11-15T19:27:34.006Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "t1": {
+      "kind": "title1",
+      "maxW": 6920,
+      "text": "1 · Cây thông & căn phòng (màu nước)",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "t2": {
+      "kind": "title1",
+      "maxW": 1720,
+      "text": "2 · Phụ kiện treo lời nhắn & trạng thái",
+      "w": 240,
+      "x": 0,
+      "y": 1930
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Bo-cay-thong.dc.html",
+    "Phu-kien-treo.dc.html",
+    "Phong-tu-do.dc.html",
+    "Bo-phu-kien.dc.html"
+  ],
+  "pages": [],
+  "title": "Cây Thông Lời Nhắn – Bản thiết kế đồ hoạ"
+}

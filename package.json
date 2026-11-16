@@ -1,0 +1,19 @@
+{
+  "name": "cay-thong-loi-nhan",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Cây Thông Lời Nhắn — căn phòng Noel màu nước, bạn bè treo lời nhắn lên cây",
+  "packageManager": "pnpm@9.12.0",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "dev": "pnpm -r --parallel --filter @ctln/web --filter @ctln/server dev",
+    "build": "pnpm --filter @ctln/web build && pnpm --filter @ctln/server build",
+    "start": "pnpm --filter @ctln/server start",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "db:up": "docker compose up -d db",
+    "db:migrate": "pnpm --filter @ctln/server db:migrate",
+    "art:export": "pnpm --filter @ctln/art export",
+    "canvas:build": "node tools/design-canvas/build-board-tree2.mjs && node tools/design-canvas/build-board-free.mjs && node tools/design-canvas/build-design-ornaments-v2.mjs"
+  }
+}

@@ -1,0 +1,492 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<title>Phụ kiện treo</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Amatic+SC:wght@700&family=Grape+Nuts&family=Mynerve&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#2F7D5B}a:hover{color:#1F5A40}
+
+.tree-sway{transform-box:view-box;transform-origin:200px 470px;animation:tree-sway 5.5s ease-in-out infinite}
+@keyframes tree-sway{0%,100%{transform:rotate(-.9deg)}50%{transform:rotate(.9deg)}}
+.light{animation:twinkle 2.2s ease-in-out infinite;animation-delay:var(--d,0s)}
+@keyframes twinkle{0%,100%{opacity:1}50%{opacity:.35}}
+.top-star{transform-box:view-box;animation:star-bob 3s ease-in-out infinite}
+.top-star .halo{transform-box:view-box;animation:halo 3s ease-in-out infinite}
+@keyframes star-bob{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg) scale(1.04)}}
+@keyframes halo{0%,100%{transform:scale(.8);opacity:.2}50%{transform:scale(1.15);opacity:.5}}
+.blink{transform-box:fill-box;transform-origin:center;animation:blink 4.6s infinite}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+.shake .tree-sway{animation:tree-shake .7s ease-in-out}
+@keyframes tree-shake{0%,100%{transform:rotate(0)}20%{transform:rotate(-3.5deg)}40%{transform:rotate(3deg)}60%{transform:rotate(-2deg)}80%{transform:rotate(1deg)}}
+.shake .light{animation:flash .9s ease-out}
+@keyframes flash{0%{opacity:.2}30%{opacity:1;filter:brightness(1.8)}100%{opacity:1}}
+.snow-drop{animation:snow-drop 1.3s ease-in forwards}
+@keyframes snow-drop{from{transform:translateY(0);opacity:1}to{transform:translateY(var(--fall,120px));opacity:0}}
+@media (prefers-reduced-motion:reduce){.tree-sway,.light,.top-star,.top-star .halo,.blink{animation:none}}
+
+
+.snowflake{animation:snowfall linear infinite}
+@keyframes snowfall{from{transform:translate(0,calc(-1 * var(--fall,300px)))}to{transform:translate(var(--dx,0),0)}}
+.gust .snowflake{animation-duration:1.4s!important}
+.twinkle-star{animation:twinkle 2.6s ease-in-out infinite;animation-delay:var(--d,0s)}
+.moon-glow{transform-box:fill-box;transform-origin:center;animation:moon 4s ease-in-out infinite}
+@keyframes moon{0%,100%{transform:scale(1);opacity:.15}50%{transform:scale(1.2);opacity:.3}}
+.gust .moon-glow{animation:moon .6s ease-in-out 3}
+.curtain{transform-box:view-box;animation:curtain 7s ease-in-out infinite}
+@keyframes curtain{0%,100%{transform:skewX(0)}50%{transform:skewX(1.2deg)}}
+.gust .curtain{animation:curtain-gust 1.2s ease-in-out}
+@keyframes curtain-gust{0%,100%{transform:skewX(0)}30%{transform:skewX(4deg)}60%{transform:skewX(-2deg)}}
+.wall-light{animation:twinkle 1.8s ease-in-out infinite;animation-delay:var(--d,0s)}
+.gust .wall-light{animation:chase .25s linear 6;animation-delay:var(--d,0s)}
+@keyframes chase{0%,100%{opacity:1}50%{opacity:.2}}
+.hang,.flag{transform-box:view-box;animation:swing 3.4s ease-in-out infinite;animation-delay:var(--d,0s)}
+@keyframes swing{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+.gust .hang,.gust .flag{animation:swing .5s ease-in-out 3}
+.flame{transform-box:view-box;animation:flame .9s ease-in-out infinite alternate}
+@keyframes flame{from{transform:scale(1,1) rotate(-3deg)}to{transform:scale(.9,1.12) rotate(3deg)}}
+.steam{animation:steam 3s ease-in-out infinite}
+@keyframes steam{0%{opacity:0;transform:translateY(6px)}40%{opacity:.8}100%{opacity:0;transform:translateY(-10px)}}
+.clock-hand{transform-box:view-box;animation:clock 10s linear infinite}
+@keyframes clock{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.snowflake,.twinkle-star,.moon-glow,.curtain,.wall-light,.hang,.flag,.flame,.steam,.clock-hand{animation:none}}
+
+
+.pet{transform-box:fill-box;transform-origin:50% 100%}
+.pet .breath{transform-box:fill-box;transform-origin:50% 100%;animation:pet-breath 3.2s ease-in-out infinite}
+@keyframes pet-breath{0%,100%{transform:scale(1,1)}50%{transform:scale(1.025,.975)}}
+.pet .head{transform-box:fill-box;transform-origin:50% 90%;animation:pet-head 4.5s ease-in-out infinite}
+@keyframes pet-head{0%,100%{transform:rotate(0)}50%{transform:rotate(-3deg)}}
+.pet .eyes{transform-box:fill-box;transform-origin:center;animation:blink 4.8s infinite}
+.pet-cat .eyes{animation-delay:.8s}.pet-owl .eyes{animation-delay:2s}.pet-bear .eyes{animation-delay:1.4s}
+.pet .tail{transform-box:fill-box;transform-origin:0% 100%;animation:pet-tail 1.6s ease-in-out infinite}
+@keyframes pet-tail{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(10deg)}}
+.pet-dog .tail{animation-duration:.8s}
+.pet .ear{transform-box:fill-box;transform-origin:50% 0%}
+.pet .flip-l{transform-box:fill-box;transform-origin:100% 0%}
+.pet .flip-r{transform-box:fill-box;transform-origin:0% 0%}
+.pet .arm-r{transform-box:fill-box;transform-origin:20% 10%}
+.pet-hearts{opacity:0;transform-box:fill-box;transform-origin:50% 100%}
+.pop .pet{animation:pet-hop .65s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pet-hop{0%{transform:translateY(0) scale(1,1)}25%{transform:translateY(0) scale(1.08,.9)}55%{transform:translateY(-22px) scale(.95,1.06)}100%{transform:translateY(0) scale(1,1)}}
+.pop .pet-hearts{animation:hearts 1.3s ease-out}
+@keyframes hearts{0%{opacity:0;transform:translateY(10px) scale(.6)}25%{opacity:1}100%{opacity:0;transform:translateY(-26px) scale(1.1)}}
+.pop .pet .tail{animation:pet-tail .18s ease-in-out 7}
+.pop .pet-dog .ear-l{animation:ear-flop-l .25s ease-in-out 4}
+.pop .pet-dog .ear-r{animation:ear-flop-r .25s ease-in-out 4}
+@keyframes ear-flop-l{50%{transform:rotate(18deg)}}
+@keyframes ear-flop-r{50%{transform:rotate(-18deg)}}
+.pop .pet-owl .head{animation:owl-turn 1.1s ease-in-out}
+@keyframes owl-turn{0%,100%{transform:rotate(0)}35%{transform:rotate(-24deg)}70%{transform:rotate(18deg)}}
+.pop .pet-deer .head{animation:deer-nod .35s ease-in-out 3}
+@keyframes deer-nod{50%{transform:rotate(8deg)}}
+.pop .pet-bear .arm-r{animation:bear-wave .35s ease-in-out 4}
+@keyframes bear-wave{0%,100%{transform:rotate(0)}50%{transform:rotate(-130deg)}}
+.pop .pet-penguin .flip-l{animation:flap-l .18s ease-in-out 7}
+.pop .pet-penguin .flip-r{animation:flap-r .18s ease-in-out 7}
+@keyframes flap-l{50%{transform:rotate(30deg)}}
+@keyframes flap-r{50%{transform:rotate(-30deg)}}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+@media (prefers-reduced-motion:reduce){.pet .breath,.pet .head,.pet .eyes,.pet .tail{animation:none}}
+
+
+.prop{transform-box:fill-box;transform-origin:50% 100%}
+.fire .flame-a{transform-box:fill-box;transform-origin:50% 100%;animation:fire 1.1s ease-in-out infinite alternate}
+.fire .flame-b{transform-box:fill-box;transform-origin:50% 100%;animation:fire .8s ease-in-out infinite alternate-reverse}
+.fire .flame-c{transform-box:fill-box;transform-origin:50% 100%;animation:fire .6s ease-in-out infinite alternate}
+@keyframes fire{from{transform:scale(1,1) skewX(-3deg)}to{transform:scale(.92,1.12) skewX(3deg)}}
+.fire-glow{transform-box:fill-box;transform-origin:center;animation:glow 1.6s ease-in-out infinite}
+@keyframes glow{0%,100%{opacity:.25;transform:scale(1)}50%{opacity:.45;transform:scale(1.08)}}
+.puff{transform-box:fill-box;transform-origin:center;opacity:0;animation:puff 3.6s ease-out infinite;animation-delay:var(--d,0s)}
+@keyframes puff{0%{opacity:0;transform:translate(0,10px) scale(.4)}20%{opacity:1}100%{opacity:0;transform:translate(14px,-46px) scale(1.4)}}
+.fire-sparks circle{opacity:0}
+.stocking{transform-box:view-box;animation:swing 3.6s ease-in-out infinite;animation-delay:var(--d,0s)}
+.flame{transform-box:view-box;animation:flame .9s ease-in-out infinite alternate}
+.candle-glow{transform-box:fill-box;transform-origin:center;animation:glow 2s ease-in-out infinite}
+.bow{transform-box:fill-box;transform-origin:50% 80%;animation:bow 2.8s ease-in-out infinite}
+@keyframes bow{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+.swing{transform-box:fill-box;transform-origin:50% 0%;animation:swing 4s ease-in-out infinite}
+.scarf-tail{transform-box:fill-box;transform-origin:0% 0%;animation:bow 1.8s ease-in-out infinite}
+.sparkles path{opacity:0;transform-box:fill-box;transform-origin:center}
+.prop .eyes{transform-box:fill-box;transform-origin:center;animation:blink 5.2s infinite}
+.pop .prop:not(.heavy){animation:prop-hop .6s cubic-bezier(.3,1.6,.5,1)}
+@keyframes prop-hop{0%{transform:translateY(0) scale(1,1)}25%{transform:scale(1.08,.9)}55%{transform:translateY(-16px) scale(.96,1.05)}100%{transform:translateY(0)}}
+.pop .sparkles path{animation:sparkle 1s ease-out;animation-delay:var(--d,0s)}
+@keyframes sparkle{0%{opacity:0;transform:scale(.2) translateY(10px)}30%{opacity:1;transform:scale(1.2)}100%{opacity:0;transform:scale(.6) translateY(-18px)}}
+.pop .gift-lid{transform-box:fill-box;transform-origin:50% 100%;animation:lid .9s ease-in-out}
+@keyframes lid{0%,100%{transform:translateY(0) rotate(0)}40%{transform:translateY(-22px) rotate(-12deg)}70%{transform:translateY(-8px) rotate(5deg)}}
+.pop .fire .flame-a,.pop .fire .flame-b{animation:fire-burst 1.2s ease-out}
+@keyframes fire-burst{0%{transform:scale(1)}30%{transform:scale(1.25,1.6)}100%{transform:scale(1)}}
+.pop .fire-sparks circle{animation:fire-spark 1.2s ease-out;animation-delay:var(--d,0s)}
+@keyframes fire-spark{0%{opacity:1;transform:translateY(0)}100%{opacity:0;transform:translateY(-70px)}}
+.pop .puff{animation-duration:1.2s}
+.pop .stocking{animation:swing .4s ease-in-out 3}
+.pop .swing{animation:swing .5s ease-in-out 3}
+.pop .cushion{transform-box:fill-box;transform-origin:50% 100%;animation:squish .6s ease-in-out}
+@keyframes squish{40%{transform:scale(1.08,.7)}}
+.pop .flame{animation:flame .15s ease-in-out 8 alternate}
+.pop .prop-deco-snowman .hat{transform-box:fill-box;transform-origin:0% 100%;animation:hat-tip .9s ease-in-out}
+@keyframes hat-tip{40%{transform:translateY(-10px) rotate(-18deg)}}
+.pop .prop-furn-rug{animation:rug .6s ease-in-out}
+@keyframes rug{30%{transform:scale(1.04,.92)}}
+.pop .shelf-plant{transform-box:fill-box;transform-origin:50% 100%;animation:swing .3s ease-in-out 4}
+@media (prefers-reduced-motion:reduce){.fire .flame-a,.fire .flame-b,.fire .flame-c,.fire-glow,.puff,.stocking,.flame,.candle-glow,.bow,.swing,.scarf-tail{animation:none}}
+
+
+.ornament{transform-box:fill-box;transform-origin:50% 0%;animation:orn-swing 3.4s ease-in-out infinite;animation-delay:var(--d,0s)}
+@keyframes orn-swing{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
+.ornament.st-locked .orn-body{filter:saturate(.25) brightness(1.08);opacity:.75}
+.ornament.st-unread .orn-body{animation:orn-shine 1.6s ease-in-out infinite}
+@keyframes orn-shine{0%,100%{filter:brightness(1)}50%{filter:brightness(1.35) drop-shadow(0 0 4px #FFE27A)}}
+.glint path{transform-box:fill-box;transform-origin:center;animation:glint 1.4s ease-in-out infinite}
+.glint path:nth-child(2){animation-delay:.7s}
+@keyframes glint{0%,100%{transform:scale(.3);opacity:0}50%{transform:scale(1.1);opacity:1}}
+.slot-bubble{transform-box:fill-box;transform-origin:50% 60%;animation:bubble 2.6s ease-in-out infinite;animation-delay:var(--d,0s)}
+@keyframes bubble{0%,100%{transform:scale(.92);opacity:.75}50%{transform:scale(1.06);opacity:1}}
+.slot-bubble .bubble-glow{transform-box:fill-box;transform-origin:center;animation:glow 2.6s ease-in-out infinite;animation-delay:var(--d,0s)}
+.slot-bubble.dim{opacity:.45;animation:none}
+.pop .ornament{animation:orn-ring .9s ease-in-out}
+@keyframes orn-ring{0%,100%{transform:rotate(0)}15%{transform:rotate(-26deg)}35%{transform:rotate(20deg)}55%{transform:rotate(-12deg)}75%{transform:rotate(6deg)}}
+.pop .slot-bubble{animation:bubble-pop .5s ease-out}
+@keyframes bubble-pop{0%{transform:scale(1)}40%{transform:scale(1.35)}100%{transform:scale(1)}}
+.drop-in .ornament{animation:orn-drop .9s cubic-bezier(.3,1.5,.5,1)}
+@keyframes orn-drop{0%{transform:translateY(-60px);opacity:0}60%{transform:translateY(4px);opacity:1}100%{transform:translateY(0)}}
+@media (prefers-reduced-motion:reduce){.ornament,.slot-bubble,.slot-bubble .bubble-glow,.glint path,.ornament.st-unread .orn-body{animation:none}}
+
+
+.no-face .tree-face{display:none}
+.hide-tree .tree{display:none}
+.pill{font:inherit;cursor:pointer;min-height:44px;padding:8px 18px;border-radius:999px;border:2.5px solid #3A2E2A;background:#FFFDF8;color:#3A2E2A;font-size:20px}
+.pill:hover{background:#FFEFD2}
+.scene{position:relative;padding:0;border:3px solid #3A2E2A;border-radius:32px;overflow:hidden;cursor:pointer;background:#FFF6E5;display:block}
+
+
+</style>
+</helmet>
+<div style="width: 1720px; box-sizing: border-box; padding: 56px; display: flex; flex-direction: column; gap: 32px; background: #FFF6E5; font-family: 'Mynerve', cursive; color: #3A2E2A">
+<header style="display: flex; flex-direction: column; gap: 10px">
+<h1 style="margin: 0; font-family: 'Amatic SC', cursive; font-size: 80px; line-height: 1; color: #D94B4B">Phụ kiện treo lời nhắn</h1>
+<p style="margin: 0; font-size: 21px; line-height: 1.4; max-width: 980px">Người viết chọn 1 trong 20 phụ kiện để treo lời nhắn. Tất cả đều đung đưa nhẹ quanh móc. Chạm vào (chế độ Play) để phụ kiện lắc mạnh. Hàng dưới là các trạng thái của một điểm nhắn.</p>
+<div style="display: flex; gap: 32px; flex-wrap: wrap"></div>
+</header>
+<div style="display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start">
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls0}}" onClick="{{tap0}}" aria-label="Tất Noel: chạm để xem hiệu ứng" style="width: 140px; height: 140px">
+<svg viewBox="-30 -6 60 60" width="140" height="140" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><defs><radialGradient id="ow-D94B4B" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#e68a8a"/><stop offset=".55" stop-color="#D94B4B"/><stop offset="1" stop-color="#b84040"/></radialGradient><radialGradient id="ow-FFFFFF" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#FFFFFF"/><stop offset="1" stop-color="#d9d9d9"/></radialGradient></defs><g class="ornament orn-sock st-filled" style="--d:0s" data-part="ornament"><g class="orn-body"><path d="M 0 0 L 0 6" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" opacity=".7"/>
+    <path d="M -9 8 L 9 8 L 9 30 Q 10 40 0 42 L -12 42 Q -22 40 -20 33 Q -18 28 -9 28 Z" fill="url(#ow-D94B4B)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M -8 34 q 4 3 8 0" stroke="#fff" stroke-width="2" fill="none" opacity=".8"/>
+    <rect x="-11" y="4" width="22" height="9" rx="4" fill="url(#ow-FFFFFF)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/></g></g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Tất Noel</figcaption>
+
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls1}}" onClick="{{tap1}}" aria-label="Ngôi sao: chạm để xem hiệu ứng" style="width: 140px; height: 140px">
+<svg viewBox="-30 -6 60 60" width="140" height="140" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><defs><radialGradient id="ow-FFD447" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#ffe387"/><stop offset=".55" stop-color="#FFD447"/><stop offset="1" stop-color="#d9b43c"/></radialGradient><radialGradient id="ow-FF8FA3" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#ffb6c3"/><stop offset=".55" stop-color="#FF8FA3"/><stop offset="1" stop-color="#d97a8b"/></radialGradient></defs><g class="ornament orn-star st-filled" style="--d:0s" data-part="ornament"><g class="orn-body"><path d="M 0 0 L 0 8" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" opacity=".7"/><polygon points="0,6 5.6,18.3 19,19.8 9,28.9 11.8,42.2 0,35.5 -11.8,42.2 -9,28.9 -19,19.8 -5.6,18.3" fill="url(#ow-FFD447)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/><circle cx="-4.5" cy="26" r="1.53" fill="#3A2E2A"/><circle cx="4.5" cy="26" r="1.53" fill="#3A2E2A"/><path d="M -2.4 29 Q 0 31 2.4 29" fill="none" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" stroke-linecap="round"/><ellipse cx="-7.5" cy="29.2" rx="2.6" ry="1.6" fill="url(#ow-FF8FA3)" opacity=".7"/><ellipse cx="7.5" cy="29.2" rx="2.6" ry="1.6" fill="url(#ow-FF8FA3)" opacity=".7"/></g></g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Ngôi sao</figcaption>
+
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls2}}" onClick="{{tap2}}" aria-label="Bóng đèn: chạm để xem hiệu ứng" style="width: 140px; height: 140px">
+<svg viewBox="-30 -6 60 60" width="140" height="140" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><defs><radialGradient id="ow-9AA3AD" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#bdc3ca"/><stop offset=".55" stop-color="#9AA3AD"/><stop offset="1" stop-color="#838b93"/></radialGradient><radialGradient id="ow-7FD0FF" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#ace0ff"/><stop offset=".55" stop-color="#7FD0FF"/><stop offset="1" stop-color="#6cb1d9"/></radialGradient></defs><g class="ornament orn-bulb st-filled" style="--d:0s" data-part="ornament"><g class="orn-body"><path d="M 0 0 L 0 4" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" opacity=".7"/>
+    <rect x="-6" y="4" width="12" height="10" rx="2" fill="url(#ow-9AA3AD)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M -6 8 L 6 8 M -6 11 L 6 11" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9"/>
+    <path d="M -6 14 Q -16 24 -12 34 Q -8 44 0 44 Q 8 44 12 34 Q 16 24 6 14 Z" fill="url(#ow-7FD0FF)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M -7 22 Q -9 28 -7 33" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".9"/></g></g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Bóng đèn</figcaption>
+
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls3}}" onClick="{{tap3}}" aria-label="Quả châu: chạm để xem hiệu ứng" style="width: 140px; height: 140px">
+<svg viewBox="-30 -6 60 60" width="140" height="140" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><defs><radialGradient id="ow-F4C542" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#f8d984"/><stop offset=".55" stop-color="#F4C542"/><stop offset="1" stop-color="#cfa738"/></radialGradient><radialGradient id="ow-2F8360" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#78ae98"/><stop offset=".55" stop-color="#2F8360"/><stop offset="1" stop-color="#286f52"/></radialGradient></defs><g class="ornament orn-ball st-filled" style="--d:0s" data-part="ornament"><g class="orn-body"><path d="M 0 0 L 0 4" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" opacity=".7"/>
+    <rect x="-5" y="3" width="10" height="7" rx="2" fill="url(#ow-F4C542)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="0" cy="26" r="17" fill="url(#ow-2F8360)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M -16 22 Q 0 28 16 22" stroke="#F4C542" stroke-width="3.2" fill="none"/>
+    <path d="M -15 31 Q 0 37 15 31" stroke="#FFFFFF" stroke-width="2.2" fill="none" stroke-dasharray="3 3"/>
+    <circle cx="-7" cy="17" r="3" fill="#fff" opacity=".85"/></g></g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Quả châu</figcaption>
+
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls4}}" onClick="{{tap4}}" aria-label="Kẹo gậy: chạm để xem hiệu ứng" style="width: 140px; height: 140px">
+<svg viewBox="-30 -6 60 60" width="140" height="140" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><defs></defs><g class="ornament orn-candy st-filled" style="--d:0s" data-part="ornament"><g class="orn-body"><path d="M 0 0 L 0 2" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" opacity=".7"/>
+    <path d="M 8 44 L 8 14 Q 8 2 -2 2 Q -12 2 -12 12" fill="none" stroke="#6E5A52" stroke-width="7.5" stroke-opacity=".9" stroke-linecap="round"/>
+    <path d="M 8 44 L 8 14 Q 8 2 -2 2 Q -12 2 -12 12" fill="none" stroke="#FFFFFF" stroke-width="5.5" stroke-linecap="round"/>
+    <path d="M 8 44 L 8 14 Q 8 2 -2 2 Q -12 2 -12 12" fill="none" stroke="#D94B4B" stroke-width="5.5" stroke-dasharray="4 4" stroke-linecap="butt"/></g></g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Kẹo gậy</figcaption>
+
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls5}}" onClick="{{tap5}}" aria-label="Chuông: chạm để xem hiệu ứng" style="width: 140px; height: 140px">
+<svg viewBox="-30 -6 60 60" width="140" height="140" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><defs><radialGradient id="ow-D94B4B" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#e68a8a"/><stop offset=".55" stop-color="#D94B4B"/><stop offset="1" stop-color="#b84040"/></radialGradient><radialGradient id="ow-F4C542" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#f8d984"/><stop offset=".55" stop-color="#F4C542"/><stop offset="1" stop-color="#cfa738"/></radialGradient><radialGradient id="ow-D9A82E" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#e6c677"/><stop offset=".55" stop-color="#D9A82E"/><stop offset="1" stop-color="#b88f27"/></radialGradient></defs><g class="ornament orn-bell st-filled" style="--d:0s" data-part="ornament"><g class="orn-body"><path d="M 0 0 L 0 4" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" opacity=".7"/>
+    <path d="M -8 6 q -8 -6 -9 1 q 1 5 9 -1 q 8 -6 9 1 q -1 5 -9 -1" fill="url(#ow-D94B4B)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M 0 8 Q -16 10 -15 30 L -18 36 L 18 36 L 15 30 Q 16 10 0 8 Z" fill="url(#ow-F4C542)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="0" cy="39" r="4" fill="url(#ow-D9A82E)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M -8 18 Q -10 24 -9 29" stroke="#FFF3C4" stroke-width="2.4" fill="none" stroke-linecap="round"/></g></g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Chuông</figcaption>
+
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls6}}" onClick="{{tap6}}" aria-label="Bánh gừng: chạm để xem hiệu ứng" style="width: 140px; height: 140px">
+<svg viewBox="-30 -6 60 60" width="140" height="140" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><defs><radialGradient id="ow-C98E5A" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#dcb694"/><stop offset=".55" stop-color="#C98E5A"/><stop offset="1" stop-color="#ab794d"/></radialGradient><radialGradient id="ow-D94B4B" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#e68a8a"/><stop offset=".55" stop-color="#D94B4B"/><stop offset="1" stop-color="#b84040"/></radialGradient><radialGradient id="ow-2F8360" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#78ae98"/><stop offset=".55" stop-color="#2F8360"/><stop offset="1" stop-color="#286f52"/></radialGradient></defs><g class="ornament orn-gingerbread st-filled" style="--d:0s" data-part="ornament"><g class="orn-body"><path d="M 0 0 L 0 4" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" opacity=".7"/>
+    <circle cx="0" cy="12" r="9" fill="url(#ow-C98E5A)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M -6 19 L -18 23 Q -21 28 -16 29 L -7 27 L -11 40 Q -11 45 -6 44 L 0 36 L 6 44 Q 11 45 11 40 L 7 27 L 16 29 Q 21 28 18 23 L 6 19 Z" fill="url(#ow-C98E5A)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="-3" cy="11" r="1.4" fill="#3A2E2A"/><circle cx="3" cy="11" r="1.4" fill="#3A2E2A"/>
+    <path d="M -3 15 Q 0 17 3 15" stroke="#fff" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+    <circle cx="0" cy="25" r="1.6" fill="url(#ow-D94B4B)"/><circle cx="0" cy="30" r="1.6" fill="url(#ow-2F8360)"/>
+    <path d="M -15 25 l 3 0 M 12 25 l 3 0 M -10 40 l 3 0 M 7 40 l 3 0" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></g></g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Bánh gừng</figcaption>
+
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls7}}" onClick="{{tap7}}" aria-label="Trái tim: chạm để xem hiệu ứng" style="width: 140px; height: 140px">
+<svg viewBox="-30 -6 60 60" width="140" height="140" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><defs><radialGradient id="ow-FF6B81" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#ff9fad"/><stop offset=".55" stop-color="#FF6B81"/><stop offset="1" stop-color="#d95b6e"/></radialGradient><radialGradient id="ow-FF8FA3" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#ffb6c3"/><stop offset=".55" stop-color="#FF8FA3"/><stop offset="1" stop-color="#d97a8b"/></radialGradient></defs><g class="ornament orn-heart st-filled" style="--d:0s" data-part="ornament"><g class="orn-body"><path d="M 0 0 L 0 8" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" opacity=".7"/>
+    <path d="M 0 42 L -15 28 Q -22 20 -17 13 Q -10 6 0 15 Q 10 6 17 13 Q 22 20 15 28 Z" fill="url(#ow-FF6B81)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M -12 16 Q -15 20 -12 24" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".85"/>
+    <circle cx="-4.5" cy="25" r="1.53" fill="#3A2E2A"/><circle cx="4.5" cy="25" r="1.53" fill="#3A2E2A"/><path d="M -2.4 28 Q 0 30 2.4 28" fill="none" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" stroke-linecap="round"/><ellipse cx="-7.5" cy="28.2" rx="2.6" ry="1.6" fill="url(#ow-FF8FA3)" opacity=".7"/><ellipse cx="7.5" cy="28.2" rx="2.6" ry="1.6" fill="url(#ow-FF8FA3)" opacity=".7"/></g></g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Trái tim</figcaption>
+
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls8}}" onClick="{{tap8}}" aria-label="Bông tuyết: chạm để xem hiệu ứng" style="width: 140px; height: 140px">
+<svg viewBox="-30 -6 60 60" width="140" height="140" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><defs><radialGradient id="ow-FFFFFF" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#FFFFFF"/><stop offset="1" stop-color="#d9d9d9"/></radialGradient></defs><g class="ornament orn-snowflake st-filled" style="--d:0s" data-part="ornament"><g class="orn-body"><path d="M 0 0 L 0 9" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" opacity=".7"/><g stroke="#6E5A52" stroke-width="4.5" stroke-opacity=".9" stroke-linecap="round" fill="none"><path d="M 0 26 L 17 26 M 10 26 L 14.2 30.3 M 10 26 L 14.2 21.7" /><path d="M 0 26 L 8.5 40.7 M 5 34.7 L 3.4 40.4 M 5 34.7 L 10.8 36.1" /><path d="M 0 26 L -8.5 40.7 M -5 34.7 L -10.8 36.1 M -5 34.7 L -3.4 40.4" /><path d="M 0 26 L -17 26 M -10 26 L -14.2 21.7 M -10 26 L -14.2 30.3" /><path d="M 0 26 L -8.5 11.3 M -5 17.3 L -3.4 11.6 M -5 17.3 L -10.8 15.9" /><path d="M 0 26 L 8.5 11.3 M 5 17.3 L 10.8 15.9 M 5 17.3 L 3.4 11.6" /></g><g stroke="#DDF0FA" stroke-width="3" stroke-linecap="round" fill="none"><path d="M 0 26 L 17 26 M 10 26 L 14.2 30.3 M 10 26 L 14.2 21.7" /><path d="M 0 26 L 8.5 40.7 M 5 34.7 L 3.4 40.4 M 5 34.7 L 10.8 36.1" /><path d="M 0 26 L -8.5 40.7 M -5 34.7 L -10.8 36.1 M -5 34.7 L -3.4 40.4" /><path d="M 0 26 L -17 26 M -10 26 L -14.2 21.7 M -10 26 L -14.2 30.3" /><path d="M 0 26 L -8.5 11.3 M -5 17.3 L -3.4 11.6 M -5 17.3 L -10.8 15.9" /><path d="M 0 26 L 8.5 11.3 M 5 17.3 L 10.8 15.9 M 5 17.3 L 3.4 11.6" /></g><circle cx="0" cy="26" r="4" fill="url(#ow-FFFFFF)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/></g></g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Bông tuyết</figcaption>
+
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls9}}" onClick="{{tap9}}" aria-label="Găng tay len: chạm để xem hiệu ứng" style="width: 140px; height: 140px">
+<svg viewBox="-30 -6 60 60" width="140" height="140" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><defs><radialGradient id="ow-4E7FB8" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#8cacd1"/><stop offset=".55" stop-color="#4E7FB8"/><stop offset="1" stop-color="#426c9c"/></radialGradient><radialGradient id="ow-FFFFFF" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#FFFFFF"/><stop offset="1" stop-color="#d9d9d9"/></radialGradient></defs><g class="ornament orn-mitten st-filled" style="--d:0s" data-part="ornament"><g class="orn-body"><path d="M 0 0 L 0 4" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" opacity=".7"/>
+    <path d="M -10 8 L 8 8 L 10 30 Q 12 42 2 43 L -6 43 Q -15 42 -14 32 L -18 26 Q -22 19 -15 18 L -12 22 Z" fill="url(#ow-4E7FB8)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M -9 32 l 18 0 M -9 36 l 18 0" stroke="#FFFFFF" stroke-width="1.8" stroke-dasharray="2 2"/>
+    <rect x="-12" y="4" width="22" height="9" rx="3" fill="url(#ow-FFFFFF)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/></g></g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Găng tay len</figcaption>
+
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls10}}" onClick="{{tap10}}" aria-label="Hộp quà nhỏ: chạm để xem hiệu ứng" style="width: 140px; height: 140px">
+<svg viewBox="-30 -6 60 60" width="140" height="140" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><defs><radialGradient id="ow-3E8A63" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#82b39a"/><stop offset=".55" stop-color="#3E8A63"/><stop offset="1" stop-color="#357554"/></radialGradient><radialGradient id="ow-2F7A55" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#78a991"/><stop offset=".55" stop-color="#2F7A55"/><stop offset="1" stop-color="#286848"/></radialGradient><radialGradient id="ow-F2C14E" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#f7d78c"/><stop offset=".55" stop-color="#F2C14E"/><stop offset="1" stop-color="#cea442"/></radialGradient></defs><g class="ornament orn-minigift st-filled" style="--d:0s" data-part="ornament"><g class="orn-body"><path d="M 0 0 L 0 6" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" opacity=".7"/>
+    <rect x="-14" y="16" width="28" height="24" rx="3" fill="url(#ow-3E8A63)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <rect x="-16" y="11" width="32" height="8" rx="2.5" fill="url(#ow-2F7A55)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M 0 11 L 0 40" stroke="#F2C14E" stroke-width="4"/>
+    <path d="M 0 11 q -10 -9 -12 -1 q 2 4 12 1 q 10 -9 12 -1 q -2 4 -12 1" fill="url(#ow-F2C14E)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/></g></g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Hộp quà nhỏ</figcaption>
+
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls11}}" onClick="{{tap11}}" aria-label="Quả thông: chạm để xem hiệu ứng" style="width: 140px; height: 140px">
+<svg viewBox="-30 -6 60 60" width="140" height="140" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><defs><radialGradient id="ow-A8744A" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#c6a589"/><stop offset=".55" stop-color="#A8744A"/><stop offset="1" stop-color="#8f633f"/></radialGradient><radialGradient id="ow-8A5A36" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#b3947c"/><stop offset=".55" stop-color="#8A5A36"/><stop offset="1" stop-color="#754d2e"/></radialGradient></defs><g class="ornament orn-pinecone st-filled" style="--d:0s" data-part="ornament"><g class="orn-body"><path d="M 0 0 L 0 5" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" opacity=".7"/><path d="M -4 8 q 4 -4 8 0" stroke="#2F7A55" stroke-width="3" fill="none"/><ellipse cx="0" cy="26" rx="12" ry="17" fill="url(#ow-A8744A)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/><path d="M -9.4 14 q 5 6 10 0" fill="url(#ow-8A5A36)" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9"/><path d="M -5 14 q 5 6 10 0" fill="url(#ow-8A5A36)" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9"/><path d="M -0.6 14 q 5 6 10 0" fill="url(#ow-8A5A36)" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9"/><path d="M -10.5 20 q 5 6 10 0" fill="url(#ow-8A5A36)" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9"/><path d="M -5 20 q 5 6 10 0" fill="url(#ow-8A5A36)" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9"/><path d="M 0.5 20 q 5 6 10 0" fill="url(#ow-8A5A36)" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9"/><path d="M -11.6 26 q 5 6 10 0" fill="url(#ow-8A5A36)" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9"/><path d="M -5 26 q 5 6 10 0" fill="url(#ow-8A5A36)" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9"/><path d="M 1.6 26 q 5 6 10 0" fill="url(#ow-8A5A36)" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9"/><path d="M -10.5 32 q 5 6 10 0" fill="url(#ow-8A5A36)" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9"/><path d="M -5 32 q 5 6 10 0" fill="url(#ow-8A5A36)" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9"/><path d="M 0.5 32 q 5 6 10 0" fill="url(#ow-8A5A36)" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9"/><path d="M -9.4 38 q 5 6 10 0" fill="url(#ow-8A5A36)" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9"/><path d="M -5 38 q 5 6 10 0" fill="url(#ow-8A5A36)" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9"/><path d="M -0.6 38 q 5 6 10 0" fill="url(#ow-8A5A36)" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9"/></g></g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Quả thông</figcaption>
+
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls12}}" onClick="{{tap12}}" aria-label="Nơ đỏ: chạm để xem hiệu ứng" style="width: 140px; height: 140px">
+<svg viewBox="-30 -6 60 60" width="140" height="140" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><defs><radialGradient id="ow-D94B4B" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#e68a8a"/><stop offset=".55" stop-color="#D94B4B"/><stop offset="1" stop-color="#b84040"/></radialGradient><radialGradient id="ow-C94040" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#dc8383"/><stop offset=".55" stop-color="#C94040"/><stop offset="1" stop-color="#ab3636"/></radialGradient><radialGradient id="ow-B83A3A" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#d17f7f"/><stop offset=".55" stop-color="#B83A3A"/><stop offset="1" stop-color="#9c3131"/></radialGradient></defs><g class="ornament orn-bow st-filled" style="--d:0s" data-part="ornament"><g class="orn-body"><path d="M 0 0 L 0 8" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" opacity=".7"/>
+    <path d="M 0 22 Q -18 6 -20 18 Q -21 30 0 22 Q 21 30 20 18 Q 18 6 0 22 Z" fill="url(#ow-D94B4B)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M -3 24 L -10 42 L -4 39 L 0 44 L 2 25 M 3 24 L 10 42 L 4 39" fill="url(#ow-C94040)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="0" cy="22" r="5" fill="url(#ow-B83A3A)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/></g></g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Nơ đỏ</figcaption>
+
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls13}}" onClick="{{tap13}}" aria-label="Người tuyết: chạm để xem hiệu ứng" style="width: 140px; height: 140px">
+<svg viewBox="-30 -6 60 60" width="140" height="140" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><defs><radialGradient id="ow-FFFFFF" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#FFFFFF"/><stop offset="1" stop-color="#d9d9d9"/></radialGradient><radialGradient id="ow-F49B3A" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#f8be7f"/><stop offset=".55" stop-color="#F49B3A"/><stop offset="1" stop-color="#cf8431"/></radialGradient></defs><g class="ornament orn-snowman st-filled" style="--d:0s" data-part="ornament"><g class="orn-body"><path d="M 0 0 L 0 3" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" opacity=".7"/>
+    <circle cx="0" cy="34" r="11" fill="url(#ow-FFFFFF)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="0" cy="18" r="9" fill="url(#ow-FFFFFF)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <rect x="-8" y="4" width="16" height="5" rx="2" fill="#3A2E2A"/><rect x="-5" y="-2" width="10" height="8" rx="2" fill="#3A2E2A"/>
+    <circle cx="-3" cy="17" r="1.3" fill="#3A2E2A"/><circle cx="3" cy="17" r="1.3" fill="#3A2E2A"/>
+    <path d="M 0 20 l 6 1.5 l -6 1 Z" fill="url(#ow-F49B3A)"/>
+    <path d="M -9 25 Q 0 29 9 25" stroke="#D94B4B" stroke-width="4" fill="none" stroke-linecap="round"/></g></g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Người tuyết</figcaption>
+
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls14}}" onClick="{{tap14}}" aria-label="Trăng khuyết: chạm để xem hiệu ứng" style="width: 140px; height: 140px">
+<svg viewBox="-30 -6 60 60" width="140" height="140" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><defs><radialGradient id="ow-FFE07A" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#ffeba9"/><stop offset=".55" stop-color="#FFE07A"/><stop offset="1" stop-color="#d9be68"/></radialGradient><radialGradient id="ow-FF8FA3" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#ffb6c3"/><stop offset=".55" stop-color="#FF8FA3"/><stop offset="1" stop-color="#d97a8b"/></radialGradient></defs><g class="ornament orn-moon st-filled" style="--d:0s" data-part="ornament"><g class="orn-body"><path d="M 0 0 L 0 6" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" opacity=".7"/>
+    <mask id="moonm"><rect x="-30" y="0" width="60" height="60" fill="#fff"/><circle cx="9" cy="21" r="14" fill="#000"/></mask>
+    <mask id="moonin"><circle cx="0" cy="26" r="17" fill="#fff"/></mask>
+    <g mask="url(#moonm)"><circle cx="0" cy="26" r="17" fill="url(#ow-FFE07A)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9"/></g>
+    <g mask="url(#moonin)"><circle cx="9" cy="21" r="14" fill="none" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9"/></g>
+    <circle cx="-9" cy="27" r="1.5" fill="#3A2E2A"/><path d="M -11 33 q 2 2 4 0" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" fill="none"/>
+    <ellipse cx="-13" cy="31" rx="2.4" ry="1.5" fill="url(#ow-FF8FA3)" opacity=".7"/></g></g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Trăng khuyết</figcaption>
+
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls15}}" onClick="{{tap15}}" aria-label="Đèn lồng: chạm để xem hiệu ứng" style="width: 140px; height: 140px">
+<svg viewBox="-30 -6 60 60" width="140" height="140" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><defs><radialGradient id="ow-2E3B5C" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#778095"/><stop offset=".55" stop-color="#2E3B5C"/><stop offset="1" stop-color="#27324e"/></radialGradient><radialGradient id="ow-FFE2A0" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#ffecc1"/><stop offset=".55" stop-color="#FFE2A0"/><stop offset="1" stop-color="#d9c088"/></radialGradient><radialGradient id="ow-FFB547" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#ffcf87"/><stop offset=".55" stop-color="#FFB547"/><stop offset="1" stop-color="#d99a3c"/></radialGradient></defs><g class="ornament orn-lantern st-filled" style="--d:0s" data-part="ornament"><g class="orn-body"><path d="M 0 0 L 0 4" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" opacity=".7"/>
+    <rect x="-8" y="4" width="16" height="6" rx="2" fill="url(#ow-2E3B5C)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M -11 10 L 11 10 L 13 36 L -13 36 Z" fill="url(#ow-FFE2A0)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M -4 10 L -5 36 M 4 10 L 5 36" stroke="#2E3B5C" stroke-width="2"/>
+    <ellipse cx="0" cy="24" rx="4" ry="6" fill="url(#ow-FFB547)"/>
+    <rect x="-14" y="36" width="28" height="6" rx="2" fill="url(#ow-2E3B5C)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/></g></g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Đèn lồng</figcaption>
+
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls16}}" onClick="{{tap16}}" aria-label="Châu sọc kẹo: chạm để xem hiệu ứng" style="width: 140px; height: 140px">
+<svg viewBox="-30 -6 60 60" width="140" height="140" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><defs><radialGradient id="ow-C9C1B5" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#dcd7cf"/><stop offset=".55" stop-color="#C9C1B5"/><stop offset="1" stop-color="#aba49a"/></radialGradient><radialGradient id="ow-FFFFFF" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#FFFFFF"/><stop offset="1" stop-color="#d9d9d9"/></radialGradient></defs><g class="ornament orn-stripeball st-filled" style="--d:0s" data-part="ornament"><g class="orn-body"><path d="M 0 0 L 0 4" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" opacity=".7"/>
+    <rect x="-5" y="3" width="10" height="7" rx="2" fill="url(#ow-C9C1B5)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <clipPath id="sbc"><circle cx="0" cy="26" r="16"/></clipPath>
+    <circle cx="0" cy="26" r="16" fill="url(#ow-FFFFFF)"/>
+    <g clip-path="url(#sbc)"><path d="M -30 6 L -10 46" stroke="#D94B4B" stroke-width="5"/><path d="M -18 6 L 2 46" stroke="#D94B4B" stroke-width="5"/><path d="M -6 6 L 14 46" stroke="#D94B4B" stroke-width="5"/><path d="M 6 6 L 26 46" stroke="#D94B4B" stroke-width="5"/><path d="M 18 6 L 38 46" stroke="#D94B4B" stroke-width="5"/></g>
+    <circle cx="0" cy="26" r="16" fill="none" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="-6" cy="19" r="3" fill="#fff" opacity=".85"/></g></g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Châu sọc kẹo</figcaption>
+
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls17}}" onClick="{{tap17}}" aria-label="Bánh quy sao: chạm để xem hiệu ứng" style="width: 140px; height: 140px">
+<svg viewBox="-30 -6 60 60" width="140" height="140" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><defs><radialGradient id="ow-D9A066" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#e6c19c"/><stop offset=".55" stop-color="#D9A066"/><stop offset="1" stop-color="#b88857"/></radialGradient><radialGradient id="ow-D94B4B" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#e68a8a"/><stop offset=".55" stop-color="#D94B4B"/><stop offset="1" stop-color="#b84040"/></radialGradient><radialGradient id="ow-3E9468" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#82b99d"/><stop offset=".55" stop-color="#3E9468"/><stop offset="1" stop-color="#357e58"/></radialGradient><radialGradient id="ow-4E7FB8" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#8cacd1"/><stop offset=".55" stop-color="#4E7FB8"/><stop offset="1" stop-color="#426c9c"/></radialGradient></defs><g class="ornament orn-cookie st-filled" style="--d:0s" data-part="ornament"><g class="orn-body"><path d="M 0 0 L 0 7" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" opacity=".7"/><polygon points="0,7 5.9,17.9 18.1,20.1 9.5,29.1 11.2,41.4 0,36 -11.2,41.4 -9.5,29.1 -18.1,20.1 -5.9,17.9" fill="url(#ow-D9A066)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+      <polygon points="0,7 5.9,17.9 18.1,20.1 9.5,29.1 11.2,41.4 0,36 -11.2,41.4 -9.5,29.1 -18.1,20.1 -5.9,17.9" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="3 3" transform="translate(0 26) scale(.72) translate(0 -26)"/>
+      <circle cx="-4" cy="24" r="1.6" fill="url(#ow-D94B4B)"/><circle cx="4" cy="28" r="1.6" fill="url(#ow-3E9468)"/><circle cx="1" cy="20" r="1.4" fill="url(#ow-4E7FB8)"/></g></g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Bánh quy sao</figcaption>
+
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls18}}" onClick="{{tap18}}" aria-label="Tuần lộc nhỏ: chạm để xem hiệu ứng" style="width: 140px; height: 140px">
+<svg viewBox="-30 -6 60 60" width="140" height="140" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><defs><radialGradient id="ow-B9845A" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#d2af94"/><stop offset=".55" stop-color="#B9845A"/><stop offset="1" stop-color="#9d704d"/></radialGradient><radialGradient id="ow-FCEBD4" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#fdf2e3"/><stop offset=".55" stop-color="#FCEBD4"/><stop offset="1" stop-color="#d6c8b4"/></radialGradient><radialGradient id="ow-5A3A22" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#947f6f"/><stop offset=".55" stop-color="#5A3A22"/><stop offset="1" stop-color="#4d311d"/></radialGradient></defs><g class="ornament orn-reindeer st-filled" style="--d:0s" data-part="ornament"><g class="orn-body"><path d="M 0 0 L 0 3" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" opacity=".7"/>
+    <path d="M -8 12 q -6 -10 -2 -14 M -9 6 l -6 -2 M 8 12 q 6 -10 2 -14 M 9 6 l 6 -2" stroke="#7A5233" stroke-width="3" fill="none" stroke-linecap="round"/>
+    <ellipse cx="-14" cy="18" rx="6" ry="3.5" fill="url(#ow-B9845A)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/><ellipse cx="14" cy="18" rx="6" ry="3.5" fill="url(#ow-B9845A)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <ellipse cx="0" cy="26" rx="13" ry="15" fill="url(#ow-B9845A)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <ellipse cx="0" cy="35" rx="8" ry="6" fill="url(#ow-FCEBD4)"/>
+    <circle cx="0" cy="33" r="3.4" fill="url(#ow-5A3A22)"/>
+    <circle cx="-5" cy="23" r="1.7" fill="#3A2E2A"/><circle cx="5" cy="23" r="1.7" fill="#3A2E2A"/></g></g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Tuần lộc nhỏ</figcaption>
+
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls19}}" onClick="{{tap19}}" aria-label="Cốc ca cao: chạm để xem hiệu ứng" style="width: 140px; height: 140px">
+<svg viewBox="-30 -6 60 60" width="140" height="140" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><defs><radialGradient id="ow-D94B4B" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#e68a8a"/><stop offset=".55" stop-color="#D94B4B"/><stop offset="1" stop-color="#b84040"/></radialGradient><radialGradient id="ow-7A4E2C" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#a98c76"/><stop offset=".55" stop-color="#7A4E2C"/><stop offset="1" stop-color="#684225"/></radialGradient><radialGradient id="ow-FFFFFF" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#ffffff"/><stop offset=".55" stop-color="#FFFFFF"/><stop offset="1" stop-color="#d9d9d9"/></radialGradient></defs><g class="ornament orn-cocoa st-filled" style="--d:0s" data-part="ornament"><g class="orn-body"><path d="M 0 0 L 0 8" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" opacity=".7"/>
+    <path d="M -13 16 L 11 16 L 9 38 Q 9 42 5 42 L -9 42 Q -13 42 -13 38 Z" fill="url(#ow-D94B4B)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M 11 21 q 9 0 8 8 q -1 6 -9 5" fill="none" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <ellipse cx="-1" cy="16" rx="12" ry="3.5" fill="url(#ow-7A4E2C)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="-5" cy="13" r="3.5" fill="url(#ow-FFFFFF)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/><circle cx="2" cy="12" r="3" fill="url(#ow-FFFFFF)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M -9 28 l 16 0" stroke="#FFFFFF" stroke-width="2" stroke-dasharray="3 2"/></g></g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Cốc ca cao</figcaption>
+
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls20}}" onClick="{{tap20}}" aria-label="Điểm trống (khách thấy): chạm để xem hiệu ứng" style="width: 200px; height: 200px">
+<svg viewBox="-30 -6 60 60" width="200" height="200" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><g class="slot-bubble" style="--d:0s" data-part="slot">
+    <circle class="bubble-glow" cx="0" cy="22" r="22" fill="#FFF6C8" opacity=".45"/>
+    <circle cx="0" cy="22" r="16" fill="#FFFFFF" fill-opacity=".38" stroke="#FFFFFF" stroke-width="2.4" stroke-opacity=".95"/>
+    <path d="M -6 15 Q -9 18 -9 22" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".9"/>
+    <path d="M 0 16 L 0 28 M -6 22 L 6 22" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" opacity=".95"/>
+    <path d="M 0 16 L 0 28 M -6 22 L 6 22" stroke="#3A2E2A" stroke-width="1.2" stroke-linecap="round" opacity=".25"/>
+  </g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Điểm trống (khách thấy)</figcaption>
+<p style="margin: 0; font-size: 17px; line-height: 1.35; text-align: center; max-width: 140px; color: #6B5A52">Bong bóng trong suốt có dấu +, thở nhẹ. Chạm để treo lời nhắn.</p>
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls21}}" onClick="{{tap21}}" aria-label="Đã có lời nhắn (khách thấy): chạm để xem hiệu ứng" style="width: 200px; height: 200px">
+<svg viewBox="-30 -6 60 60" width="200" height="200" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><defs><radialGradient id="ow-F4C542" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#f8d984"/><stop offset=".55" stop-color="#F4C542"/><stop offset="1" stop-color="#cfa738"/></radialGradient><radialGradient id="ow-2F8360" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#78ae98"/><stop offset=".55" stop-color="#2F8360"/><stop offset="1" stop-color="#286f52"/></radialGradient></defs><g class="ornament orn-ball st-filled" style="--d:0s" data-part="ornament"><g class="orn-body"><path d="M 0 0 L 0 4" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" opacity=".7"/>
+    <rect x="-5" y="3" width="10" height="7" rx="2" fill="url(#ow-F4C542)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="0" cy="26" r="17" fill="url(#ow-2F8360)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M -16 22 Q 0 28 16 22" stroke="#F4C542" stroke-width="3.2" fill="none"/>
+    <path d="M -15 31 Q 0 37 15 31" stroke="#FFFFFF" stroke-width="2.2" fill="none" stroke-dasharray="3 3"/>
+    <circle cx="-7" cy="17" r="3" fill="#fff" opacity=".85"/></g></g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Đã có lời nhắn (khách thấy)</figcaption>
+<p style="margin: 0; font-size: 17px; line-height: 1.35; text-align: center; max-width: 140px; color: #6B5A52">Chỉ thấy phụ kiện, không thấy nội dung hay tên.</p>
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls22}}" onClick="{{tap22}}" aria-label="Quà còn gói (chủ cây, trước 24/12): chạm để xem hiệu ứng" style="width: 200px; height: 200px">
+<svg viewBox="-30 -6 60 60" width="200" height="200" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><defs><radialGradient id="ow-FF6B81" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#ff9fad"/><stop offset=".55" stop-color="#FF6B81"/><stop offset="1" stop-color="#d95b6e"/></radialGradient><radialGradient id="ow-FF8FA3" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#ffb6c3"/><stop offset=".55" stop-color="#FF8FA3"/><stop offset="1" stop-color="#d97a8b"/></radialGradient><radialGradient id="ow-D94B4B" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#e68a8a"/><stop offset=".55" stop-color="#D94B4B"/><stop offset="1" stop-color="#b84040"/></radialGradient><radialGradient id="ow-B83A3A" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#d17f7f"/><stop offset=".55" stop-color="#B83A3A"/><stop offset="1" stop-color="#9c3131"/></radialGradient></defs><g class="ornament orn-heart st-locked" style="--d:0s" data-part="ornament"><g class="orn-body"><path d="M 0 0 L 0 8" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" opacity=".7"/>
+    <path d="M 0 42 L -15 28 Q -22 20 -17 13 Q -10 6 0 15 Q 10 6 17 13 Q 22 20 15 28 Z" fill="url(#ow-FF6B81)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M -12 16 Q -15 20 -12 24" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" opacity=".85"/>
+    <circle cx="-4.5" cy="25" r="1.53" fill="#3A2E2A"/><circle cx="4.5" cy="25" r="1.53" fill="#3A2E2A"/><path d="M -2.4 28 Q 0 30 2.4 28" fill="none" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" stroke-linecap="round"/><ellipse cx="-7.5" cy="28.2" rx="2.6" ry="1.6" fill="url(#ow-FF8FA3)" opacity=".7"/><ellipse cx="7.5" cy="28.2" rx="2.6" ry="1.6" fill="url(#ow-FF8FA3)" opacity=".7"/></g><g class="lock-bow"><path d="M 0 4 q -10 -8 -11 0 q 1 6 11 0 q 10 -8 11 0 q -1 6 -11 0" fill="url(#ow-D94B4B)" stroke="#6E5A52" stroke-width="1.5" stroke-opacity=".9"/><circle cx="0" cy="4" r="2.6" fill="url(#ow-B83A3A)"/></g></g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Quà còn gói (chủ cây, trước 24/12)</figcaption>
+<p style="margin: 0; font-size: 17px; line-height: 1.35; text-align: center; max-width: 140px; color: #6B5A52">Nhạt màu, có nơ đỏ trên móc. Chưa đọc được.</p>
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls23}}" onClick="{{tap23}}" aria-label="Chưa đọc (chủ cây, từ 24/12): chạm để xem hiệu ứng" style="width: 200px; height: 200px">
+<svg viewBox="-30 -6 60 60" width="200" height="200" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><defs><radialGradient id="ow-FFD447" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#ffe387"/><stop offset=".55" stop-color="#FFD447"/><stop offset="1" stop-color="#d9b43c"/></radialGradient><radialGradient id="ow-FF8FA3" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#ffb6c3"/><stop offset=".55" stop-color="#FF8FA3"/><stop offset="1" stop-color="#d97a8b"/></radialGradient><radialGradient id="ow-FFF6C8" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#fff9db"/><stop offset=".55" stop-color="#FFF6C8"/><stop offset="1" stop-color="#d9d1aa"/></radialGradient></defs><g class="ornament orn-star st-unread" style="--d:0s" data-part="ornament"><g class="orn-body"><path d="M 0 0 L 0 8" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" opacity=".7"/><polygon points="0,6 5.6,18.3 19,19.8 9,28.9 11.8,42.2 0,35.5 -11.8,42.2 -9,28.9 -19,19.8 -5.6,18.3" fill="url(#ow-FFD447)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/><circle cx="-4.5" cy="26" r="1.53" fill="#3A2E2A"/><circle cx="4.5" cy="26" r="1.53" fill="#3A2E2A"/><path d="M -2.4 29 Q 0 31 2.4 29" fill="none" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" stroke-linecap="round"/><ellipse cx="-7.5" cy="29.2" rx="2.6" ry="1.6" fill="url(#ow-FF8FA3)" opacity=".7"/><ellipse cx="7.5" cy="29.2" rx="2.6" ry="1.6" fill="url(#ow-FF8FA3)" opacity=".7"/></g><g class="glint"><path d="M 16 10 l 1.6 4 l 4 1.6 l -4 1.6 l -1.6 4 l -1.6 -4 l -4 -1.6 l 4 -1.6 Z" fill="url(#ow-FFF6C8)" stroke="#E5B92E" stroke-width="1"/><path d="M -18 32 l 1.2 3 l 3 1.2 l -3 1.2 l -1.2 3 l -1.2 -3 l -3 -1.2 l 3 -1.2 Z" fill="url(#ow-FFF6C8)" stroke="#E5B92E" stroke-width="1"/></g></g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Chưa đọc (chủ cây, từ 24/12)</figcaption>
+<p style="margin: 0; font-size: 17px; line-height: 1.35; text-align: center; max-width: 140px; color: #6B5A52">Sáng lên và lấp lánh, mời bấm vào.</p>
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls24}}" onClick="{{tap24}}" aria-label="Đã đọc: chạm để xem hiệu ứng" style="width: 200px; height: 200px">
+<svg viewBox="-30 -6 60 60" width="200" height="200" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><defs><radialGradient id="ow-D94B4B" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#e68a8a"/><stop offset=".55" stop-color="#D94B4B"/><stop offset="1" stop-color="#b84040"/></radialGradient><radialGradient id="ow-F4C542" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#f8d984"/><stop offset=".55" stop-color="#F4C542"/><stop offset="1" stop-color="#cfa738"/></radialGradient><radialGradient id="ow-D9A82E" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="#e6c677"/><stop offset=".55" stop-color="#D9A82E"/><stop offset="1" stop-color="#b88f27"/></radialGradient></defs><g class="ornament orn-bell st-read" style="--d:0s" data-part="ornament"><g class="orn-body"><path d="M 0 0 L 0 4" stroke="#6E5A52" stroke-width="1.4" stroke-opacity=".9" opacity=".7"/>
+    <path d="M -8 6 q -8 -6 -9 1 q 1 5 9 -1 q 8 -6 9 1 q -1 5 -9 -1" fill="url(#ow-D94B4B)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M 0 8 Q -16 10 -15 30 L -18 36 L 18 36 L 15 30 Q 16 10 0 8 Z" fill="url(#ow-F4C542)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <circle cx="0" cy="39" r="4" fill="url(#ow-D9A82E)" stroke="#6E5A52" stroke-width="2.0" stroke-opacity=".9" stroke-linejoin="round" stroke-linecap="round"/>
+    <path d="M -8 18 Q -10 24 -9 29" stroke="#FFF3C4" stroke-width="2.4" fill="none" stroke-linecap="round"/></g></g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Đã đọc</figcaption>
+<p style="margin: 0; font-size: 17px; line-height: 1.35; text-align: center; max-width: 140px; color: #6B5A52">Trở lại bình thường.</p>
+</figure>
+<figure style="margin: 0; display: flex; flex-direction: column; align-items: center; gap: 10px">
+<button type="button" class="scene {{cls25}}" onClick="{{tap25}}" aria-label="Điểm trống (chủ cây): chạm để xem hiệu ứng" style="width: 200px; height: 200px">
+<svg viewBox="-30 -6 60 60" width="200" height="200" aria-hidden="true"><rect x="-30" y="-6" width="60" height="60" fill="#5DC3C0"/><rect x="-30" y="-6" width="60" height="60" fill="#3E8FB3" opacity=".25"/><g class="slot-bubble dim" style="--d:0s" data-part="slot">
+    <circle class="bubble-glow" cx="0" cy="22" r="22" fill="#FFF6C8" opacity=".45"/>
+    <circle cx="0" cy="22" r="16" fill="#FFFFFF" fill-opacity=".38" stroke="#FFFFFF" stroke-width="2.4" stroke-opacity=".95"/>
+    <path d="M -6 15 Q -9 18 -9 22" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" opacity=".9"/>
+    <path d="M 0 16 L 0 28 M -6 22 L 6 22" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" opacity=".95"/>
+    <path d="M 0 16 L 0 28 M -6 22 L 6 22" stroke="#3A2E2A" stroke-width="1.2" stroke-linecap="round" opacity=".25"/>
+  </g></svg>
+</button>
+<figcaption style="font-family: 'Grape Nuts', cursive; font-size: 24px; text-align: center; max-width: 140px">Điểm trống (chủ cây)</figcaption>
+<p style="margin: 0; font-size: 17px; line-height: 1.35; text-align: center; max-width: 140px; color: #6B5A52">Mờ hơn, chủ cây không tự nhắn lên cây mình.</p>
+</figure>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1720,"height":900}}'>
+var N = 26;
+var TOGGLES = [];
+var ON = 'background: #3A2E2A; color: #FFF6E5';
+class Component extends DCLogic {
+  constructor(p) { super(p); var st = { fx: {} }; TOGGLES.forEach(function (t) { st[t.key] = t.options[0][0]; }); this.state = st; this.timers = {}; }
+  componentWillUnmount() { var t = this.timers; Object.keys(t).forEach(function (k) { clearTimeout(t[k]); }); }
+  tap(i) {
+    var self = this;
+    clearTimeout(self.timers[i]);
+    var off = Object.assign({}, self.state.fx); off[i] = false;
+    self.setState({ fx: off }, function () {
+      requestAnimationFrame(function () {
+        var on = Object.assign({}, self.state.fx); on[i] = true; self.setState({ fx: on });
+        self.timers[i] = setTimeout(function () { var o = Object.assign({}, self.state.fx); o[i] = false; self.setState({ fx: o }); }, 1700);
+      });
+    });
+  }
+  renderVals() {
+    var s = this.state, self = this, v = {}, base = '';
+    TOGGLES.forEach(function (t) {
+      t.options.forEach(function (o) { if (s[t.key] === o[0] && o[2]) base += o[2] + ' '; });
+      v[t.key + 'List'] = t.options.map(function (o) { var on = s[t.key] === o[0]; return { name: o[1], on: on ? 'true' : 'false', css: on ? ON : '', pick: function () { var x = {}; x[t.key] = o[0]; self.setState(x); } }; });
+    });
+    for (var i = 0; i < N; i++) { (function (i) { v['cls' + i] = base + (s.fx[i] ? 'gust shake pop' : ''); v['tap' + i] = function () { self.tap(i); }; })(i); }
+    return v;
+  }
+}
+</script>
+</body>
+</html>

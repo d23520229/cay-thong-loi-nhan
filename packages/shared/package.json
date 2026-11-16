@@ -1,0 +1,14 @@
+{
+  "name": "@ctln/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Dùng chung cho web và server: danh mục đồ hoạ, hình học tán cây, xếp điểm nhắn, (sắp có) schema Zod và kiểu dữ liệu",
+  "exports": {
+    ".": "./src/index.mjs",
+    "./catalog.json": "./src/catalog.json",
+    "./geometry": "./src/geometry.mjs",
+    "./slots": "./src/slots.mjs"
+  },
+  "scripts": { "test": "node --test \"test/*.test.mjs\"" }
+}
