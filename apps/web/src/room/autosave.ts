@@ -178,5 +178,9 @@ export function createAutosave(o: Opts) {
       unsubscribe();
     },
     version: () => version,
+    /** Phòng server đã xác nhận gần nhất. */
+    lastSaved: () => lastSaved,
+    /** Bản trên máy đúng là bản server đã nhận, không còn lượt gửi nào. */
+    isSaved: () => !inFlight && store.getState().room === lastSaved,
   };
 }

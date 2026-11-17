@@ -147,7 +147,9 @@ function TreeRoom({ id }: { id: string }) {
             setView({ kind: 'owner', data: { meta: { ...view.data.meta, roomVersion }, room: r } });
             setMode('view');
           }}
-          onWriteClosed={() => {
+          onWriteClosed={(r, roomVersion) => {
+            // Về Xem với bản server đã nhận; bản bị từ chối vẫn nằm trong nháp trên máy.
+            setView({ kind: 'owner', data: { meta: { ...view.data.meta, roomVersion }, room: r } });
             setWriteClosed(true);
             setMode('view');
           }}
@@ -192,7 +194,7 @@ type EditorProps = {
   autosaveRef: MutableRefObject<Autosave | null>;
   toast: (m: string) => void;
   onLeave: (room: Room, roomVersion: number) => void;
-  onWriteClosed: () => void;
+  onWriteClosed: (lastSaved: Room, roomVersion: number) => void;
   onUnauthorized: () => void;
   onBadRoom: () => void;
 };
@@ -226,7 +228,7 @@ function OwnerEditor(props: EditorProps) {
           setConflict({ ...server, ...room });
         },
         onSlotsInUse: (m) => latest.current.toast(m),
-        onWriteClosed: () => latest.current.onWriteClosed(),
+        onWriteClosed: () => latest.current.onWriteClosed(a.lastSaved(), a.version()),
         onUnauthorized: () => {
           blocks.current++;
           latest.current.onUnauthorized();
@@ -257,7 +259,8 @@ function OwnerEditor(props: EditorProps) {
     if (!a || conflict) return;
     const before = blocks.current;
     await a.flush();
-    if (blocks.current === before) latest.current.onLeave(store.getState().room, a.version());
+    // Chỉ rời chế độ Sửa khi đã lưu thật; mất mạng thì ở lại để bộ tự lưu tiếp tục thử lại.
+    if (blocks.current === before && a.isSaved()) latest.current.onLeave(store.getState().room, a.version());
   };
 
   const resolve = (keep: boolean) => {

@@ -370,4 +370,18 @@ describe('autosave', () => {
     await t.a.flush();
     expect(t.saveRoom).toHaveBeenCalledTimes(2);
   });
+  it('isSaved / lastSaved: chỉ "đã lưu" khi bản trên máy đúng là bản server đã nhận', async () => {
+    const t = track(setup());
+    const initial = t.store.getState().room;
+    expect(t.a.isSaved()).toBe(true);
+    t.saveRoom.mockRejectedValueOnce(new ApiError(0, 'network', 'x'));
+    t.store.getState().setTree({ slotCount: 9 });
+    expect(t.a.isSaved()).toBe(false);
+    await t.a.flush();
+    expect(t.a.isSaved()).toBe(false);
+    expect(t.a.lastSaved()).toBe(initial);
+    await t.a.flush();
+    expect(t.a.isSaved()).toBe(true);
+    expect(t.a.lastSaved()).toBe(t.store.getState().room);
+  });
 });
