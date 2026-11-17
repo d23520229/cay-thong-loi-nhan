@@ -28,6 +28,20 @@ describe('storage', () => {
     expect(s.deviceId()).toMatch(/^[0-9a-f-]{36}$/);
   });
 
+  it('deviceId: không có crypto.randomUUID (trang http trong mạng LAN) → UUID v4 từ getRandomValues', async () => {
+    const real = globalThis.crypto;
+    vi.stubGlobal('crypto', { getRandomValues: real.getRandomValues.bind(real) });
+    expect('randomUUID' in globalThis.crypto).toBe(false);
+    const v4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+    const a = (await load()).deviceId();
+    expect(a).toMatch(v4);
+    expect(localStorage.getItem('deviceId')).toBe(a);
+    localStorage.clear();
+    const b = (await load()).deviceId();
+    expect(b).toMatch(v4);
+    expect(b).not.toBe(a);
+  });
+
   it('draft và ref khứ hồi; dữ liệu hỏng → null', async () => {
     const s = await load();
     const d = { room, baseVersion: 2, savedAt: 'x' };
