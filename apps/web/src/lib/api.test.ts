@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Room } from '@ctln/shared';
-import { api, ApiError } from './api';
+import { api, ApiError, type OwnerRoom } from './api';
 
 const room = { background: 'night', tree: { shape: 'cloud3', palette: 'teal', trunkShape: 'straight', wood: 'oak', slotCount: 12 }, items: [] } as Room;
 const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -55,5 +55,19 @@ describe('api', () => {
     const e = await api.getConfig().catch((x) => x);
     expect(e).toBeInstanceOf(ApiError);
     expect(e.status).toBe(502);
+  });
+});
+
+describe('OwnerRoom', () => {
+  it('slots có messageId, unread, locked (ghim bằng typecheck)', async () => {
+    const owner: OwnerRoom = {
+      id: 'abcdefgh', ownerName: 'A', title: null, background: 'night', tree: room.tree, items: [], roomVersion: 1, phase: 'BUILD',
+      slots: [{ index: 0, occupied: true, ornament: 'star', messageId: '7', unread: true, locked: true }, { index: 1, occupied: false, locked: true }],
+      messageCount: 1, newSinceLastVisit: 1, showMessageCount: true,
+    };
+    fetchMock().mockResolvedValue(json(200, owner));
+    const got = await api.getOwnerTree('abcdefgh');
+    expect(got.slots[0]!.messageId).toBe('7');
+    expect(got.slots[1]!.locked).toBe(true);
   });
 });

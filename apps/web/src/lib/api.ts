@@ -27,7 +27,14 @@ export type PublicRoom = {
   phase: string;
 };
 
-export type OwnerRoom = PublicRoom & { messageCount: number; newSinceLastVisit: number; showMessageCount: boolean };
+export type OwnerSlot = PublicRoom['slots'][number] & { messageId?: string; unread?: boolean; locked: boolean };
+
+export type OwnerRoom = Omit<PublicRoom, 'slots'> & {
+  slots: OwnerSlot[];
+  messageCount: number;
+  newSinceLastVisit: number;
+  showMessageCount: boolean;
+};
 
 export type AppConfig = {
   now: string;
