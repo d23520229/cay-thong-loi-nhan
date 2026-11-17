@@ -9,6 +9,7 @@ import '@fontsource/grape-nuts/vietnamese-400.css';
 import '@fontsource/grape-nuts/latin-400.css';
 import './styles/base.css';
 import './styles/room-animations.css';
+import './styles/app.css';
 
 function Placeholder() {
   return (
