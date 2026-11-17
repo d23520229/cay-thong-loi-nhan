@@ -1,4 +1,6 @@
-# apps/web/src — sơ đồ thư mục (làm ở mốc M2–M3)
+# apps/web/src — sơ đồ thư mục (M2 xong; còn lại làm ở M3)
+
+**Đã có (M2):** `routes/Home`, `CreatePage`, `RoomPage`, `ReopenDialog`, `OwnerLogin`; `room/Scene`, `RoomStage`, `Editor`, `EditorLayout`, `ConflictDialog`, `model`, `store`, `drag`, `fit`, `autosave`; `lib/api`, `catalog`, `storage`, `treeRef`, `authError`; `ui/Button`, `PinInput`, `Sheet`, `Toast`; `styles/app.css`. **Chưa có (M3 trở đi):** `guest/`, `owner/`, `admin/`, `art/`, hiệu ứng chạm.
 
 | Thư mục | Thành phần dự kiến | Lấy từ bản thiết kế |
 |---|---|---|

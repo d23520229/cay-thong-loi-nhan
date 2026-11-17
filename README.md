@@ -28,7 +28,7 @@ docs/         Đặc tả, lược đồ cơ sở dữ liệu
 | CSS chuyển động (cây, lửa, thú cưng, phụ kiện, hiệu ứng chạm) | Xong, `apps/web/src/styles/room-animations.css` |
 | Lược đồ PostgreSQL + kiểm thử trên PGlite | Xong, `apps/server/src/db/migrations/0000_init.sql` |
 | Server: khung Fastify, tính giai đoạn | Khung |
-| Web: khung React | Khung |
+| Web: trang chủ, tạo cây, sửa phòng tự do, tự lưu (M2) | Xong (nhánh `m2-frontend`) |
 | API, giao diện phòng, bạn bè, chủ cây, quản trị | Chưa làm (M1–M3) |
 
 ## Chạy trên máy
@@ -42,5 +42,12 @@ pnpm db:up                   # PostgreSQL 16 trong Docker
 pnpm dev                     # web: http://localhost:5173  ·  server: http://localhost:3000
 pnpm test                    # kiểm thử tất cả gói
 ```
+
+Chạy giao diện M2 (tạo cây, trang trí phòng):
+
+1. Mở Docker Desktop.
+2. Trong `.env` đặt `BASE_URL=http://localhost:5173` (cổng Vite).
+3. `pnpm db:up`, rồi `pnpm dev`.
+4. Mở http://localhost:5173 (Vite chuyển `/api` và `/og` sang server cổng 3000).
 
 Đồ hoạ: sửa trong `packages/art/src`, chạy `pnpm art:export` để xuất lại ảnh và `catalog.json`.

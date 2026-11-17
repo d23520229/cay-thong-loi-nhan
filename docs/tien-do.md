@@ -4,9 +4,23 @@
 
 ## Hiện tại
 
-- **Ngày cập nhật:** 17/11/2026
+- **Ngày cập nhật:** 18/11/2026
 - **Mốc đang ở:** M1 xong trên nhánh `m1-backend` (backend: 6 nhóm route, 118 test server + 40 test shared). Chưa gộp vào `main`. Đã chạy thử với PostgreSQL 16 thật trong Docker ngày 17/11 (mục 1–9 bên dưới đều đạt); mục 10 làm khi lên Azure.
-- **Việc tiếp theo:** **M2 — frontend phòng tự do** — chờ chủ dự án duyệt.
+- **M2 xong** trên nhánh `m2-frontend` (chưa gộp vào `main`): giao diện phòng tự do, 141 test web + 120 test server + 40 test shared, typecheck sạch. Bản build JS + CSS ≈ 145 KB gzip (giới hạn 250 KB). Đã chạy thật qua proxy Vite với PostgreSQL trong Docker (18/11): `/` trả HTML, `/api/config` qua proxy, tạo cây 201 với `publicUrl` bắt đầu `http://localhost:5173/c/`, `GET /api/trees/{id}` 200.
+- **Việc tiếp theo:** **M3 — bạn bè treo lời nhắn, chủ cây đọc/khoá/đếm ngược, chia sẻ, OG** — chờ chủ dự án duyệt.
+
+### M2 — danh sách thử tay trên trình duyệt (chủ dự án)
+
+Chuẩn bị: Docker Desktop đang chạy, `.env` có `BASE_URL=http://localhost:5173`, `pnpm db:up`, `pnpm dev`, mở http://localhost:5173.
+
+1. Bấm "Bắt đầu tạo cây" → đặt tên, chọn PIN → tạo cây.
+2. Trang trí: kéo, phóng to/thu nhỏ, lật, đổi kiểu, thêm/xoá đồ; thử trên điện thoại (hoặc DevTools thiết bị) để thấy dải chọn và mũi tên ‹ ›.
+3. Bấm "Hoàn tất" → thấy link công khai và link riêng.
+4. Mở link riêng trong tab ẩn danh → vào được phòng với quyền chủ cây.
+5. Mở cùng cây ở hai tab, sửa ở cả hai → tab lưu sau thấy bảng xung đột (giữ bản nào).
+6. DevTools → Network → Offline, sửa phòng → báo lỗi lưu; bật mạng lại → tự lưu lại.
+7. Tắt mạng rồi bấm "Xong" → vẫn ở chế độ Sửa (chỉ rời khi đã lưu).
+8. Trang chủ: "Bạn đã có cây?" → mở lại bằng mã cây/link + PIN.
 
 ### M1 — đã xong (kế hoạch duyệt 16/11; chi tiết trong file kế hoạch)
 
@@ -51,7 +65,7 @@ Chưa làm ở M1: giao diện web (M2–M3), trang quản trị (M3b), OG ảnh
 |---|---|---|---|
 | M0 | 16–18/11 | Đặc tả v3, CSDL, đồ hoạ, khung repo | **Xong** |
 | M1 | 18–25/11 | Backend: migration, giai đoạn, xác thực, API phòng + lời nhắn, test | **Xong** (17/11) |
-| M2 | 25/11–02/12 | Frontend phòng tự do: kéo thả, xếp lớp, mũi tên ‹ ›, dải chọn, tự lưu | |
+| M2 | 25/11–02/12 | Frontend phòng tự do: kéo thả, xếp lớp, mũi tên ‹ ›, dải chọn, tự lưu | **Xong** (18/11, nhánh `m2-frontend`) |
 | M3 | 02–07/12 | Bạn bè treo lời nhắn; chủ cây đọc, khoá, đếm ngược; chia sẻ, OG | |
 | M3b | 05–08/12 | Trang quản trị P0 | |
 | M4 | 07–10/12 | Hoàn thiện, triển khai Azure (kèm Blob cho ảnh, câu trung thực về riêng tư trong chính sách) | |
@@ -113,6 +127,10 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 - **Không log nguyên `DrizzleQueryError`:** `message`, `query`, `params` chứa nội dung người dùng (lời nhắn, tên, băm). Chỉ log `{ name, code }`.
 - **`tsc` không chép file `.sql`:** script `build` phải chép `src/db/migrations` sang `dist/db/migrations`, nếu không `pnpm start` không tìm thấy migration.
 - Server dev/migrate nạp `.env` bằng `tsx --env-file-if-exists=../../.env` (Node ≥ 22.9); không có thư viện dotenv.
+- **CSS:** class của app không được trùng tên với class trong `room-animations.css` (gom từ canvas thiết kế) — đã từng va chạm lớp panel; đặt tiền tố riêng.
+- **jsdom** không có `ResizeObserver`, và sự kiện pointer không có `clientX` → test kéo thả qua controller (`drag.ts`) thay vì bắn sự kiện DOM.
+- **React StrictMode** mount hai lần: tự lưu cần dừng trì hoãn (deferred stop), nếu không lần unmount giả sẽ huỷ bộ tự lưu đang chạy.
+- "Xong" chỉ rời chế độ Sửa khi đã lưu thành công; offline thì ở lại và báo lỗi.
 - `node --test` không nhận thư mục trên mọi máy → dùng glob `"test/*.test.mjs"`.
 
 ## Tài nguyên
@@ -122,5 +140,6 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 
 ## Nhật ký
 
+- **18/11/2026** — Xong M2 frontend (nhánh `m2-frontend`): trang chủ + "Bạn đã có cây?", tạo cây (`/tao`), trang phòng (`/c/:id`) cho chủ cây và khách, trình sửa phòng (kéo/zoom/lật, dải chọn, mũi tên ‹ ›, bảng bên), tự lưu + nháp cục bộ, bảng xung đột phiên bản. 141 test web, 120 test server, 40 test shared, typecheck sạch; build ≈ 145 KB gzip. Quyết định: dựng theo phương án A (module phòng thuần có test); phòng hiện trọn theo chiều rộng; "Bạn đã có cây?" mở lại bằng mã/link + PIN; lệch phiên bản thì hỏi chủ cây giữ bản nào; "Xong" chỉ rời chế độ Sửa khi đã lưu.
 - **17/11/2026** — Xong M1 backend: config, trees (tạo/đọc/xoá), auth (thiết bị, link riêng, PIN, Google), room (PUT có `room_version`), messages (treo/sửa/gỡ trong 15 phút), owner (đọc, mở, chặn, báo cáo). 109 test server (Vitest + PGlite) + 40 test shared, typecheck sạch. Quyết định chính: giữ chỗ lượt thử PIN nguyên tử trước khi băm; khoá dòng khi lưu phòng và đăng lời nhắn; log request không chứa IP; migration có khoá advisory. `index.ts` nối thật (env → PostgreSQL → migration → listen), production bắt buộc `DATABASE_URL`. Chưa chạy với PostgreSQL thật vì máy chưa có Docker.
 - **16/11/2026** — Chốt đặc tả v3 (phòng tự do, trang quản trị, stack TS/React/Fastify/PostgreSQL). Thiết kế 16 bảng, kiểm trên PGlite (7 test). Dựng monorepo, chuyển đồ hoạ + catalog + slots vào đúng gói (29 test slot). Ghi repo vào `D:\cay-thong-loi-nhan`. Thêm `CLAUDE.md` và file tiến độ này.
