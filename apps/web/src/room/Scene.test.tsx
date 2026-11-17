@@ -2,6 +2,8 @@ import { render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { Scene } from './Scene';
 import { defaultRoom, drawOrder } from './model';
+import appCss from '../styles/app.css?raw';
+import animCss from '../styles/room-animations.css?raw';
 
 describe('Scene', () => {
   const room = defaultRoom();
@@ -42,6 +44,14 @@ describe('Scene', () => {
     const { container } = render(<Scene room={room} selectedId={id} />);
     expect(find(container, id)).toHaveClass('selected');
     expect(container.querySelectorAll('.selected')).toHaveLength(1);
+  });
+
+  it('class selected có viền nét đứt vàng như mẫu đã duyệt (không trùng room-animations.css)', () => {
+    const rule = /\.item\.selected\s*\{([^}]*)\}/.exec(appCss)?.[1] ?? '';
+    expect(rule).toMatch(/outline:\s*4px dashed #FFD86B/i);
+    expect(rule).toMatch(/outline-offset:\s*8px/);
+    expect(rule).toMatch(/border-radius:\s*14px/);
+    expect(animCss).not.toMatch(/\.selected|\.item/);
   });
 
   it('món lật có scaleX(-1)', () => {

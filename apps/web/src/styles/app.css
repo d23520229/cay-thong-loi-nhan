@@ -63,6 +63,8 @@
 .strip-panel { display: flex; flex-direction: column; gap: 10px; }
 .strip-panel .scroll-x { display: flex; flex-wrap: wrap; gap: 8px; overflow: visible; }
 .hint { font-size: 18px; color: var(--muted); margin: 0; }
+/* Món đang chọn — đơn vị theo toạ độ phòng 720 (đã co cùng phòng), như mẫu tools/design-canvas/build-mock-m2.mjs */
+.item.selected { outline: 4px dashed #FFD86B; outline-offset: 8px; border-radius: 14px; }
 
 /* Trang chủ, mở lại cây, tạo cây */
 .home, .create-page { position: relative; width: 100%; height: 100%; overflow: hidden; }
