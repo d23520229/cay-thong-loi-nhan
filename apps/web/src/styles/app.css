@@ -12,6 +12,13 @@
 .save i { width: 10px; height: 10px; border-radius: 50%; background: #7bd88f; }
 .save-saving i { background: var(--gold); }
 .save-unsaved i { background: #f2877a; }
+/* Điện thoại hẹp: thanh trên cỡ thường cần ~410px; thu gọn chữ/đệm để vừa một hàng ở 360px, vẫn cao 44px. */
+@media (max-width: 419px) {
+  .topbar { gap: 6px; }
+  .topbar .pillbtn { padding: 6px 8px; font-size: 15px; }
+  .topbar .save { font-size: 15px; gap: 4px; }
+  .topbar .btn { padding: 6px 12px; font-size: 16px; }
+}
 
 .arrows { display: flex; align-items: center; justify-content: center; gap: 6px; }
 .toolbar { display: flex; align-items: center; gap: 6px; padding: 8px; border-radius: 22px;

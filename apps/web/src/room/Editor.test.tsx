@@ -7,6 +7,7 @@ import {
 } from './Editor';
 import { defaultRoom } from './model';
 import { createEditorStore } from './store';
+import appCss from '../styles/app.css?raw';
 
 const setup = () => {
   const store = createEditorStore(defaultRoom());
@@ -149,5 +150,16 @@ describe('Editor controls', () => {
     expect(store.getState().panel).toBe('bg');
     await userEvent.click(screen.getByRole('button', { name: 'Hoàn tất' }));
     expect(done).toBe(1);
+  });
+});
+
+describe('thanh trên trên điện thoại hẹp', () => {
+  // jsdom không đo được bố cục; kiểm tra quy tắc CSS (số đo đã thử bằng Chrome, xem báo cáo M2).
+  it('dưới 420px thu gọn chữ/đệm nút nhưng giữ cao 44px, không đổi chữ trên nút', () => {
+    const block = /@media \(max-width: 419px\) \{([\s\S]*?)\n\}/.exec(appCss)?.[1] ?? '';
+    expect(block).toMatch(/\.topbar \{[^}]*gap: 6px/);
+    expect(block).toMatch(/\.topbar \.pillbtn \{[^}]*padding: 6px 8px[^}]*font-size: 15px/);
+    expect(block).toMatch(/\.topbar \.btn \{[^}]*padding: 6px 12px[^}]*font-size: 16px/);
+    expect(block).not.toMatch(/min-height|height:/);
   });
 });
