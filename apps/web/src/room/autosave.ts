@@ -28,6 +28,8 @@ type Opts = {
   onUnauthorized(): void;
   onOffline(): void;
   onRateLimited(): void;
+  /** 404: cây đã bị xoá ở nơi khác — tự lưu đã dừng, nháp vẫn giữ. */
+  onGone(): void;
 };
 
 /** Tự lưu phòng (đặc tả 6.5 "Tự lưu"): gộp 1,5 giây, nháp `draft:{treeId}`, xử lý từng mã lỗi. */
@@ -114,6 +116,9 @@ export function createAutosave(o: Opts) {
       o.onWriteClosed();
     } else if (err.status === 401) {
       o.onUnauthorized();
+    } else if (err.status === 404) {
+      stop();
+      o.onGone();
     } else if (err.status === 429) {
       if (!rateLimited) {
         rateLimited = true;
@@ -151,6 +156,13 @@ export function createAutosave(o: Opts) {
     o.onState('unsaved');
     schedule();
   });
+
+  const stop = () => {
+    stopped = true;
+    clearTimers();
+    window.removeEventListener('online', onOnline);
+    unsubscribe();
+  };
 
   return {
     resume(serverVersion: number): 'none' | 'sent' | 'conflict' {
@@ -192,12 +204,7 @@ export function createAutosave(o: Opts) {
       if (debounce !== undefined || retry !== undefined || store.getState().room !== lastSaved) return send();
       return inFlight ?? Promise.resolve();
     },
-    stop() {
-      stopped = true;
-      clearTimers();
-      window.removeEventListener('online', onOnline);
-      unsubscribe();
-    },
+    stop,
     version: () => version,
     /** Phòng server đã xác nhận gần nhất. */
     lastSaved: () => lastSaved,

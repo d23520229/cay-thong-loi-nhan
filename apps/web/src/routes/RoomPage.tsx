@@ -236,6 +236,7 @@ function OwnerEditor(props: EditorProps) {
         onOffline: () => latest.current.toast('Mất mạng — thay đổi được giữ trên máy'),
         onRateLimited: () =>
           latest.current.toast('Bạn lưu hơi nhiều, sẽ tự lưu lại sau ít phút — thay đổi vẫn giữ trên máy.'),
+        onGone: () => latest.current.toast('Cây này không còn nữa.'),
       });
       mine.current = a;
       autosaveRef.current = a;
@@ -263,6 +264,7 @@ function OwnerEditor(props: EditorProps) {
     await a.flush();
     // Chỉ rời chế độ Sửa khi đã lưu thật; mất mạng thì ở lại để bộ tự lưu tiếp tục thử lại.
     if (blocks.current === before && a.isSaved()) latest.current.onLeave(store.getState().room, a.version());
+    else latest.current.toast('Chưa lưu được — thay đổi vẫn giữ trên máy.');
   };
 
   const resolve = (keep: boolean) => {

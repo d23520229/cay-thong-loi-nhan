@@ -19,6 +19,7 @@ function setup(opts: { version?: number; store?: EditorStore; saveRoom?: SaveFn 
     onUnauthorized: vi.fn(),
     onOffline: vi.fn(),
     onRateLimited: vi.fn(),
+    onGone: vi.fn(),
   };
   const a = createAutosave({ treeId: 't1', store, version: opts.version ?? 3, api: { saveRoom }, storage, ...cb });
   return { store, saveRoom, a, ...cb };
@@ -233,6 +234,23 @@ describe('autosave', () => {
     t.store.getState().setTree({ slotCount: 20 });
     await vi.advanceTimersByTimeAsync(1500);
     expect(t.saveRoom).toHaveBeenCalledTimes(102);
+  });
+
+  it('404 (cây đã bị xoá) → onGone, dừng tự lưu, giữ nháp', async () => {
+    const t = track(setup());
+    t.saveRoom.mockRejectedValueOnce(new ApiError(404, 'not_found', 'x'));
+    t.store.getState().setTree({ slotCount: 9 });
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(t.onGone).toHaveBeenCalledTimes(1);
+    expect(t.onOffline).not.toHaveBeenCalled();
+    expect(t.onState).toHaveBeenLastCalledWith('unsaved');
+    expect(storage.getDraft('t1')!.room.tree.slotCount).toBe(9);
+    t.store.getState().setTree({ slotCount: 16 });
+    window.dispatchEvent(new Event('online'));
+    await vi.advanceTimersByTimeAsync(70000);
+    await t.a.flush();
+    expect(t.saveRoom).toHaveBeenCalledTimes(1);
+    expect(storage.getDraft('t1')).not.toBeNull();
   });
 
   it('403 write_closed → onWriteClosed; 401 → onUnauthorized', async () => {

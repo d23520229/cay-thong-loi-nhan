@@ -237,6 +237,20 @@ describe('RoomPage', () => {
     expect(storage.getDraft(ID)).not.toBeNull();
   });
 
+  it('lưu bị 404 (cây đã bị xoá ở nơi khác) → "Cây này không còn nữa.", ngừng lưu, giữ nháp', async () => {
+    const mine = defaultRoom();
+    mine.tree = { ...mine.tree, slotCount: 9 };
+    storage.setDraft(ID, { room: mine, baseVersion: 2, savedAt: '' });
+    mocked.getOwnerTree.mockResolvedValue(ownerRoom());
+    mocked.saveRoom.mockRejectedValue(new ApiError(404, 'not_found', 'x'));
+    renderAt();
+    expect(await screen.findByText('Cây này không còn nữa.')).toBeInTheDocument();
+    await userEvent.click(screen.getAllByRole('button', { name: 'Xong' })[0]!);
+    expect(await screen.findByText('Chưa lưu được — thay đổi vẫn giữ trên máy.')).toBeInTheDocument();
+    expect(mocked.saveRoom).toHaveBeenCalledTimes(1);
+    expect(storage.getDraft(ID)!.room.tree.slotCount).toBe(9);
+  });
+
   it('tên cây có HTML hiển thị nguyên chuỗi dạng text', async () => {
     const evil = '<img src=x onerror=alert(1)>';
     mocked.getOwnerTree.mockRejectedValue(unauthorized());
@@ -295,7 +309,7 @@ describe('RoomPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Phông nền' }));
     await userEvent.click(screen.getByRole('button', { name: 'Nhà gỗ' }));
     await userEvent.click(screen.getAllByRole('button', { name: 'Xong' })[0]!);
-    expect(await screen.findByText('Mất mạng — thay đổi được giữ trên máy')).toBeInTheDocument();
+    expect(await screen.findByText('Chưa lưu được — thay đổi vẫn giữ trên máy.')).toBeInTheDocument();
     expect(screen.getByText('Chưa lưu')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Sửa phòng/ })).not.toBeInTheDocument();
     expect(mocked.saveRoom).toHaveBeenCalledTimes(1);
