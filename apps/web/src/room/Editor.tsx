@@ -28,7 +28,7 @@ export function VariantArrows({ store }: P) {
   );
 }
 
-export function ItemToolbar({ store }: P) {
+export function ItemToolbar({ store, showStyle = true }: P & { showStyle?: boolean }) {
   const it = useSelectedItem(store);
   if (!it) return null;
   const { scale, flip, openPanel, remove } = store.getState();
@@ -38,9 +38,11 @@ export function ItemToolbar({ store }: P) {
       <button type="button" className="tb" aria-label="Nhỏ hơn" onClick={() => scale(-1)}>−</button>
       <button type="button" className="tb" aria-label="To hơn" onClick={() => scale(1)}>＋</button>
       <button type="button" className="tb wide" aria-label="Lật" onClick={flip}>⇋ Lật</button>
-      <button type="button" className="tb wide" aria-label="Đổi kiểu" onClick={() => openPanel(isTree ? 'tree' : 'variant')}>
-        Đổi kiểu
-      </button>
+      {showStyle ? (
+        <button type="button" className="tb wide" aria-label="Đổi kiểu" onClick={() => openPanel(isTree ? 'tree' : 'variant')}>
+          Đổi kiểu
+        </button>
+      ) : null}
       {isTree ? null : (
         <button type="button" className="tb wide" aria-label="Xoá" onClick={remove}>Xoá</button>
       )}
@@ -64,7 +66,7 @@ export function VariantStrip({ store, mode = 'strip' }: M) {
   if (!it || it.type === 'tree') return null;
   const variants = catalog.items[it.type]!.variants;
   return (
-    <div className={mode === 'panel' ? 'strip panel' : 'strip'}>
+    <div className={mode === 'panel' ? 'strip-panel' : 'strip'}>
       <div className="scroll-x">
         {Object.entries(variants).map(([key, v]) => (
           <button
@@ -99,7 +101,7 @@ export function TreeStrip({ store, mode = 'strip' }: M) {
       <button key={key} type="button" className="chip" aria-pressed={on} onClick={onClick}>{text}</button>
     );
   return (
-    <div className={mode === 'panel' ? 'strip panel' : 'strip'}>
+    <div className={mode === 'panel' ? 'strip-panel' : 'strip'}>
       <div className="tabs scroll-x" role="tablist">
         {TREE_TABS.map(([k, text]) => (
           <button key={k} type="button" role="tab" className="chip" aria-selected={tab === k} onClick={() => setTreeTab(k)}>
@@ -127,7 +129,7 @@ export function TreeStrip({ store, mode = 'strip' }: M) {
 export function BackgroundStrip({ store, mode = 'strip' }: M) {
   const bg = useEditor(store, (s) => s.room.background);
   return (
-    <div className={mode === 'panel' ? 'strip panel' : 'strip'}>
+    <div className={mode === 'panel' ? 'strip-panel' : 'strip'}>
       <div className="scroll-x">
         {Object.entries(catalog.backgrounds).map(([key, b]) => (
           <button
@@ -194,13 +196,17 @@ function AddTrayBody({ store, mode = 'strip' }: M) {
 const SAVE_TEXT = { saved: 'Đã lưu', saving: 'Đang lưu', unsaved: 'Chưa lưu' } as const;
 
 export function EditorTopBar({
-  store, onDone, doneLabel, saveState,
-}: P & { onDone: () => void; doneLabel: 'Hoàn tất' | 'Xong'; saveState?: keyof typeof SAVE_TEXT }) {
+  store, onDone, doneLabel, saveState, showTools = true,
+}: P & { onDone: () => void; doneLabel: 'Hoàn tất' | 'Xong'; saveState?: keyof typeof SAVE_TEXT; showTools?: boolean }) {
   const { openPanel } = store.getState();
   return (
     <div className="topbar">
-      <button type="button" className="pillbtn" onClick={() => openPanel('add')}>＋ Thêm đồ</button>
-      <button type="button" className="pillbtn" onClick={() => openPanel('bg')}>Phông nền</button>
+      {showTools ? (
+        <>
+          <button type="button" className="pillbtn" onClick={() => openPanel('add')}>＋ Thêm đồ</button>
+          <button type="button" className="pillbtn" onClick={() => openPanel('bg')}>Phông nền</button>
+        </>
+      ) : null}
       {saveState ? (
         <span className={`save save-${saveState}`}><i aria-hidden="true" />{SAVE_TEXT[saveState]}</span>
       ) : null}

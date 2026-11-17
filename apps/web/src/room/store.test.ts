@@ -77,3 +77,16 @@ describe('editor store', () => {
     expect(s.getState().treeTab).toBe('wood');
   });
 });
+
+describe('select(null) và panel', () => {
+  it('đóng dải kiểu/cây, giữ phông nền và khay thêm đồ', () => {
+    const s = createEditorStore(defaultRoom());
+    const id = s.getState().room.items.find((i) => i.type === 'gift')!.clientId;
+    for (const [panel, kept] of [['variant', null], ['tree', null], ['bg', 'bg'], ['add', 'add']] as const) {
+      s.getState().select(id);
+      s.getState().openPanel(panel);
+      s.getState().select(null);
+      expect(s.getState().panel).toBe(kept);
+    }
+  });
+});

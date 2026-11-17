@@ -1,7 +1,7 @@
-import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ComponentProps } from 'react';
 import { catalog } from '../lib/catalog';
 import {
-  AddTray, BackgroundStrip, ItemToolbar, TreeStrip, VariantArrows, VariantStrip,
+  AddTray, BackgroundStrip, EditorTopBar, ItemToolbar, TreeStrip, VariantArrows, VariantStrip,
 } from './Editor';
 import { useDrag } from './drag';
 import { cameraShift, type Fit } from './fit';
@@ -23,7 +23,7 @@ export function useIsDesktop(): boolean {
   return on;
 }
 
-type Props = { store: EditorStore; topBar: ReactNode };
+type Props = { store: EditorStore; topBar: Omit<ComponentProps<typeof EditorTopBar>, 'store' | 'showTools'> };
 
 export function EditorLayout({ store, topBar }: Props) {
   const desktop = useIsDesktop();
@@ -41,12 +41,11 @@ export function EditorLayout({ store, topBar }: Props) {
   const dockRef = useRef<HTMLDivElement | null>(null);
   const [shift, setShift] = useState(0);
 
-  // Dải đang mở che món đang chọn thì dời phòng lên (chỉ điện thoại).
-  const stripOpen = panel === 'variant' || panel === 'tree' || panel === 'bg';
+  // Phần dưới (dải hoặc mũi tên + thanh công cụ) che món đang chọn thì dời phòng lên (chỉ điện thoại).
   useLayoutEffect(() => {
     const layout = layoutRef.current;
     const dock = dockRef.current;
-    if (desktop || !stripOpen || !selected || !fit || !layout || !dock) {
+    if (desktop || !selected || !fit || !layout || !dock) {
       setShift(0);
       return;
     }
@@ -54,7 +53,7 @@ export function EditorLayout({ store, topBar }: Props) {
     const itemBottom = selected.y - v.ay * selected.scale + v.h * selected.scale;
     const obstacleTop = dock.getBoundingClientRect().top - layout.getBoundingClientRect().top;
     setShift(cameraShift(itemBottom, fit.top, fit.scale, obstacleTop));
-  }, [desktop, stripOpen, selected, fit, panel]);
+  }, [desktop, selected, fit, panel]);
 
   const stage = (reserveTop: number) => (
     <RoomStage
@@ -70,25 +69,25 @@ export function EditorLayout({ store, topBar }: Props) {
 
   if (desktop) {
     return (
-      <div ref={layoutRef} className="layout desktop">
-        <aside className="col col-left scroll-y" data-testid="col-left">
+      <div ref={layoutRef} className="layout layout-desktop">
+        <aside className="side-col scroll-y" data-testid="col-left">
           <h2 className="lab">Thêm đồ</h2>
           <AddTray store={store} mode="panel" />
           <h2 className="lab">Phông nền</h2>
           <BackgroundStrip store={store} mode="panel" />
         </aside>
         <div className="col-mid">
-          <div className="col-mid-top">{topBar}</div>
+          <div className="col-mid-top"><EditorTopBar store={store} showTools={false} {...topBar} /></div>
           <div className="col-mid-stage">{stage(0)}</div>
         </div>
-        <aside className="col col-right scroll-y" data-testid="col-right">
+        <aside className="side-col scroll-y" data-testid="col-right">
           {selected ? (
             <>
               <VariantArrows store={store} />
               {selected.type === 'tree'
                 ? <TreeStrip store={store} mode="panel" />
                 : <VariantStrip store={store} mode="panel" />}
-              <ItemToolbar store={store} />
+              <ItemToolbar store={store} showStyle={false} />
             </>
           ) : (
             <p className="hint">Chạm một món để chỉnh</p>
@@ -99,14 +98,14 @@ export function EditorLayout({ store, topBar }: Props) {
   }
 
   return (
-    <div ref={layoutRef} className="layout phone">
+    <div ref={layoutRef} className="layout layout-phone">
       <div
         data-camera=""
         style={{ position: 'absolute', inset: 0, transform: shift ? `translateY(-${shift}px)` : 'translateY(0px)', transition: 'transform 250ms ease' }}
       >
         {stage(TOP_RESERVE)}
       </div>
-      <div className="phone-top">{topBar}</div>
+      <div className="phone-top"><EditorTopBar store={store} {...topBar} /></div>
       <div ref={dockRef} data-dock="" className="dock">
         {panel === 'variant' ? <VariantStrip store={store} />
           : panel === 'tree' ? <TreeStrip store={store} />

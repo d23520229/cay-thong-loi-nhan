@@ -49,7 +49,12 @@ export function createEditorStore(initial: Room): EditorStore {
       panel: null,
       treeTab: 'shape',
       revision: 0,
-      select: (id) => set({ selectedId: id }),
+      select: (id) =>
+        set((s) => ({
+          selectedId: id,
+          // Bỏ chọn thì dải kiểu/cây không còn món để chỉnh nên đóng; phông nền và khay thêm đồ không phụ thuộc món.
+          panel: id === null && (s.panel === 'variant' || s.panel === 'tree') ? null : s.panel,
+        })),
       move: (id, x, y) => apply((r) => moveItem(r, id, x, y)),
       scale: (dir) => withSelected((r, id) => scaleItem(r, id, dir)),
       flip: () => withSelected(flipItem),

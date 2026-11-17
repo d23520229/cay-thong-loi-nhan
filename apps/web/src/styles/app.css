@@ -53,13 +53,13 @@
 .phone-top { position: absolute; top: 0; left: 0; right: 0; padding: 6px 8px; }
 .dock { position: absolute; left: 0; right: 0; bottom: 0; padding: 0 8px 8px; display: flex; flex-direction: column; gap: 6px; }
 .dock .strip { position: static; flex-direction: row; padding: 8px; border-radius: 22px; animation: none; }
-.layout.desktop { display: grid; grid-template-columns: 280px 1fr 300px; }
-.col { min-height: 0; padding: 12px; display: flex; flex-direction: column; gap: 10px; background: rgba(36, 29, 42, .97); }
+.layout-desktop { display: grid; grid-template-columns: 280px 1fr 300px; grid-template-rows: minmax(0, 1fr); }
+.side-col { min-height: 0; padding: 12px; display: flex; flex-direction: column; gap: 10px; background: rgba(36, 29, 42, .97); }
 .col-mid { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
 .col-mid-top { padding: 8px; }
 .col-mid-stage { flex: 1; min-height: 0; }
-.col h2 { margin: 0; font-weight: 400; }
+.side-col h2 { margin: 0; font-weight: 400; }
 .panel-list { display: flex; flex-direction: column; gap: 8px; }
-.strip.panel { flex-direction: column; align-items: stretch; box-shadow: none; background: transparent; padding: 0; }
-.strip.panel .scroll-x { display: flex; flex-wrap: wrap; gap: 8px; overflow: visible; }
+.strip-panel { display: flex; flex-direction: column; gap: 10px; }
+.strip-panel .scroll-x { display: flex; flex-wrap: wrap; gap: 8px; overflow: visible; }
 .hint { font-size: 18px; color: var(--muted); margin: 0; }
