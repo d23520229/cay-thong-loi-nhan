@@ -257,4 +257,117 @@ describe('autosave', () => {
     await vi.advanceTimersByTimeAsync(10000);
     expect(t.saveRoom).toHaveBeenCalledTimes(2);
   });
+  it('sau stop(), lượt lưu đang chạy xong (thành công hay lỗi) không gọi callback nào', async () => {
+    let release!: (v: { roomVersion: number }) => void;
+    const t = track(setup());
+    t.saveRoom.mockImplementationOnce(() => new Promise((r) => (release = r)));
+    t.store.getState().setTree({ slotCount: 9 });
+    await vi.advanceTimersByTimeAsync(1500);
+    t.store.getState().setTree({ slotCount: 16 });
+    t.a.stop();
+    const before = t.onState.mock.calls.length;
+    release({ roomVersion: 4 });
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(t.onState.mock.calls.length).toBe(before);
+    expect(t.saveRoom).toHaveBeenCalledTimes(1);
+
+    let fail!: (e: unknown) => void;
+    const t2 = track(setup());
+    t2.saveRoom.mockImplementationOnce(() => new Promise((_r, j) => (fail = j)));
+    t2.store.getState().setTree({ slotCount: 9 });
+    await vi.advanceTimersByTimeAsync(1500);
+    t2.a.stop();
+    const before2 = t2.onState.mock.calls.length;
+    fail(new ApiError(401, 'owner_required', 'x'));
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(t2.onState.mock.calls.length).toBe(before2);
+    expect(t2.onUnauthorized).not.toHaveBeenCalled();
+  });
+
+  it('keepMine coi phòng server là bản đã lưu: slots_in_use sau đó trả slotCount về giá trị của server', async () => {
+    const other = defaultRoom();
+    other.tree = { ...other.tree, slotCount: 16 };
+    const server = serverRoom(other, 7);
+    const t = track(setup());
+    t.saveRoom.mockRejectedValueOnce(new ApiError(409, 'version_conflict', 'x', { room: server }));
+    t.store.getState().setTree({ slotCount: 9 });
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(t.onConflict).toHaveBeenCalledTimes(1);
+    t.saveRoom.mockRejectedValueOnce(new ApiError(409, 'slots_in_use', 'Đã có lời nhắn.'));
+    t.a.keepMine(server);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(t.store.getState().room.tree.slotCount).toBe(16);
+  });
+
+  it('slots_in_use mà trả slotCount không đổi gì vẫn hẹn lưu lại, không bỏ rơi thay đổi mới hơn', async () => {
+    let fail!: (e: unknown) => void;
+    const t = track(setup());
+    t.saveRoom.mockImplementationOnce(() => new Promise((_r, j) => (fail = j)));
+    t.store.getState().setTree({ slotCount: 9 });
+    await vi.advanceTimersByTimeAsync(1500);
+    // Trong lúc gửi: trả về 12 và đổi phông — slotCount đã bằng bản đã lưu.
+    t.store.getState().setTree({ slotCount: 12 });
+    t.store.getState().setBackground('night');
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(t.saveRoom).toHaveBeenCalledTimes(1);
+    // setTree hiện luôn tạo phòng mới; giả lập trường hợp trả về không đổi gì (không tăng revision).
+    t.store.setState({ setTree: () => {} });
+    fail(new ApiError(409, 'slots_in_use', 'Đã có lời nhắn.'));
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(t.saveRoom).toHaveBeenCalledTimes(2);
+    expect(t.saveRoom.mock.calls[1]![2].background).toBe('night');
+    expect(t.onState).toHaveBeenLastCalledWith('saved');
+  });
+
+  it('xung đột → sửa thêm khi bảng đang mở → keepMine gửi bản mới nhất với roomVersion mới', async () => {
+    const server = serverRoom(defaultRoom(), 7);
+    const t = track(setup());
+    t.saveRoom.mockRejectedValueOnce(new ApiError(409, 'version_conflict', 'x', { room: server }));
+    t.store.getState().setTree({ slotCount: 9 });
+    await vi.advanceTimersByTimeAsync(1500);
+    t.store.getState().setTree({ slotCount: 20 });
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(t.saveRoom).toHaveBeenCalledTimes(1);
+    t.a.keepMine(server);
+    await vi.advanceTimersByTimeAsync(0);
+    expect(t.saveRoom).toHaveBeenCalledTimes(2);
+    expect(t.saveRoom).toHaveBeenLastCalledWith('t1', 7, t.store.getState().room);
+    expect(t.saveRoom.mock.calls[1]![2].tree.slotCount).toBe(20);
+  });
+
+  it('mất mạng → sửa tiếp → có mạng thì gửi bản mới nhất', async () => {
+    const t = track(setup());
+    t.saveRoom.mockRejectedValueOnce(new ApiError(0, 'network', 'x'));
+    t.store.getState().setTree({ slotCount: 9 });
+    await vi.advanceTimersByTimeAsync(1500);
+    t.store.getState().setTree({ slotCount: 25 });
+    window.dispatchEvent(new Event('online'));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(t.saveRoom).toHaveBeenCalledTimes(2);
+    expect(t.saveRoom.mock.calls[1]![2].tree.slotCount).toBe(25);
+    expect(t.onState).toHaveBeenLastCalledWith('saved');
+  });
+
+  it('store.replaceRoom không tăng revision nên không ghi nháp hay hẹn lưu', async () => {
+    const t = track(setup());
+    const other = defaultRoom();
+    other.background = 'night';
+    t.store.getState().replaceRoom(other);
+    expect(t.store.getState().revision).toBe(0);
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(t.saveRoom).not.toHaveBeenCalled();
+    expect(storage.getDraft('t1')).toBeNull();
+  });
+  it('401 rồi đăng nhập lại: flush gửi lại thay đổi chưa lưu dù không còn hẹn giờ nào', async () => {
+    const t = track(setup());
+    t.saveRoom.mockRejectedValueOnce(new ApiError(401, 'owner_required', 'x'));
+    t.store.getState().setTree({ slotCount: 9 });
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(t.onUnauthorized).toHaveBeenCalledTimes(1);
+    await t.a.flush();
+    expect(t.saveRoom).toHaveBeenCalledTimes(2);
+    expect(t.onState).toHaveBeenLastCalledWith('saved');
+    await t.a.flush();
+    expect(t.saveRoom).toHaveBeenCalledTimes(2);
+  });
 });
