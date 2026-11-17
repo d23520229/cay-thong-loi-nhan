@@ -18,7 +18,7 @@ tools/
 docs/         Đặc tả, lược đồ cơ sở dữ liệu
 ```
 
-## Trạng thái hiện tại (16/11/2026)
+## Trạng thái hiện tại (18/11/2026)
 
 | Phần | Trạng thái |
 |---|---|
@@ -27,9 +27,9 @@ docs/         Đặc tả, lược đồ cơ sở dữ liệu
 | `packages/shared`: catalog, hình học, xếp điểm nhắn | Xong (JS), có kiểm thử; sẽ chuyển TypeScript ở M1 |
 | CSS chuyển động (cây, lửa, thú cưng, phụ kiện, hiệu ứng chạm) | Xong, `apps/web/src/styles/room-animations.css` |
 | Lược đồ PostgreSQL + kiểm thử trên PGlite | Xong, `apps/server/src/db/migrations/0000_init.sql` |
-| Server: khung Fastify, tính giai đoạn | Khung |
+| Server: API (cấu hình, cây, xác thực, phòng, lời nhắn, chủ cây), tính giai đoạn, migration | Xong (M1, nhánh `m1-backend`) |
 | Web: trang chủ, tạo cây, sửa phòng tự do, tự lưu (M2) | Xong (nhánh `m2-frontend`) |
-| API, giao diện phòng, bạn bè, chủ cây, quản trị | Chưa làm (M1–M3) |
+| Bạn bè treo lời nhắn, chủ cây đọc/đếm ngược, chia sẻ + OG (M3), trang quản trị (M3b) | Chưa làm |
 
 ## Chạy trên máy
 
