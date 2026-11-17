@@ -75,6 +75,7 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 - Có trang quản trị `/quan-tri`: đăng nhập Google theo danh sách cho phép, vai trò admin/moderator, không đọc lời nhắn trừ bản chụp báo cáo, có nhật ký và nút tạm dừng khẩn cấp.
 - Dịch vụ chạy đến hết 31/12; từ 26/12 hiện thông báo tải ảnh; xoá dữ liệu 07/01/2027.
 - Chủ cây vào phòng: mặc định chế độ **"Xem"** (phòng như khách thấy + đếm ngược + số lời nhắn + nút chia sẻ), nút **"Sửa phòng"** mở khung chỉnh sửa.
+- **M2 (chốt 18/11, chi tiết đặc tả 6.5):** trang chủ luôn hiện khung giới thiệu + "Bắt đầu tạo cây" + nút "Bạn đã có cây?" (mở lại bằng mã cây/link + PIN hoặc Google); không giới hạn số cây trên một máy; phòng luôn hiện trọn theo chiều rộng (sửa phương án C: camera chỉ dời khi dải chọn che món); lệch phiên bản khi lưu → hỏi chủ cây giữ bản nào; dựng theo phương án A (module phòng thuần có test).
 - **Hiện số lời nhắn** cho chủ cây (O10): trong app, kèm số mới kể từ lần vào trước; bật/tắt được, mặc định hiện. Không làm thông báo đẩy.
 
 **Đồ hoạ**

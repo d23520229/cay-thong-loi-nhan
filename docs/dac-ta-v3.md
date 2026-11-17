@@ -66,7 +66,7 @@ Mỗi người dùng có một **căn phòng Noel** vẽ theo phong cách màu n
 | 13 | Xác thực chủ cây | Nhớ thiết bị + **bắt buộc chọn 1 cách khôi phục**: đăng nhập Google hoặc mã PIN 6 số; link riêng làm dự phòng |
 | 14 | Sửa lời nhắn | **Trong 15 phút** kể từ lúc tạo, **trên đúng thiết bị đã viết**; khoá sớm hơn nếu chủ cây đã mở |
 | 15 | Điểm nhắn | Chủ cây chọn số theo mốc 6/9/12/16/20/25/30; máy tự xếp đều trên tán |
-| 16 | Đổi kiểu trên điện thoại | Phương án C: mũi tên ‹ › cạnh món + dải chọn mỏng, camera tự dời tới món |
+| 16 | Đổi kiểu trên điện thoại | Phương án C: mũi tên ‹ › cạnh món + dải chọn mỏng. **Sửa 18/11:** phòng luôn hiện trọn theo chiều rộng; camera chỉ dời khi dải chọn che món đang sửa |
 | 17 | Trên máy tính | Hai bảng bên: trái là khay đồ và phông nền, phải là chỉnh món đang chọn |
 | 18 | Cách làm | Làm đầy đủ chức năng, ưu tiên P0 trước |
 | 19 | Công nghệ | TypeScript; React + Vite; Fastify; PostgreSQL 16 + Drizzle; pnpm monorepo |
@@ -302,6 +302,72 @@ Một tên miền cho cả trang và API: cookie đơn giản, không cần cấ
 - **`events`:** M1 chỉ ghi sự kiện server tự biết (tạo phòng, lưu phòng, treo/sửa/gỡ, mở lời nhắn); sự kiện chỉ trình duyệt biết để M3.
 - **Google:** test dùng bộ xác minh giả; thiếu `GOOGLE_CLIENT_ID` thì API Google trả 503, PIN vẫn chạy.
 - **Chống giả mạo yêu cầu:** API ghi chỉ nhận `Content-Type: application/json`, kết hợp cookie `SameSite=Lax`.
+
+### 6.5 Thiết kế frontend M2 — phòng tự do (chốt 18/11)
+
+**Mục đích.** Chủ cây tạo và trang trí căn phòng trên điện thoại và máy tính, mọi thay đổi tự lưu lên server M1. Đây là nền cho M3 (khách treo lời nhắn, mở quà), nên quy tắc phòng phải tách khỏi giao diện và có test. Mẫu các màn đã duyệt ngày 18/11 (bản phác trong `.superpowers/brainstorm/`, không commit).
+
+**Mục tiêu M2:** R1–R10 (mục 3.1), luồng tạo cây (9.1) có khung giới thiệu, chủ cây mở lại phòng (9.2, trừ Google), hai chế độ Xem / Sửa phòng (khung), thông báo lỗi lưu phòng (9.3, 9.11).
+**Không làm ở M2:** khách zoom cây, viết lời nhắn, hiệu ứng chạm (M3); nội dung chế độ Xem — đếm ngược, số lời nhắn, chia sẻ Zalo/Messenger, mở quà (M3); OG (M3); hoàn tác, phòng ngẫu nhiên (R11, R12 — P1, chỉ làm nếu còn thời gian sau khi xong P0); Playwright (M4).
+**Không được xảy ra:** mất thay đổi của chủ cây khi rớt mạng hoặc tải lại trang; kéo thả giật trên điện thoại; phòng bị cắt mất phần nào trên bất kỳ cỡ màn hình nào; lộ khoá link riêng trong thanh địa chỉ sau khi đã đăng nhập.
+
+**Cách dựng (phương án A, chủ dự án chọn 18/11).** Phương án đã cân nhắc: (A) tách "bộ não" phòng thành module thuần có test, component chỉ hiển thị; (B) chép gần nguyên khối logic bản thiết kế canvas vào một component lớn — nhanh hơn 1–2 ngày nhưng không test được và M3 phải gỡ ra. Chọn A.
+
+**Đường dẫn (React Router):**
+
+| Đường dẫn | Nội dung |
+|---|---|
+| `/` | Phòng mặc định làm mờ + khung giới thiệu (màn 1a, luôn giống nhau với mọi máy): giới thiệu 3 dòng, lời chúc, nút chính "Bắt đầu tạo cây" (không có nút đóng), nút chữ nhỏ **"Bạn đã có cây?"** mở khung "Mở lại cây của bạn" (xem dưới). `/?ref={id}` lưu `ref` vào `sessionStorage` để gửi kèm khi tạo phòng (S4). |
+| `/tao` | Trang trí bản nháp (chưa có trên server; lưu `localStorage` khoá `draft:new`) → nút "Hoàn tất" → bảng: tên chủ cây (bắt buộc, ≤ 30), tên cây (≤ 40), chọn "Mã PIN 6 số" / "Google", cảnh báo mất PIN → `POST /api/trees` → màn "Tạo xong": **mã cây** (8 ký tự, ví dụ `k7m2xq4a`), link gửi bạn bè, link riêng (nút sao chép), nhắc "Ghi lại mã cây và PIN để mở cây trên máy khác", nút "Về phòng của tôi". |
+| `/c/:id` | Gọi `GET /api/trees/:id/owner`: 200 → chủ cây (chế độ Xem, nút "Sửa phòng"); 401 → khách (chỉ xem phòng, nút "Tạo cây của bạn" → `/?ref={id}`, nút nhỏ "Tôi là chủ cây"); 404 → "Không tìm thấy cây này" + nút tạo cây. Có `#k=` → `POST auth/link` rồi xoá `#k=` khỏi địa chỉ bằng `history.replaceState`. |
+
+Khách trong phòng bạn bè bấm "Tạo cây của bạn" thấy đúng màn 1a (không có màn riêng). **Không giới hạn số cây trên một máy** (chủ dự án chốt 18/11): ai cũng có thể bấm "Bắt đầu tạo cây" để làm thêm cây.
+
+**Khung "Mở lại cây của bạn"** (bấm "Bạn đã có cây?"; chủ dự án chốt 18/11). Mã PIN gắn với từng cây, nên phải biết mở cây nào:
+- Ô **"Mã cây hoặc link cây"**: nhận mã 8 ký tự (`^[a-z2-9]{8}$`) hoặc dán nguyên link (link gửi bạn bè `/c/{id}` hay link riêng `/c/{id}#k=...`; dán link riêng thì vào thẳng bằng `auth/link`, không cần PIN). Sai định dạng → "Mã cây chưa đúng".
+- Ô **PIN 6 số** + nút "Mở cây" → `POST /api/trees/{id}/auth/pin`; thành công → chuyển tới `/c/{id}` (chế độ Xem của chủ cây). Lỗi dùng chung thông báo với bảng "Chào chủ cây" (sai PIN, bị khoá 15 phút); 404 → "Không tìm thấy cây này".
+- Nút **"Đăng nhập bằng Google"** → `POST /api/auth/google` không kèm `treeId`: 1 cây thì mở luôn, nhiều cây thì hiện danh sách tên cây để chọn, 0 cây → "Tài khoản này chưa có cây nào".
+- **Máy có ghi nhớ:** `localStorage` khoá `myTrees` (`[{ id, title, createdAt }]`, ghi khi tạo phòng hoặc đăng nhập thành công). Có thì điền sẵn ô mã cây (cây mới nhất; nhiều cây thì hiện danh sách tên để chọn). Chọn một cây mà phiên trên máy còn hiệu lực (`GET /owner` trả 200) → mở thẳng, không hỏi PIN. Server trả 404 → xoá cây đó khỏi `myTrees`.
+
+**Bố cục.** Phòng hiện trọn (mục 11). Điện thoại: thanh trên (Thêm đồ, Phông nền, chấm trạng thái lưu, Xong/Hoàn tất) đặt trong phần dư phía trên nếu đủ ≥ 44px; mũi tên ‹ ›, thanh công cụ (nhỏ hơn, to hơn, lật, đổi kiểu, xoá) và dải chọn đặt trong phần dư phía dưới; không đủ chỗ thì đè lên phòng và phòng tự đẩy lên để món đang chọn nằm trên dải. Từ 900px: bảng trái (Thêm đồ, Phông nền), phòng giữa (co theo chiều cao), bảng phải (món đang chọn: các kiểu, to/nhỏ, lật, xoá; cây có tab Dáng · Màu · Thân · Gỗ · Điểm nhắn).
+
+**Module phòng `apps/web/src/room/model.ts` (thuần, không React, có test).** Quy tắc lấy từ bản thiết kế canvas:
+- Thứ tự vẽ: `rank = (wall ? 0 : rug ? 2000 : 4000) + y` — tường sau cùng, thảm, rồi đồ sàn; cùng lớp thì y lớn hơn (gần người xem) nằm trước.
+- Giới hạn khi kéo: x trong 10–710; món lớp `wall`: y trong 200–750 (`floorY` − 20); món khác: y trong 810 (`floorY` + 40) – 1075.
+- Phóng to/thu nhỏ bước 0,1 trong 0,5–1,6; lật ngang.
+- Mũi tên ‹ ›: đổi kiểu theo thứ tự trong `catalog.json`, quay vòng; với cây thông thì đổi màu tán.
+- Thêm món: đặt ở (360, 380) nếu lớp tường, (360, 1000) nếu sàn; tối đa 25 món; không xoá được cây.
+- `clientId` sinh ngẫu nhiên, không dùng lại cho món khác (tránh lỗi đổi loại khi lưu).
+- Hàm chuyển sang/đọc từ dạng `Room` của `@ctln/shared` để gửi API; mọi phòng gửi đi phải qua `validateRoom`.
+
+**Dựng phòng (`room/Scene`).** Ảnh WebP ở `/assets/...` theo `catalog.json` (kích thước, điểm neo `ax, ay`). Cây = thân + tán (ảnh) + đèn + ngôi sao (SVG `lightsSource`, `starSource` của `@ctln/art/tree`) + đung đưa. Lò sưởi có lửa (`fire2Overlay`), cửa sổ có tuyết (`windowSnowOverlay`), thú cưng là SVG động (`petSVGSoft`). Lớp SVG chèn nguyên văn từ `packages/art` (chuỗi tĩnh, không chứa dữ liệu người dùng), toạ độ lớp phủ theo `crop` trong catalog. CSS chuyển động: `room-animations.css` + `TREE2_CSS`; tôn trọng "giảm chuyển động".
+
+**Kéo thả (`room/DragLayer`).** Pointer Events; khi kéo chỉ đổi `transform` của món qua ref (không render lại React), thả tay mới ghi vị trí vào store và tính lại thứ tự vẽ. Chạm nền bỏ chọn.
+
+**Trạng thái.** Zustand: phòng đang sửa, món đang chọn, dải/bảng đang mở, trạng thái lưu. TanStack Query: dữ liệu từ server (`/api/config`, phòng, `/owner`).
+
+**Tự lưu (`room/autosave`).** Sau 1,5 giây không thao tác gửi `PUT /api/trees/:id/room` kèm `roomVersion`. Chấm trạng thái: Đã lưu / Đang lưu / Chưa lưu. Mỗi thay đổi ghi luôn `localStorage` khoá `draft:{treeId}`; lưu thành công thì xoá. Xử lý trả về:
+- 409 `version_conflict` → **hỏi chủ cây** (chủ dự án chọn 18/11): bảng "Có thay đổi chưa lưu trên máy này, nhưng phòng đã được sửa ở thiết bị khác" với hai nút **"Giữ bản trên máy này"** (gửi lại bản trên máy kèm `roomVersion` mới nhận trong `error.room`) và **"Dùng bản mới nhất"** (thay bằng `error.room`, xoá nháp).
+- 409 `slots_in_use` → trả số điểm nhắn về giá trị cũ, hiện thông báo của server.
+- 403 `write_closed` → chuyển về chế độ Xem, ẩn "Sửa phòng".
+- 401 → mất phiên chủ cây: hiện bảng "Tôi là chủ cây".
+- Lỗi mạng / 5xx / 429 → giữ "Chưa lưu", thử lại sau 5 giây và khi trình duyệt báo có mạng; thông báo "Mất mạng — thay đổi được giữ trên máy".
+- Nháp `draft:{treeId}` lưu cả phòng kèm `baseVersion` (bản server mà nháp sửa từ đó). Mở lại phòng mà còn nháp: `baseVersion` bằng bản server → gửi nháp lên luôn; server đã mới hơn → hiện đúng bảng hỏi ở trên.
+
+**Chủ cây vào từ máy khác.** Bảng "Chào chủ cây": ô PIN 6 số → `POST auth/pin`; sai → "Mã PIN chưa đúng"; 429 `pin_locked` → "Nhập sai quá nhiều lần, thử lại sau 15 phút" (dùng `retryAt`); dòng "Có link riêng? Mở link đó là vào được ngay".
+
+**Google.** `/api/config` trả thêm `googleClientId` (chuỗi công khai, `null` nếu chưa cấu hình). Chưa có → nút Google hiện mờ, ghi "sắp có", chỉ dùng PIN. Tích hợp Google Identity Services làm khi chủ dự án có Client ID (chậm nhất M4).
+
+**Kiểm thử (Vitest + React Testing Library + jsdom).** `model.ts`: mọi quy tắc trên. Tự lưu: gộp 1,5 giây, từng mã lỗi ở trên, nháp `localStorage` (đồng hồ giả, `fetch` giả). Màn: khung giới thiệu 1a, khung "Mở lại cây của bạn" (đọc mã từ mã 8 ký tự / link thường / link riêng, sai định dạng, PIN sai, bị khoá, mở thẳng khi còn phiên, điền sẵn từ `myTrees`), bảng Hoàn tất (tên bắt buộc, PIN đúng 6 số), màn Tạo xong hiện mã cây, đăng nhập PIN (sai, bị khoá), xoá `#k=` khỏi địa chỉ. Server: test `googleClientId` trong `/api/config`.
+
+**Làm rõ sau lượt đọc thử (18/11):**
+- **Phòng mặc định** = `catalog.defaultRoom` trong `@ctln/shared` (đã có), thêm `clientId` cho từng món. Phòng mờ phía sau khung giới thiệu cũng là phòng này. Dạng gửi API là `Room` của `@ctln/shared/schemas.mjs`: `{ background, tree: { shape, palette, trunkShape, wood, slotCount }, items: [{ clientId, type, variant, x, y, scale, flip }] }` — cây thông cũng là một món trong `items`.
+- **Điểm nhắn và phụ kiện đã treo** không hiện ở M2 (cả chế độ Xem lẫn khách); M3 thêm.
+- **M2 chạy qua Vite dev** (`pnpm dev`, cổng 5173, chuyển `/api` sang 3000). Đặt `BASE_URL=http://localhost:5173` trong `.env` khi phát triển để link "Tạo xong" mở được. Server phục vụ bản build + chuyển mọi đường dẫn trang về `index.html` làm ở M4 khi triển khai.
+- **Bố cục chi tiết** (ngưỡng thanh trên ≥ 44px, bề rộng bảng bên máy tính…) lấy theo CSS của bản thiết kế canvas. Script vẽ mẫu đã duyệt lưu ở `tools/design-canvas/build-mock-m2.mjs` (chạy lại để xem mẫu).
+- **Thư viện test thêm (devDependencies):** `@testing-library/user-event`, `@testing-library/jest-dom`; `apps/web/vitest.config.ts` dùng jsdom. `pnpm test` ở gốc chạy cả test web.
+
+**Để người làm tự quyết:** chia nhỏ component, tên CSS, hiệu ứng mở/đóng bảng, cách nạp trước ảnh — miễn giữ đúng bản thiết kế canvas và mẫu đã duyệt.
 
 ---
 
@@ -773,7 +839,7 @@ flowchart TD
 
 1. Mọi thao tác (kéo, đổi kiểu, phóng to, thêm, xoá) cập nhật giao diện ngay.
 2. Sau 1,5 giây không thao tác, gửi `PUT /room` kèm `roomVersion`.
-3. Lệch phiên bản (409): hiện "Phòng vừa được sửa ở thiết bị khác" và tải bản mới.
+3. Lệch phiên bản (409): hỏi chủ cây "Giữ bản trên máy này" hay "Dùng bản mới nhất" (sửa 18/11, xem 6.5).
 4. Mất mạng: giữ bản nháp trong localStorage, thử lại khi có mạng; hiện chấm trạng thái "Đã lưu / Đang lưu / Chưa lưu".
 
 ### 9.4 Bạn bè treo lời nhắn
@@ -880,7 +946,8 @@ Khi bị spam tạo phòng hoặc lời nhắn hàng loạt: quản trị viên 
 
 ## 11. Giao diện & trải nghiệm
 
-- **Điện thoại (phương án C):** chọn món → mũi tên ‹ › và nhãn kiểu ngay cạnh món; "Đổi kiểu" mở dải mỏng ở đáy, camera dời tới món; cây thông có tab Dáng · Màu · Thân · Gỗ · Điểm nhắn. Thanh công cụ dưới: nhỏ hơn, to hơn, lật, đổi kiểu, xoá. Nút trên: Thêm đồ, Phông nền.
+- **Phòng luôn hiện trọn (chốt 18/11):** khung 720×1080 co theo chiều rộng màn hình (tỉ lệ = min(rộng/720, cao/1080) của vùng hiển thị); phần dư phủ bằng phông nền làm mờ và dùng cho thanh công cụ. Chỉ khách chạm cây mới phóng to (zoom vào cây).
+- **Điện thoại (phương án C, sửa 18/11):** chọn món → mũi tên ‹ › và nhãn kiểu ngay cạnh món; "Đổi kiểu" mở dải mỏng ở đáy — nằm trong phần dư dưới phòng; máy không đủ chỗ thì phòng tự đẩy lên vừa đủ để món đang chọn không bị che; cây thông có tab Dáng · Màu · Thân · Gỗ · Điểm nhắn. Thanh công cụ dưới: nhỏ hơn, to hơn, lật, đổi kiểu, xoá. Nút trên: Thêm đồ, Phông nền.
 - **Máy tính:** trái là khay đồ + phông nền; giữa là phòng; phải là món đang chọn. Từ 900px trở lên.
 - **Chủ cây có hai chế độ (chốt 16/11):** mặc định **"Xem"** — phòng như khách thấy, cộng thêm đếm ngược, số lời nhắn (O10), nút chia sẻ; từ 0h 24/12 chạm phụ kiện để mở quà. Nút **"Sửa phòng"** vào khung chỉnh sửa (phương án C / hai bảng bên); nút ẩn từ 0h 26/12.
 - **Bạn bè:** lời nhắc chạm cây; zoom vào cây 0,9 giây; bảng viết trượt lên; hiệu ứng chạm đồ vật.
