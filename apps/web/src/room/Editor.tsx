@@ -8,6 +8,8 @@ import { variantLabel } from './model';
 import { useEditor, type EditorStore, type TreeTab } from './store';
 
 type P = { store: EditorStore };
+/** 'strip': dải ngang ở phòng điện thoại; 'panel': khối trong cột máy tính (lưới, không có nút Xong). */
+type M = P & { mode?: 'strip' | 'panel' };
 
 const useSelectedItem = (store: EditorStore) =>
   useEditor(store, (s) => s.room.items.find((i) => i.clientId === s.selectedId) ?? null);
@@ -57,12 +59,12 @@ function Thumb({ type, variant, def }: { type: string; variant: string; def: Ite
   return <img src={assetUrl(def.asset!)} alt="" draggable={false} />;
 }
 
-export function VariantStrip({ store }: P) {
+export function VariantStrip({ store, mode = 'strip' }: M) {
   const it = useSelectedItem(store);
   if (!it || it.type === 'tree') return null;
   const variants = catalog.items[it.type]!.variants;
   return (
-    <div className="strip">
+    <div className={mode === 'panel' ? 'strip panel' : 'strip'}>
       <div className="scroll-x">
         {Object.entries(variants).map(([key, v]) => (
           <button
@@ -77,7 +79,7 @@ export function VariantStrip({ store }: P) {
           </button>
         ))}
       </div>
-      <Button onClick={() => store.getState().openPanel(null)}>Xong</Button>
+      {mode === 'strip' ? <Button onClick={() => store.getState().openPanel(null)}>Xong</Button> : null}
     </div>
   );
 }
@@ -86,7 +88,7 @@ const TREE_TABS: [TreeTab, string][] = [
   ['shape', 'Dáng'], ['palette', 'Màu'], ['trunk', 'Thân'], ['wood', 'Gỗ'], ['slots', 'Điểm nhắn'],
 ];
 
-export function TreeStrip({ store }: P) {
+export function TreeStrip({ store, mode = 'strip' }: M) {
   const tab = useEditor(store, (s) => s.treeTab);
   const tree = useEditor(store, (s) => s.room.tree);
   const { setTree, setTreeTab, openPanel } = store.getState();
@@ -97,7 +99,7 @@ export function TreeStrip({ store }: P) {
       <button key={key} type="button" className="chip" aria-pressed={on} onClick={onClick}>{text}</button>
     );
   return (
-    <div className="strip">
+    <div className={mode === 'panel' ? 'strip panel' : 'strip'}>
       <div className="tabs scroll-x" role="tablist">
         {TREE_TABS.map(([k, text]) => (
           <button key={k} type="button" role="tab" className="chip" aria-selected={tab === k} onClick={() => setTreeTab(k)}>
@@ -117,15 +119,15 @@ export function TreeStrip({ store }: P) {
         {tab === 'slots' && catalog.tree.slotCounts.map((n) =>
           chip(String(n), String(n), tree.slotCount === n, () => setTree({ slotCount: n })))}
       </div>
-      <Button onClick={() => openPanel(null)}>Xong</Button>
+      {mode === 'strip' ? <Button onClick={() => openPanel(null)}>Xong</Button> : null}
     </div>
   );
 }
 
-export function BackgroundStrip({ store }: P) {
+export function BackgroundStrip({ store, mode = 'strip' }: M) {
   const bg = useEditor(store, (s) => s.room.background);
   return (
-    <div className="strip">
+    <div className={mode === 'panel' ? 'strip panel' : 'strip'}>
       <div className="scroll-x">
         {Object.entries(catalog.backgrounds).map(([key, b]) => (
           <button
@@ -140,23 +142,24 @@ export function BackgroundStrip({ store }: P) {
           </button>
         ))}
       </div>
-      <Button onClick={() => store.getState().openPanel(null)}>Xong</Button>
+      {mode === 'strip' ? <Button onClick={() => store.getState().openPanel(null)}>Xong</Button> : null}
     </div>
   );
 }
 
 const ADD_GROUPS = ['window', 'fireplace', 'rug', 'stack', 'gift', 'pet'] as const;
 
-export function AddTray({ store }: P) {
+export function AddTray({ store, mode = 'strip' }: M) {
   const open = useEditor(store, (s) => s.panel === 'add');
   // Thân khay chỉ được dựng khi mở, nên thông báo "đủ 25 món" tự hết khi đóng khay.
+  if (mode === 'panel') return <AddTrayBody store={store} mode="panel" />;
   return open ? <AddTrayBody store={store} /> : null;
 }
 
-function AddTrayBody({ store }: P) {
+function AddTrayBody({ store, mode = 'strip' }: M) {
   const [full, setFull] = useState(false);
-  return (
-    <Sheet title="Thêm đồ vào phòng" onClose={() => store.getState().openPanel(null)}>
+  const body = (
+    <>
       {full ? <div className="notice" role="alert">Phòng đã đủ 25 món</div> : null}
       {ADD_GROUPS.map((type) => {
         const def = catalog.items[type]!;
@@ -179,7 +182,12 @@ function AddTrayBody({ store }: P) {
           </section>
         );
       })}
-    </Sheet>
+    </>
+  );
+  return mode === 'panel' ? (
+    <div className="panel-list">{body}</div>
+  ) : (
+    <Sheet title="Thêm đồ vào phòng" onClose={() => store.getState().openPanel(null)}>{body}</Sheet>
   );
 }
 

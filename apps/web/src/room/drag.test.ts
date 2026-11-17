@@ -89,4 +89,15 @@ describe('createDragController', () => {
     ev('pointermove', 200, 100);
     expect(el.style.translate).toBe('');
   });
+  it('mất bắt con trỏ giữa lúc kéo: dọn trạng thái và cho kéo lại', () => {
+    const { store, el, down, ev } = setup();
+    down(100, 100);
+    ev('pointermove', 140, 100);
+    ev('lostpointercapture', 140, 100);
+    expect(el.style.translate).toBe('');
+    expect(store.getState().revision).toBe(0);
+    down(100, 100);
+    ev('pointermove', 140, 100);
+    expect(el.style.translate).toBe('80px 0px');
+  });
 });

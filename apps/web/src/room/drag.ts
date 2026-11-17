@@ -53,6 +53,7 @@ export function createDragController(store: EditorStore, getScale: () => number)
       el.removeEventListener('pointermove', onMove);
       el.removeEventListener('pointerup', onUp);
       el.removeEventListener('pointercancel', onCancel);
+      el.removeEventListener('lostpointercapture', onCancel);
       el.style.translate = '';
       if (commit && moved) {
         const p = dragPosition(start, ps, { x: ev.clientX, y: ev.clientY }, scale, item.type);
@@ -64,6 +65,8 @@ export function createDragController(store: EditorStore, getScale: () => number)
     el.addEventListener('pointermove', onMove);
     el.addEventListener('pointerup', onUp);
     el.addEventListener('pointercancel', onCancel);
+    // Món bị gỡ khỏi DOM giữa lúc kéo thì trình duyệt chỉ báo mất bắt con trỏ.
+    el.addEventListener('lostpointercapture', onCancel);
   }
 
   function itemRef(clientId: string, el: HTMLDivElement | null) {
