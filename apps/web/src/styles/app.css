@@ -84,7 +84,8 @@
 .row.nowrap { flex-wrap: nowrap; }
 .btn:disabled, .chip:disabled { opacity: .5; cursor: not-allowed; }
 .toast { position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%); padding: 10px 18px; border-radius: 999px;
-  background: var(--cream); color: var(--ink); font-size: 17px; z-index: 10; }
+  background: var(--cream); color: var(--ink); font-size: 17px; z-index: 10;
+  width: max-content; max-width: calc(100% - 32px); box-sizing: border-box; text-align: center; }
 .done-page { position: relative; width: min(100%, 520px); margin: 0 auto; padding: 24px 16px; box-sizing: border-box;
   height: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
 .done-page h1 { margin: 0; font-size: 48px; color: var(--gold); }

@@ -18,6 +18,7 @@ function setup(opts: { version?: number; store?: EditorStore; saveRoom?: SaveFn 
     onWriteClosed: vi.fn(),
     onUnauthorized: vi.fn(),
     onOffline: vi.fn(),
+    onRateLimited: vi.fn(),
   };
   const a = createAutosave({ treeId: 't1', store, version: opts.version ?? 3, api: { saveRoom }, storage, ...cb });
   return { store, saveRoom, a, ...cb };
@@ -181,18 +182,57 @@ describe('autosave', () => {
     expect(t.saveRoom).toHaveBeenCalledTimes(3);
   });
 
-  it.each([
-    [500, 'internal'],
-    [429, 'rate_limited'],
-  ])('lỗi %i cũng thử lại sau 5000ms', async (status, code) => {
+  it('lỗi 500 cũng thử lại sau 5000ms', async () => {
     const t = track(setup());
-    t.saveRoom.mockRejectedValueOnce(new ApiError(status, code, 'x'));
+    t.saveRoom.mockRejectedValueOnce(new ApiError(500, 'internal', 'x'));
     t.store.getState().setTree({ slotCount: 9 });
     await vi.advanceTimersByTimeAsync(1500);
     expect(t.onOffline).toHaveBeenCalledTimes(1);
     await vi.advanceTimersByTimeAsync(5000);
     expect(t.saveRoom).toHaveBeenCalledTimes(2);
     expect(t.onState).toHaveBeenLastCalledWith('saved');
+  });
+
+  it('429 → onRateLimited (không phải onOffline), thử lại sau 60 giây chứ không phải 5 giây', async () => {
+    const t = track(setup());
+    t.saveRoom.mockRejectedValueOnce(new ApiError(429, 'rate_limited', 'x'));
+    t.store.getState().setTree({ slotCount: 9 });
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(t.onRateLimited).toHaveBeenCalledTimes(1);
+    expect(t.onOffline).not.toHaveBeenCalled();
+    expect(t.onState).toHaveBeenLastCalledWith('unsaved');
+    t.store.getState().setTree({ slotCount: 16 }); // sửa tiếp trong lúc bị giới hạn cũng không gửi sớm
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(t.saveRoom).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(60000 - 5000 - 1);
+    expect(t.saveRoom).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(t.saveRoom).toHaveBeenCalledTimes(2);
+    expect(t.saveRoom.mock.calls[1]![2].tree.slotCount).toBe(16);
+    expect(t.onState).toHaveBeenLastCalledWith('saved');
+    expect(storage.getDraft('t1')).toBeNull();
+  });
+
+  it('đã gửi 100 lần trong một giờ → lần sửa sau chờ 60 giây; quá một giờ thì về 1,5 giây', async () => {
+    const t = track(setup());
+    for (let k = 0; k < 100; k++) {
+      t.store.getState().setTree({ slotCount: k % 2 ? 12 : 9 });
+      await vi.advanceTimersByTimeAsync(1500);
+    }
+    expect(t.saveRoom).toHaveBeenCalledTimes(100);
+    t.store.getState().setTree({ slotCount: 16 });
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(t.saveRoom).toHaveBeenCalledTimes(100);
+    await vi.advanceTimersByTimeAsync(60000 - 1500 - 1);
+    expect(t.saveRoom).toHaveBeenCalledTimes(100);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(t.saveRoom).toHaveBeenCalledTimes(101);
+    expect(t.onRateLimited).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(3600000);
+    t.store.getState().setTree({ slotCount: 20 });
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(t.saveRoom).toHaveBeenCalledTimes(102);
   });
 
   it('403 write_closed → onWriteClosed; 401 → onUnauthorized', async () => {

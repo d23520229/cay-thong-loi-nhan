@@ -7,6 +7,10 @@ export type SaveState = 'saved' | 'saving' | 'unsaved';
 
 const DEBOUNCE_MS = 1500;
 const RETRY_MS = 5000;
+// Server giới hạn 120 lần lưu/giờ/cây (đặc tả 10): từ lần gửi thứ 100 trong một giờ thì gộp 60 giây.
+const HOUR_MS = 3600000;
+const SLOW_AFTER = 100;
+const SLOW_MS = 60000;
 
 type Opts = {
   treeId: string;
@@ -16,18 +20,21 @@ type Opts = {
   storage: Pick<typeof storageModule, 'getDraft' | 'setDraft' | 'clearDraft'>;
   setTimer?: typeof setTimeout;
   clearTimer?: typeof clearTimeout;
+  now?: () => number;
   onState(s: SaveState): void;
   onConflict(serverRoom: PublicRoom): void;
   onSlotsInUse(message: string): void;
   onWriteClosed(): void;
   onUnauthorized(): void;
   onOffline(): void;
+  onRateLimited(): void;
 };
 
 /** Tự lưu phòng (đặc tả 6.5 "Tự lưu"): gộp 1,5 giây, nháp `draft:{treeId}`, xử lý từng mã lỗi. */
 export function createAutosave(o: Opts) {
   const setTimer = o.setTimer ?? ((fn: () => void, ms: number) => setTimeout(fn, ms));
   const clearTimer = o.clearTimer ?? ((t: ReturnType<typeof setTimeout>) => clearTimeout(t));
+  const now = o.now ?? (() => Date.now());
   const { store, storage, treeId } = o;
 
   let version = o.version;
@@ -36,6 +43,8 @@ export function createAutosave(o: Opts) {
   let retry: ReturnType<typeof setTimeout> | undefined;
   let inFlight: Promise<void> | null = null;
   let offline = false;
+  let rateLimited = false;
+  let attempts: number[] = []; // thời điểm các lần gửi trong một giờ gần nhất
   let conflict = false; // chờ chủ cây chọn trong bảng xung đột, không gửi
   let stopped = false;
 
@@ -57,6 +66,9 @@ export function createAutosave(o: Opts) {
       return Promise.resolve();
     }
     o.onState('saving');
+    const t = now();
+    attempts = attempts.filter((a) => a > t - HOUR_MS);
+    attempts.push(t);
     inFlight = (async () => {
       let next = false;
       try {
@@ -64,6 +76,7 @@ export function createAutosave(o: Opts) {
         version = res.roomVersion;
         lastSaved = room;
         offline = false;
+        rateLimited = false;
         // Đã stop(): vẫn cập nhật nháp cho đúng bản server, nhưng không gọi callback nào.
         if (store.getState().room === room) {
           storage.clearDraft(treeId);
@@ -101,7 +114,13 @@ export function createAutosave(o: Opts) {
       o.onWriteClosed();
     } else if (err.status === 401) {
       o.onUnauthorized();
-    } else if (err.status === 0 || err.status >= 500 || err.status === 429) {
+    } else if (err.status === 429) {
+      if (!rateLimited) {
+        rateLimited = true;
+        o.onRateLimited();
+      }
+      if (!stopped) retry = setTimer(() => void send(), SLOW_MS);
+    } else if (err.status === 0 || err.status >= 500) {
       if (!offline) {
         offline = true;
         o.onOffline();
@@ -117,10 +136,12 @@ export function createAutosave(o: Opts) {
 
   const schedule = () => {
     if (debounce !== undefined) clearTimer(debounce);
+    const t = now();
+    const recent = attempts.filter((a) => a > t - HOUR_MS).length;
     debounce = setTimer(() => {
       debounce = undefined;
       void send();
-    }, DEBOUNCE_MS);
+    }, rateLimited || recent >= SLOW_AFTER ? SLOW_MS : DEBOUNCE_MS);
   };
 
   // replaceRoom (resume, useLatest) không tăng revision nên không đi qua đây.

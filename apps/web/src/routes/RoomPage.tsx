@@ -234,6 +234,8 @@ function OwnerEditor(props: EditorProps) {
           latest.current.onUnauthorized();
         },
         onOffline: () => latest.current.toast('Mất mạng — thay đổi được giữ trên máy'),
+        onRateLimited: () =>
+          latest.current.toast('Bạn lưu hơi nhiều, sẽ tự lưu lại sau ít phút — thay đổi vẫn giữ trên máy.'),
       });
       mine.current = a;
       autosaveRef.current = a;

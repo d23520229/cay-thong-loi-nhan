@@ -223,6 +223,20 @@ describe('RoomPage', () => {
     expect(screen.getByText('Chưa lưu')).toBeInTheDocument();
   });
 
+  it('lưu bị 429 → báo lưu hơi nhiều, không báo mất mạng', async () => {
+    const mine = defaultRoom();
+    mine.tree = { ...mine.tree, slotCount: 9 };
+    storage.setDraft(ID, { room: mine, baseVersion: 2, savedAt: '' });
+    mocked.getOwnerTree.mockResolvedValue(ownerRoom());
+    mocked.saveRoom.mockRejectedValue(new ApiError(429, 'rate_limited', 'x'));
+    renderAt();
+    expect(
+      await screen.findByText('Bạn lưu hơi nhiều, sẽ tự lưu lại sau ít phút — thay đổi vẫn giữ trên máy.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Mất mạng — thay đổi được giữ trên máy')).not.toBeInTheDocument();
+    expect(storage.getDraft(ID)).not.toBeNull();
+  });
+
   it('tên cây có HTML hiển thị nguyên chuỗi dạng text', async () => {
     const evil = '<img src=x onerror=alert(1)>';
     mocked.getOwnerTree.mockRejectedValue(unauthorized());
