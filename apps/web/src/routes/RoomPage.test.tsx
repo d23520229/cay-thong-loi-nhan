@@ -309,6 +309,22 @@ describe('RoomPage', () => {
     expect(mocked.saveRoom.mock.calls[1]![1]).toBe(3);
   });
 
+  it('rời trang khi đang sửa (chưa lưu xong / mất mạng) → giữ draft:{id} với thay đổi mới nhất', async () => {
+    mocked.getOwnerTree.mockResolvedValue(ownerRoom());
+    mocked.saveRoom.mockRejectedValue(new ApiError(0, 'network', 'x'));
+    const { unmount } = renderAt();
+    await userEvent.click(await screen.findByRole('button', { name: /Sửa phòng/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Phông nền' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Nhà gỗ' }));
+    const draft = storage.getDraft(ID);
+    expect(draft!.baseVersion).toBe(2);
+    unmount();
+    await new Promise((r) => setTimeout(r, 0));
+    await waitFor(() => expect(mocked.saveRoom).toHaveBeenCalledTimes(1)); // rời trang vẫn thử gửi ngay
+    await new Promise((r) => setTimeout(r, 0));
+    expect(storage.getDraft(ID)).toEqual(draft);
+  });
+
   it('lưu bị 409 slots_in_use → hiện thông báo của server', async () => {
     const mine = defaultRoom();
     mine.tree = { ...mine.tree, slotCount: 9 };

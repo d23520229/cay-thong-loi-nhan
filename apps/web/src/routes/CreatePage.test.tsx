@@ -2,7 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { api } from '../lib/api';
+import { ApiError, api } from '../lib/api';
 import { storage } from '../lib/storage';
 import { CreatePage } from './CreatePage';
 
@@ -87,6 +87,29 @@ describe('CreatePage', () => {
     await userEvent.click(createBtn());
     await waitFor(() => expect(mocked.createTree).toHaveBeenCalled());
     expect(mocked.createTree.mock.calls[0]![0].ref).toBeUndefined();
+  });
+
+  it.each([
+    ['mất mạng', new ApiError(0, 'network', 'Không kết nối được, kiểm tra mạng rồi thử lại nhé.')],
+    ['429', new ApiError(429, 'rate_limited', 'Bạn thao tác nhanh quá, đợi một lát nhé.')],
+    ['500', new ApiError(500, 'internal', 'Có lỗi xảy ra, thử lại sau nhé.')],
+  ])('createTree lỗi (%s) → báo lỗi, giữ draft:new, "Tạo cây" bấm lại được', async (_n, err) => {
+    mocked.createTree.mockRejectedValueOnce(err);
+    renderPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Phông nền' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Nhà gỗ' }));
+    const draft = storage.getDraft('new');
+    expect(draft).not.toBeNull();
+    await fillForm();
+    await userEvent.click(createBtn());
+    expect(await screen.findByRole('alert')).toHaveTextContent(err.message);
+    expect(storage.getDraft('new')).toEqual(draft);
+    expect(storage.myTrees()).toEqual([]);
+    expect(createBtn()).toBeEnabled();
+    mocked.createTree.mockResolvedValueOnce(created);
+    await userEvent.click(createBtn());
+    expect(await screen.findByText('Cây của bạn đã sẵn sàng! 🎉')).toBeInTheDocument();
+    expect(mocked.createTree).toHaveBeenCalledTimes(2);
   });
 
   it('nháp hỏng bị bỏ và xoá', () => {
