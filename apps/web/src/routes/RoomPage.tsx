@@ -101,8 +101,9 @@ function TreeRoom({ id }: { id: string }) {
       try {
         await api.authLink(id, decodeURIComponent(key));
         remember(id, null);
-      } catch {
-        /* khoá sai: vào như khách */
+      } catch (e) {
+        // Khoá sai/hết hạn: báo rồi vào như khách (lỗi mạng thì vẫn vào lặng lẽ).
+        if (e instanceof ApiError && (e.status === 400 || e.status === 401)) show('Link riêng chưa đúng hoặc đã hết hạn.');
       }
     })();
     void link.current.then(() => {
@@ -111,7 +112,7 @@ function TreeRoom({ id }: { id: string }) {
     return () => {
       cancelled = true;
     };
-  }, [id, load]);
+  }, [id, load, show]);
 
   const onLoggedIn = async () => {
     const afterUnauthorized = login === 'unauthorized';
@@ -124,7 +125,7 @@ function TreeRoom({ id }: { id: string }) {
     <OwnerLogin treeId={id} onClose={() => setLogin(null)} onSuccess={() => void onLoggedIn()} />
   ) : null;
 
-  if (view.kind === 'loading') return <div className="room-page" aria-busy="true" />;
+  if (view.kind === 'loading') return <div className="room-page" aria-busy="true">{toast}</div>;
   if (view.kind === 'notFound' || view.kind === 'error') {
     return (
       <main className="placeholder">

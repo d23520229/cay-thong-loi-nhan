@@ -168,6 +168,7 @@ describe('RoomPage', () => {
     mocked.getTree.mockResolvedValue(publicRoom());
     renderAt(`/c/${ID}#k=BAD`);
     expect(await screen.findByRole('link', { name: 'Tạo cây của bạn' })).toBeInTheDocument();
+    expect(screen.getByText('Link riêng chưa đúng hoặc đã hết hạn.')).toBeInTheDocument();
     expect(window.location.hash).toBe('');
     expect(storage.myTrees()).toEqual([]);
   });
