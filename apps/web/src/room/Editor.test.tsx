@@ -1,6 +1,6 @@
-import { act, cleanup, render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { catalog } from '../lib/catalog';
 import {
   AddTray, BackgroundStrip, EditorTopBar, ItemToolbar, TreeStrip, VariantArrows, VariantStrip,
@@ -14,8 +14,6 @@ const setup = () => {
   const select = (t: string) => act(() => store.getState().select(idOf(t)));
   return { store, select };
 };
-
-afterEach(cleanup);
 
 describe('Editor controls', () => {
   it('mũi tên kiểu: chỉ hiện khi có món chọn, đổi nhãn khi bấm', async () => {
@@ -125,6 +123,19 @@ describe('Editor controls', () => {
     render(<AddTray store={store} />);
     await userEvent.click(screen.getByRole('button', { name: catalog.items.gift!.variants.gold!.name }));
     expect(screen.getByRole('alert')).toHaveTextContent('Phòng đã đủ 25 món');
+  });
+
+  it('thông báo đủ 25 món biến mất khi đóng khay và mở lại sau khi xoá bớt', async () => {
+    const { store } = setup();
+    for (let i = 0; i < 18; i++) act(() => void store.getState().add('gift', 'gold'));
+    act(() => store.getState().openPanel('add'));
+    render(<AddTray store={store} />);
+    await userEvent.click(screen.getByRole('button', { name: catalog.items.gift!.variants.gold!.name }));
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    act(() => store.getState().openPanel(null));
+    act(() => store.getState().remove());
+    act(() => store.getState().openPanel('add'));
+    expect(screen.queryByRole('alert')).toBeNull();
   });
 
   it('thanh trên: nút, trạng thái lưu, nút chính', async () => {

@@ -149,8 +149,12 @@ const ADD_GROUPS = ['window', 'fireplace', 'rug', 'stack', 'gift', 'pet'] as con
 
 export function AddTray({ store }: P) {
   const open = useEditor(store, (s) => s.panel === 'add');
+  // Thân khay chỉ được dựng khi mở, nên thông báo "đủ 25 món" tự hết khi đóng khay.
+  return open ? <AddTrayBody store={store} /> : null;
+}
+
+function AddTrayBody({ store }: P) {
   const [full, setFull] = useState(false);
-  if (!open) return null;
   return (
     <Sheet title="Thêm đồ vào phòng" onClose={() => store.getState().openPanel(null)}>
       {full ? <div className="notice" role="alert">Phòng đã đủ 25 món</div> : null}
