@@ -23,26 +23,33 @@ const TAP_PX = 4;
 
 export function createDragController(store: EditorStore, getScale: () => number) {
   const els = new Map<string, HTMLDivElement>();
+  let activePointer: number | null = null;
 
   function onItemPointerDown(clientId: string, e: Pick<ReactPointerEvent<HTMLDivElement>, 'pointerId' | 'clientX' | 'clientY' | 'currentTarget'>) {
+    if (activePointer !== null) return;
     const el = els.get(clientId) ?? e.currentTarget;
     store.getState().select(clientId);
     const item = store.getState().room.items.find((i) => i.clientId === clientId);
     if (!item) return;
     el.setPointerCapture?.(e.pointerId);
+    activePointer = e.pointerId;
     const ps = { x: e.clientX, y: e.clientY };
     const start = { x: item.x, y: item.y };
     const scale = getScale();
     let moved = false;
 
     const onMove = (ev: PointerEvent) => {
+      if (ev.pointerId !== e.pointerId) return;
       const dx = ev.clientX - ps.x;
       const dy = ev.clientY - ps.y;
       if (!moved && Math.hypot(dx, dy) < TAP_PX) return;
       moved = true;
-      el.style.translate = `${dx / scale}px ${dy / scale}px`;
+      const p = dragPosition(start, ps, { x: ev.clientX, y: ev.clientY }, scale, item.type);
+      el.style.translate = `${p.x - start.x}px ${p.y - start.y}px`;
     };
     const finish = (ev: PointerEvent, commit: boolean) => {
+      if (ev.pointerId !== e.pointerId) return;
+      activePointer = null;
       el.removeEventListener('pointermove', onMove);
       el.removeEventListener('pointerup', onUp);
       el.removeEventListener('pointercancel', onCancel);

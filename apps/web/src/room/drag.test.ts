@@ -22,9 +22,9 @@ function setup() {
   drag.itemRef(item.clientId, el);
   const down = (x: number, y: number) =>
     drag.onItemPointerDown(item.clientId, { pointerId: 1, clientX: x, clientY: y, currentTarget: el } as never);
-  const ev = (type: string, x: number, y: number) => {
+  const ev = (type: string, x: number, y: number, pointerId = 1) => {
     const e = new Event(type) as Event & { clientX: number; clientY: number; pointerId: number };
-    Object.assign(e, { clientX: x, clientY: y, pointerId: 1 });
+    Object.assign(e, { clientX: x, clientY: y, pointerId });
     el.dispatchEvent(e);
   };
   return { store, item, el, down, ev };
@@ -42,18 +42,51 @@ describe('createDragController', () => {
   });
   it('kéo: chỉ đặt translate, thả mới gọi move một lần', () => {
     const { store, item, el, down, ev } = setup();
-    const move = vi.spyOn(store.getState(), 'move');
     down(100, 100);
     ev('pointermove', 140, 100);
     expect(el.style.translate).toBe('80px 0px');
     expect(store.getState().revision).toBe(0);
     ev('pointermove', 150, 100);
-    expect(move).not.toHaveBeenCalled();
+    expect(store.getState().revision).toBe(0);
     ev('pointerup', 150, 100);
     expect(el.style.translate).toBe('');
-    expect(move).toHaveBeenCalledTimes(1);
     const now = store.getState().room.items.find((i) => i.clientId === item.clientId)!;
     expect(now.x).toBe(Math.min(710, item.x + 100));
     expect(store.getState().revision).toBe(1);
+  });
+  it('con trỏ thứ hai bị bỏ qua, move đúng một lần', () => {
+    const { store, item, el, down, ev } = setup();
+    down(100, 100);
+    down(500, 500);
+    ev('pointermove', 140, 100);
+    ev('pointermove', 900, 900, 2);
+    expect(el.style.translate).toBe('80px 0px');
+    ev('pointerup', 900, 900, 2);
+    expect(store.getState().revision).toBe(0);
+    ev('pointerup', 140, 100);
+    expect(store.getState().revision).toBe(1);
+    expect(store.getState().room.items.find((i) => i.clientId === item.clientId)!.x).toBe(item.x + 80);
+  });
+  it('kẹp ngay khi kéo (thú cưng kéo lên dừng ở y 810)', () => {
+    const { el, item, down, ev } = setup();
+    down(100, 500);
+    ev('pointermove', 100, 0);
+    expect(el.style.translate).toBe(`0px ${810 - item.y}px`);
+  });
+  it('pointercancel xoá translate, không move', () => {
+    const { store, el, down, ev } = setup();
+    down(100, 100);
+    ev('pointermove', 140, 100);
+    ev('pointercancel', 140, 100);
+    expect(el.style.translate).toBe('');
+    expect(store.getState().revision).toBe(0);
+  });
+  it('sau khi thả, pointermove không đặt translate', () => {
+    const { el, down, ev } = setup();
+    down(100, 100);
+    ev('pointermove', 140, 100);
+    ev('pointerup', 140, 100);
+    ev('pointermove', 200, 100);
+    expect(el.style.translate).toBe('');
   });
 });
