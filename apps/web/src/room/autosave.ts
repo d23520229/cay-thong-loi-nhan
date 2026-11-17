@@ -1,0 +1,169 @@
+import { RoomSchema, validateRoom, type Room } from '@ctln/shared';
+import { ApiError, type api as apiModule, type PublicRoom } from '../lib/api';
+import type { storage as storageModule } from '../lib/storage';
+import type { EditorStore } from './store';
+
+export type SaveState = 'saved' | 'saving' | 'unsaved';
+
+const DEBOUNCE_MS = 1500;
+const RETRY_MS = 5000;
+
+type Opts = {
+  treeId: string;
+  store: EditorStore;
+  version: number;
+  api: Pick<typeof apiModule, 'saveRoom'>;
+  storage: Pick<typeof storageModule, 'getDraft' | 'setDraft' | 'clearDraft'>;
+  setTimer?: typeof setTimeout;
+  clearTimer?: typeof clearTimeout;
+  onState(s: SaveState): void;
+  onConflict(serverRoom: PublicRoom): void;
+  onSlotsInUse(message: string): void;
+  onWriteClosed(): void;
+  onUnauthorized(): void;
+  onOffline(): void;
+};
+
+/** Tự lưu phòng (đặc tả 6.5 "Tự lưu"): gộp 1,5 giây, nháp `draft:{treeId}`, xử lý từng mã lỗi. */
+export function createAutosave(o: Opts) {
+  const setTimer = o.setTimer ?? ((fn: () => void, ms: number) => setTimeout(fn, ms));
+  const clearTimer = o.clearTimer ?? ((t: ReturnType<typeof setTimeout>) => clearTimeout(t));
+  const { store, storage, treeId } = o;
+
+  let version = o.version;
+  let lastSaved: Room = store.getState().room; // phòng server đã xác nhận gần nhất
+  let debounce: ReturnType<typeof setTimeout> | undefined;
+  let retry: ReturnType<typeof setTimeout> | undefined;
+  let inFlight: Promise<void> | null = null;
+  let offline = false;
+  let conflict = false; // chờ chủ cây chọn trong bảng xung đột, không gửi
+  let stopped = false;
+
+  const clearTimers = () => {
+    if (debounce !== undefined) clearTimer(debounce);
+    if (retry !== undefined) clearTimer(retry);
+    debounce = retry = undefined;
+  };
+  const writeDraft = () =>
+    storage.setDraft(treeId, { room: store.getState().room, baseVersion: version, savedAt: new Date().toISOString() });
+
+  const send = (): Promise<void> => {
+    clearTimers();
+    if (inFlight) return inFlight; // xong lượt đang gửi sẽ tự gửi tiếp bản mới nhất
+    if (stopped || conflict) return Promise.resolve();
+    const room = store.getState().room;
+    if (!validateRoom(room).ok) {
+      o.onState('unsaved');
+      return Promise.resolve();
+    }
+    o.onState('saving');
+    inFlight = (async () => {
+      let next = false;
+      try {
+        const res = await o.api.saveRoom(treeId, version, room);
+        version = res.roomVersion;
+        lastSaved = room;
+        offline = false;
+        if (store.getState().room === room) {
+          storage.clearDraft(treeId);
+          o.onState('saved');
+        } else {
+          writeDraft(); // nháp sửa tiếp từ bản vừa lưu
+          o.onState('unsaved');
+          next = debounce === undefined;
+        }
+      } catch (e) {
+        o.onState('unsaved');
+        handleError(e);
+      } finally {
+        inFlight = null;
+      }
+      if (next) await send();
+    })();
+    return inFlight;
+  };
+
+  const handleError = (e: unknown) => {
+    const err = e instanceof ApiError ? e : new ApiError(0, 'network', String(e));
+    if (err.status === 409 && err.code === 'version_conflict') {
+      conflict = true;
+      o.onConflict(err.extra.room as PublicRoom);
+    } else if (err.status === 409 && err.code === 'slots_in_use') {
+      store.getState().setTree({ slotCount: lastSaved.tree.slotCount });
+      o.onSlotsInUse(err.message);
+    } else if (err.status === 403 && err.code === 'write_closed') {
+      o.onWriteClosed();
+    } else if (err.status === 401) {
+      o.onUnauthorized();
+    } else if (err.status === 0 || err.status >= 500 || err.status === 429) {
+      if (!offline) {
+        offline = true;
+        o.onOffline();
+      }
+      if (!stopped) retry = setTimer(() => void send(), RETRY_MS);
+    }
+  };
+
+  const onOnline = () => {
+    if (offline) void send();
+  };
+  window.addEventListener('online', onOnline);
+
+  const unsubscribe = store.subscribe((s, prev) => {
+    if (s.revision === prev.revision) return;
+    writeDraft();
+    o.onState('unsaved');
+    if (debounce !== undefined) clearTimer(debounce);
+    debounce = setTimer(() => {
+      debounce = undefined;
+      void send();
+    }, DEBOUNCE_MS);
+  });
+
+  return {
+    resume(serverVersion: number): 'none' | 'sent' | 'conflict' {
+      const draft = storage.getDraft(treeId);
+      if (!draft) return 'none';
+      const parsed = RoomSchema.safeParse(draft.room);
+      if (!parsed.success || !validateRoom(parsed.data).ok) {
+        storage.clearDraft(treeId);
+        return 'none';
+      }
+      store.getState().replaceRoom(parsed.data);
+      if (draft.baseVersion === serverVersion) {
+        version = serverVersion;
+        void send();
+        return 'sent';
+      }
+      conflict = true;
+      return 'conflict';
+    },
+    keepMine(serverRoom: PublicRoom) {
+      conflict = false;
+      version = serverRoom.roomVersion;
+      writeDraft();
+      void send();
+    },
+    useLatest(serverRoom: PublicRoom) {
+      conflict = false;
+      clearTimers();
+      const room: Room = { background: serverRoom.background, tree: serverRoom.tree, items: serverRoom.items };
+      store.getState().replaceRoom(room);
+      lastSaved = room;
+      version = serverRoom.roomVersion;
+      storage.clearDraft(treeId);
+      o.onState('saved');
+    },
+    flush(): Promise<void> {
+      if (debounce !== undefined || retry !== undefined) return send();
+      return inFlight ?? Promise.resolve();
+    },
+    stop() {
+      stopped = true;
+      clearTimers();
+      window.removeEventListener('online', onOnline);
+      unsubscribe();
+    },
+    version: () => version,
+  };
+}
