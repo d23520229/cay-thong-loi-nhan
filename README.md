@@ -11,7 +11,7 @@ apps/
   web/        React + Vite + TypeScript — trang chính và trang quản trị (/quan-tri)
   server/     Fastify + TypeScript + PostgreSQL (Drizzle) — API, ảnh xem trước, phục vụ bản build web
 packages/
-  shared/     Dùng chung web + server: catalog.json, hình học tán cây, xếp điểm nhắn (slots), (sắp có) schema Zod
+  shared/     Dùng chung web + server: catalog.json, hình học tán cây, xếp điểm nhắn (slots), schema Zod (`schemas.mjs`)
   art/        Mã nguồn đồ hoạ màu nước (SVG) + script xuất WebP và catalog
 tools/
   design-canvas/   Mã sinh các bảng thiết kế trên canvas (chỉ để duyệt, không dùng khi chạy)
@@ -24,7 +24,7 @@ docs/         Đặc tả, lược đồ cơ sở dữ liệu
 |---|---|
 | Đặc tả v3 + thiết kế CSDL | Xong |
 | Đồ hoạ: 4 dáng tán × 6 màu, 12 thân, 9 phông, 8 lò sưởi, 3 cửa sổ, 2 thảm, 10 quà, 6 thú cưng, 20 phụ kiện treo | Xong, đã xuất WebP trong `apps/web/public/assets` |
-| `packages/shared`: catalog, hình học, xếp điểm nhắn | Xong (JS), có kiểm thử; sẽ chuyển TypeScript ở M1 |
+| `packages/shared`: catalog, hình học, xếp điểm nhắn | Xong (JS `.mjs` + JSDoc, kiểu ở `index.d.ts`, schema Zod ở `schemas.mjs`), có kiểm thử |
 | CSS chuyển động (cây, lửa, thú cưng, phụ kiện, hiệu ứng chạm) | Xong, `apps/web/src/styles/room-animations.css` |
 | Lược đồ PostgreSQL + kiểm thử trên PGlite | Xong, `apps/server/src/db/migrations/0000_init.sql` |
 | Server: API (cấu hình, cây, xác thực, phòng, lời nhắn, chủ cây), tính giai đoạn, migration | Xong (M1, nhánh `m1-backend`) |
