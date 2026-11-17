@@ -32,6 +32,19 @@ describe('fitRoom', () => {
     expect(f.width).toBe(260);
     expect(f.left).toBe(292);
   });
+
+  it('chừa chỗ phía dưới (nút của khách): phòng nhỏ lại, không lọt xuống vùng chừa', () => {
+    const f = fitRoom(360, 640, 56, 116);
+    expect(f.top).toBe(56);
+    expect(f.height).toBeCloseTo(468, 6);
+    expect(f.top + f.height).toBeLessThanOrEqual(640 - 116);
+    expect(f.spareBottom).toBeGreaterThanOrEqual(116 - 1e-9);
+    expect(f.left).toBeCloseTo((360 - f.width) / 2, 6);
+  });
+
+  it('đã đủ chỗ phía dưới thì giữ nguyên cách co', () => {
+    expect(fitRoom(390, 844, 56, 116)).toEqual(fitRoom(390, 844, 56));
+  });
 });
 
 describe('cameraShift', () => {

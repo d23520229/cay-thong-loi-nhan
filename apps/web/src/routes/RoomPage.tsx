@@ -22,6 +22,8 @@ type View =
   | { kind: 'guest'; data: Loaded<PublicRoom> };
 
 const TOP_RESERVE = 56;
+// Khối nút của khách: 8 + 44 ("Tạo cây của bạn") + 4 + 44 ("Tôi là chủ cây") + 16 — đo bằng Chrome.
+const GUEST_BOTTOM_RESERVE = 116;
 
 /** Phòng nhận từ server phải hợp lệ mới vẽ (không tin dữ liệu ngoài). */
 function toRoom(r: PublicRoom): Room | null {
@@ -164,7 +166,13 @@ function TreeRoom({ id }: { id: string }) {
 
   return (
     <div className="room-page">
-      <div className="room-stage"><RoomStage room={room} reserveTop={TOP_RESERVE} /></div>
+      <div className="room-stage">
+        <RoomStage
+          room={room}
+          reserveTop={TOP_RESERVE}
+          reserveBottom={view.kind === 'guest' ? GUEST_BOTTOM_RESERVE : 0}
+        />
+      </div>
       <div className="room-top">
         <h1 className="room-title">{roomTitle(meta)}</h1>
         {canEdit ? (

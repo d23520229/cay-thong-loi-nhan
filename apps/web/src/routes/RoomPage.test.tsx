@@ -107,6 +107,23 @@ describe('RoomPage', () => {
     expect(screen.queryByText('Tạo cây của bạn')).not.toBeInTheDocument();
   });
 
+  it('khách trên máy thấp 360x640: phòng không bị khối nút phía dưới che', async () => {
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, get: () => 360 });
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, get: () => 640 });
+    try {
+      mocked.getOwnerTree.mockRejectedValue(unauthorized());
+      mocked.getTree.mockResolvedValue(publicRoom());
+      const { container } = renderAt();
+      await screen.findByRole('link', { name: 'Tạo cây của bạn' });
+      const box = container.querySelector<HTMLElement>('.room-stage [style*="transform: scale"]')!.parentElement!;
+      expect(parseFloat(box.style.top)).toBe(56);
+      expect(parseFloat(box.style.top) + parseFloat(box.style.height)).toBeLessThanOrEqual(640 - 116);
+    } finally {
+      delete (HTMLElement.prototype as unknown as Record<string, unknown>).clientWidth;
+      delete (HTMLElement.prototype as unknown as Record<string, unknown>).clientHeight;
+    }
+  });
+
   it('"Chào chủ cây": PIN sai và bị khoá hiện đúng thông báo', async () => {
     mocked.getOwnerTree.mockRejectedValue(unauthorized());
     mocked.getTree.mockResolvedValue(publicRoom());

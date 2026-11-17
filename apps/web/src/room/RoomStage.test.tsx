@@ -32,4 +32,12 @@ describe('RoomStage', () => {
     expect(onFit).toHaveBeenLastCalledWith(expect.objectContaining({ width: 390, top: 56 }));
     expect(container.querySelectorAll('.item')).toHaveLength(7);
   });
+
+  it('reserveBottom: phòng không lấn vào vùng chừa phía dưới', () => {
+    const onFit = vi.fn();
+    render(<RoomStage room={defaultRoom()} reserveTop={56} reserveBottom={400} onFit={onFit} />);
+    const fit = onFit.mock.lastCall![0];
+    expect(fit.top).toBe(56);
+    expect(fit.top + fit.height).toBeLessThanOrEqual(844 - 400);
+  });
 });

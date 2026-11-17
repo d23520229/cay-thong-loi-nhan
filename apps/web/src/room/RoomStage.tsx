@@ -5,16 +5,17 @@ import { Scene, type SceneProps } from './Scene';
 
 export type RoomStageProps = SceneProps & {
   reserveTop?: number;
+  reserveBottom?: number;
   /** Phần tử vùng chứa, để bố cục đo toạ độ màn hình. */
   stageRef?: Ref<HTMLDivElement>;
   /** Gọi mỗi khi cách co phòng thay đổi, để bố cục đặt thanh trên/dưới. */
   onFit?: (fit: Fit) => void;
 };
 
-export function RoomStage({ reserveTop = 0, stageRef, onFit, ...scene }: RoomStageProps) {
+export function RoomStage({ reserveTop = 0, reserveBottom = 0, stageRef, onFit, ...scene }: RoomStageProps) {
   const el = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
-  const fit = fitRoom(size.w, size.h, reserveTop);
+  const fit = fitRoom(size.w, size.h, reserveTop, reserveBottom);
 
   useLayoutEffect(() => {
     const node = el.current;
