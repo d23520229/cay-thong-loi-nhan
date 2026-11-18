@@ -197,6 +197,17 @@ describe('autosave', () => {
     expect(t.onState).toHaveBeenLastCalledWith('saved');
   });
 
+  it('429 → đã hẹn thử lại 60 giây → stop() (như "Xong"/rời trang) thì không gửi gì nữa', async () => {
+    const t = track(setup());
+    t.saveRoom.mockRejectedValueOnce(new ApiError(429, 'rate_limited', 'x'));
+    t.store.getState().setTree({ slotCount: 9 });
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(t.onRateLimited).toHaveBeenCalledTimes(1);
+    t.a.stop();
+    await vi.advanceTimersByTimeAsync(60000);
+    expect(t.saveRoom).toHaveBeenCalledTimes(1);
+  });
+
   it('đã gửi 100 lần trong một giờ → lần sửa sau chờ 60 giây; quá một giờ thì về 1,5 giây', async () => {
     const t = track(setup());
     for (let k = 0; k < 100; k++) {

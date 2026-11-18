@@ -194,6 +194,14 @@ describe('RoomPage', () => {
     expect(mocked.saveRoom).not.toHaveBeenCalled();
   });
 
+  it('/c/new không xoá nháp /tao (draft:new)', async () => {
+    storage.setDraft('new', { room: defaultRoom(), baseVersion: null, savedAt: 'x' });
+    mocked.getOwnerTree.mockRejectedValue(new ApiError(404, 'not_found', 'x'));
+    renderAt('/c/new');
+    expect(await screen.findByText('Không tìm thấy cây này.')).toBeInTheDocument();
+    expect(storage.getDraft('new')).not.toBeNull();
+  });
+
   it('StrictMode: chỉ một bộ tự lưu — sửa một lần thì gửi đúng một lần', async () => {
     mocked.getOwnerTree.mockResolvedValue(ownerRoom());
     mocked.saveRoom.mockResolvedValue({ roomVersion: 3 });

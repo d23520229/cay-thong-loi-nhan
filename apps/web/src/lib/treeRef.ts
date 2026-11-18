@@ -1,6 +1,6 @@
 export const TREE_ID = /^[a-z2-9]{8}$/;
 // Bảng chữ thật server dùng sinh mã (security.ts) bỏ i, l, o nên mã có chữ đó chắc chắn gõ nhầm.
-const TREE_CODE = /^[a-hjkmnp-z2-9]{8}$/;
+export const TREE_CODE = /^[a-hjkmnp-z2-9]{8}$/;
 
 /** Đọc mã cây (8 ký tự) hoặc link `/c/{id}` (có thể kèm `#k=` của link riêng). */
 export function parseTreeRef(input: string): { id: string; key?: string } | null {

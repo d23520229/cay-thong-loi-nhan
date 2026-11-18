@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router';
 import { RoomSchema, validateRoom, type Room } from '@ctln/shared';
 import { ApiError, api, type OwnerRoom, type PublicRoom } from '../lib/api';
 import { storage } from '../lib/storage';
+import { TREE_CODE } from '../lib/treeRef';
 import { createAutosave, type SaveState } from '../room/autosave';
 import { ConflictDialog } from '../room/ConflictDialog';
 import { EditorLayout } from '../room/EditorLayout';
@@ -92,7 +93,7 @@ function TreeRoom({ id }: { id: string }) {
   useEffect(() => {
     let cancelled = false;
     // Phòng đã tạo không giữ nháp nữa (chốt 19/11): xoá nháp còn sót từ bản cũ.
-    storage.clearDraft(id);
+    if (TREE_CODE.test(id)) storage.clearDraft(id); // không đụng draft:new của /tao
     // Dùng chung một lượt auth/link (StrictMode chạy effect hai lần).
     link.current ??= (async () => {
       const key = /(?:^#|&)k=([^&]+)/.exec(window.location.hash)?.[1];
