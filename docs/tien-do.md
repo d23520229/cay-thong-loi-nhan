@@ -4,9 +4,9 @@
 
 ## Hiện tại
 
-- **Ngày cập nhật:** 18/11/2026
+- **Ngày cập nhật:** 19/11/2026
 - **Mốc đang ở:** M2 xong trên nhánh `m2-frontend` (tách từ `m1-backend`; cả hai chưa gộp vào `main`). M1 backend: 6 nhóm route, 118 test server + 40 test shared (M2 thêm 2 test `googleClientId`, nay 120 test server); đã chạy thử với PostgreSQL 16 thật trong Docker ngày 17/11 (mục 1–9 bên dưới đều đạt); mục 10 làm khi lên Azure.
-- **M2 xong** trên nhánh `m2-frontend` (chưa gộp vào `main`): giao diện phòng tự do, 160 test web + 120 test server + 40 test shared (sau đợt sửa cuối M2), typecheck sạch. Bản build JS + CSS ≈ 150 KB gzip (giới hạn 250 KB). Đã chạy thật qua proxy Vite với PostgreSQL trong Docker (18/11): `/` trả HTML, `/api/config` qua proxy, tạo cây 201 với `publicUrl` bắt đầu `http://localhost:5173/c/`, `GET /api/trees/{id}` 200.
+- **M2 xong** trên nhánh `m2-frontend` (chưa gộp vào `main`): giao diện phòng tự do, 159 test web + 120 test server + 40 test shared (sau thay đổi mất mạng 19/11), typecheck sạch. Bản build JS + CSS ≈ 150 KB gzip (giới hạn 250 KB). Đã chạy thật qua proxy Vite với PostgreSQL trong Docker (18/11): `/` trả HTML, `/api/config` qua proxy, tạo cây 201 với `publicUrl` bắt đầu `http://localhost:5173/c/`, `GET /api/trees/{id}` 200.
 - **Việc tiếp theo:** **M3 — bạn bè treo lời nhắn, chủ cây đọc/khoá/đếm ngược, chia sẻ, OG** — chờ chủ dự án duyệt.
 
 ### M2 — danh sách thử tay trên trình duyệt (chủ dự án)
@@ -18,8 +18,8 @@ Chuẩn bị: Docker Desktop đang chạy, `.env` có `BASE_URL=http://localhost
 3. Bấm "Hoàn tất" → thấy link công khai và link riêng.
 4. Mở link riêng trong tab ẩn danh → vào được phòng với quyền chủ cây.
 5. Mở cùng cây ở hai tab, sửa ở cả hai → tab lưu sau thấy bảng xung đột (giữ bản nào).
-6. DevTools → Network → Offline, sửa phòng → báo lỗi lưu; bật mạng lại → tự lưu lại.
-7. Tắt mạng rồi bấm "Xong" → vẫn ở chế độ Sửa (chỉ rời khi đã lưu).
+6. DevTools → Network → Offline, sửa phòng → "Chưa lưu" + "Mất mạng — thay đổi chưa được lưu", không tự thử lại; bật mạng lại rồi sửa tiếp → lưu cả phòng (gồm thay đổi trước).
+7. Tắt mạng, sửa rồi bấm "Xong" → vẫn về chế độ Xem, báo "Thay đổi chưa được lưu.", phòng hiện bản server đã lưu; tải lại trang không hỏi gì (không còn nháp).
 8. Trang chủ: "Bạn đã có cây?" → mở lại bằng mã cây/link + PIN.
 
 ### M1 — đã xong (kế hoạch duyệt 16/11; chi tiết trong file kế hoạch)
@@ -89,7 +89,7 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 - Có trang quản trị `/quan-tri`: đăng nhập Google theo danh sách cho phép, vai trò admin/moderator, không đọc lời nhắn trừ bản chụp báo cáo, có nhật ký và nút tạm dừng khẩn cấp.
 - Dịch vụ chạy đến hết 31/12; từ 26/12 hiện thông báo tải ảnh; xoá dữ liệu 07/01/2027.
 - Chủ cây vào phòng: mặc định chế độ **"Xem"** (phòng như khách thấy + đếm ngược + số lời nhắn + nút chia sẻ), nút **"Sửa phòng"** mở khung chỉnh sửa.
-- **M2 (chốt 18/11, chi tiết đặc tả 6.5):** trang chủ luôn hiện khung giới thiệu + "Bắt đầu tạo cây" + nút "Bạn đã có cây?" (mở lại bằng mã cây/link + PIN hoặc Google); không giới hạn số cây trên một máy; phòng luôn hiện trọn theo chiều rộng (sửa phương án C: camera chỉ dời khi dải chọn che món); lệch phiên bản khi lưu → hỏi chủ cây giữ bản nào; dựng theo phương án A (module phòng thuần có test).
+- **M2 (chốt 18/11, chi tiết đặc tả 6.5):** trang chủ luôn hiện khung giới thiệu + "Bắt đầu tạo cây" + nút "Bạn đã có cây?" (mở lại bằng mã cây/link + PIN hoặc Google); không giới hạn số cây trên một máy; phòng luôn hiện trọn theo chiều rộng (sửa phương án C: camera chỉ dời khi dải chọn che món); lệch phiên bản khi đang sửa → hỏi chủ cây giữ bản nào (không còn hỏi khi mở lại vì không còn nháp); mất mạng: không cố lưu, không nháp cho phòng đã tạo (chốt 19/11) — không tự thử lại, thao tác tiếp theo lưu lại cả phòng, "Xong" chưa lưu được vẫn rời chế độ Sửa và hiện bản server; chỉ `/tao` giữ nháp `draft:new`; dựng theo phương án A (module phòng thuần có test).
 - **Hiện số lời nhắn** cho chủ cây (O10): trong app, kèm số mới kể từ lần vào trước; bật/tắt được, mặc định hiện. Không làm thông báo đẩy.
 
 **Đồ hoạ**
@@ -130,7 +130,7 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 - **CSS:** class của app không được trùng tên với class trong `room-animations.css` (gom từ canvas thiết kế) — đã từng va chạm lớp panel; đặt tiền tố riêng.
 - **jsdom** không có `ResizeObserver`, và sự kiện pointer không có `clientX` → test kéo thả qua controller (`drag.ts`) thay vì bắn sự kiện DOM.
 - **React StrictMode** mount hai lần: tự lưu cần dừng trì hoãn (deferred stop), nếu không lần unmount giả sẽ huỷ bộ tự lưu đang chạy.
-- "Xong" chỉ rời chế độ Sửa khi đã lưu thành công; offline thì ở lại và báo lỗi.
+- "Xong" luôn rời chế độ Sửa; chưa lưu được thì dừng tự lưu trước khi rời (không thì lượt gửi khi gỡ trang vẫn lưu phần mà chế độ Xem đã bỏ) và hiện `lastSaved()` (sửa 19/11).
 - `node --test` không nhận thư mục trên mọi máy → dùng glob `"test/*.test.mjs"`.
 
 ## Tài nguyên
@@ -140,6 +140,7 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 
 ## Nhật ký
 
+- **19/11/2026** — Mất mạng không cần lưu (chủ dự án chốt, đặc tả 6.5): bỏ nháp `draft:{treeId}`, bỏ hỏi xung đột khi mở lại, bỏ tự thử lại khi lỗi mạng/5xx (5 giây và sự kiện `online`); thao tác tiếp theo lưu lại cả phòng; "Xong" chưa lưu được vẫn về Xem với bản server; mở phòng thì xoá nháp cũ còn sót. Giữ nguyên bảng hỏi 409 khi đang sửa, 429 thử lại sau 60 giây, nháp `/tao`. 159 test web; build ≈ 149 KB gzip.
 - **18/11/2026** — Xong M2 frontend (nhánh `m2-frontend`): trang chủ + "Bạn đã có cây?", tạo cây (`/tao`), trang phòng (`/c/:id`) cho chủ cây và khách, trình sửa phòng (kéo/zoom/lật, dải chọn, mũi tên ‹ ›, bảng bên), tự lưu + nháp cục bộ, bảng xung đột phiên bản. 141 test web, 120 test server, 40 test shared, typecheck sạch; build ≈ 145 KB gzip. Quyết định: dựng theo phương án A (module phòng thuần có test); phòng hiện trọn theo chiều rộng; "Bạn đã có cây?" mở lại bằng mã/link + PIN; lệch phiên bản thì hỏi chủ cây giữ bản nào; "Xong" chỉ rời chế độ Sửa khi đã lưu.
 - **17/11/2026** — Xong M1 backend: config, trees (tạo/đọc/xoá), auth (thiết bị, link riêng, PIN, Google), room (PUT có `room_version`), messages (treo/sửa/gỡ trong 15 phút), owner (đọc, mở, chặn, báo cáo). 109 test server (Vitest + PGlite) + 40 test shared, typecheck sạch. Quyết định chính: giữ chỗ lượt thử PIN nguyên tử trước khi băm; khoá dòng khi lưu phòng và đăng lời nhắn; log request không chứa IP; migration có khoá advisory. `index.ts` nối thật (env → PostgreSQL → migration → listen), production bắt buộc `DATABASE_URL`. Chưa chạy với PostgreSQL thật vì máy chưa có Docker.
 - **16/11/2026** — Chốt đặc tả v3 (phòng tự do, trang quản trị, stack TS/React/Fastify/PostgreSQL). Thiết kế 16 bảng, kiểm trên PGlite (7 test). Dựng monorepo, chuyển đồ hoạ + catalog + slots vào đúng gói (29 test slot). Ghi repo vào `D:\cay-thong-loi-nhan`. Thêm `CLAUDE.md` và file tiến độ này.
