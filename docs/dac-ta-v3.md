@@ -309,7 +309,7 @@ Một tên miền cho cả trang và API: cookie đơn giản, không cần cấ
 
 **Mục tiêu M2:** R1–R10 (mục 3.1), luồng tạo cây (9.1) có khung giới thiệu, chủ cây mở lại phòng (9.2, trừ Google), hai chế độ Xem / Sửa phòng (khung), thông báo lỗi lưu phòng (9.3, 9.11).
 **Không làm ở M2:** khách zoom cây, viết lời nhắn, hiệu ứng chạm (M3); nội dung chế độ Xem — đếm ngược, số lời nhắn, chia sẻ Zalo/Messenger, mở quà (M3); OG (M3); hoàn tác, phòng ngẫu nhiên (R11, R12 — P1, chỉ làm nếu còn thời gian sau khi xong P0); Playwright (M4).
-**Không được xảy ra:** mất thay đổi của chủ cây khi rớt mạng hoặc tải lại trang; kéo thả giật trên điện thoại; phòng bị cắt mất phần nào trên bất kỳ cỡ màn hình nào; lộ khoá link riêng trong thanh địa chỉ sau khi đã đăng nhập.
+**Không được xảy ra:** mất công trang trí ở `/tao` khi tải lại trang (trước khi tạo cây); kéo thả giật trên điện thoại; phòng bị cắt mất phần nào trên bất kỳ cỡ màn hình nào; lộ khoá link riêng trong thanh địa chỉ sau khi đã đăng nhập.
 
 **Cách dựng (phương án A, chủ dự án chọn 18/11).** Phương án đã cân nhắc: (A) tách "bộ não" phòng thành module thuần có test, component chỉ hiển thị; (B) chép gần nguyên khối logic bản thiết kế canvas vào một component lớn — nhanh hơn 1–2 ngày nhưng không test được và M3 phải gỡ ra. Chọn A.
 
@@ -346,19 +346,20 @@ Khách trong phòng bạn bè bấm "Tạo cây của bạn" thấy đúng màn 
 
 **Trạng thái.** Zustand: phòng đang sửa, món đang chọn, dải/bảng đang mở, trạng thái lưu. TanStack Query: dữ liệu từ server (`/api/config`, phòng, `/owner`).
 
-**Tự lưu (`room/autosave`).** Sau 1,5 giây không thao tác gửi `PUT /api/trees/:id/room` kèm `roomVersion`. Chấm trạng thái: Đã lưu / Đang lưu / Chưa lưu. Mỗi thay đổi ghi luôn `localStorage` khoá `draft:{treeId}`; lưu thành công thì xoá. Xử lý trả về:
-- 409 `version_conflict` → **hỏi chủ cây** (chủ dự án chọn 18/11): bảng "Có thay đổi chưa lưu trên máy này, nhưng phòng đã được sửa ở thiết bị khác" với hai nút **"Giữ bản trên máy này"** (gửi lại bản trên máy kèm `roomVersion` mới nhận trong `error.room`) và **"Dùng bản mới nhất"** (thay bằng `error.room`, xoá nháp).
+**Tự lưu (`room/autosave`).** Sau 1,5 giây không thao tác gửi `PUT /api/trees/:id/room` kèm `roomVersion`. Chấm trạng thái: Đã lưu / Đang lưu / Chưa lưu. Mỗi lần lưu gửi **cả phòng**, nên lần lưu thành công sau sẽ mang theo mọi thay đổi trước đó còn trên trang. **Không lưu nháp phòng đã tạo trên máy** (chủ dự án chốt 19/11: mất mạng thì không cần cố giữ thay đổi; chỉ `/tao` giữ nháp `draft:new`). Xử lý trả về:
+- 409 `version_conflict` → **hỏi chủ cây** (chủ dự án chọn 18/11): bảng "Có thay đổi chưa lưu trên máy này, nhưng phòng đã được sửa ở thiết bị khác" với hai nút **"Giữ bản trên máy này"** (gửi lại phòng đang sửa kèm `roomVersion` mới nhận trong `error.room`) và **"Dùng bản mới nhất"** (thay bằng `error.room`).
 - 409 `slots_in_use` → trả số điểm nhắn về giá trị cũ, hiện thông báo của server.
 - 403 `write_closed` → chuyển về chế độ Xem, ẩn "Sửa phòng".
 - 401 → mất phiên chủ cây: hiện bảng "Tôi là chủ cây".
-- Lỗi mạng / 5xx / 429 → giữ "Chưa lưu", thử lại sau 5 giây và khi trình duyệt báo có mạng; thông báo "Mất mạng — thay đổi được giữ trên máy".
-- Nháp `draft:{treeId}` lưu cả phòng kèm `baseVersion` (bản server mà nháp sửa từ đó). Mở lại phòng mà còn nháp: `baseVersion` bằng bản server → gửi nháp lên luôn; server đã mới hơn → hiện đúng bảng hỏi ở trên.
+- Lỗi mạng / 5xx → "Chưa lưu", **không tự thử lại** (chủ dự án chốt 19/11); thông báo một lần "Mất mạng — thay đổi chưa được lưu". Thao tác tiếp theo của chủ cây sẽ lưu lại cả phòng như bình thường.
+- 429 (vượt 120 lần lưu/giờ, mục 10) → thông báo "Bạn lưu hơi nhiều, sẽ tự lưu lại sau ít phút.", thử lại sau 60 giây (trong lúc vẫn ở trang); khi đã có ≥ 100 lần lưu trong một giờ thì giãn khoảng chờ lên 60 giây.
+- "Xong" → lưu ngay một lần; vẫn chưa lưu được (mất mạng, 429, lỗi khác) → vẫn rời chế độ Sửa, thông báo "Thay đổi chưa được lưu.", chế độ Xem hiện bản server đã xác nhận (phần chưa lưu bị bỏ).
 
 **Chủ cây vào từ máy khác.** Bảng "Chào chủ cây": ô PIN 6 số → `POST auth/pin`; sai → "Mã PIN chưa đúng"; 429 `pin_locked` → "Nhập sai quá nhiều lần, thử lại sau 15 phút" (dùng `retryAt`); dòng "Có link riêng? Mở link đó là vào được ngay".
 
 **Google.** `/api/config` trả thêm `googleClientId` (chuỗi công khai, `null` nếu chưa cấu hình). Chưa có → nút Google hiện mờ, ghi "sắp có", chỉ dùng PIN. Tích hợp Google Identity Services làm khi chủ dự án có Client ID (chậm nhất M4).
 
-**Kiểm thử (Vitest + React Testing Library + jsdom).** `model.ts`: mọi quy tắc trên. Tự lưu: gộp 1,5 giây, từng mã lỗi ở trên, nháp `localStorage` (đồng hồ giả, `fetch` giả). Màn: khung giới thiệu 1a, khung "Mở lại cây của bạn" (đọc mã từ mã 8 ký tự / link thường / link riêng, sai định dạng, PIN sai, bị khoá, mở thẳng khi còn phiên, điền sẵn từ `myTrees`), bảng Hoàn tất (tên bắt buộc, PIN đúng 6 số), màn Tạo xong hiện mã cây, đăng nhập PIN (sai, bị khoá), xoá `#k=` khỏi địa chỉ. Server: test `googleClientId` trong `/api/config`.
+**Kiểm thử (Vitest + React Testing Library + jsdom).** `model.ts`: mọi quy tắc trên. Tự lưu: gộp 1,5 giây, từng mã lỗi ở trên, không tự thử lại khi mất mạng (đồng hồ giả, `fetch` giả). Màn: khung giới thiệu 1a, khung "Mở lại cây của bạn" (đọc mã từ mã 8 ký tự / link thường / link riêng, sai định dạng, PIN sai, bị khoá, mở thẳng khi còn phiên, điền sẵn từ `myTrees`), bảng Hoàn tất (tên bắt buộc, PIN đúng 6 số), màn Tạo xong hiện mã cây, đăng nhập PIN (sai, bị khoá), xoá `#k=` khỏi địa chỉ. Server: test `googleClientId` trong `/api/config`.
 
 **Làm rõ sau lượt đọc thử (18/11):**
 - **Phòng mặc định** = `catalog.defaultRoom` trong `@ctln/shared` (đã có), thêm `clientId` cho từng món. Phòng mờ phía sau khung giới thiệu cũng là phòng này. Dạng gửi API là `Room` của `@ctln/shared/schemas.mjs`: `{ background, tree: { shape, palette, trunkShape, wood, slotCount }, items: [{ clientId, type, variant, x, y, scale, flip }] }` — cây thông cũng là một món trong `items`.
@@ -839,7 +840,7 @@ flowchart TD
 
 1. Mọi thao tác (kéo, đổi kiểu, phóng to, thêm, xoá) cập nhật giao diện ngay.
 2. Sau 1,5 giây không thao tác, gửi `PUT /room` kèm `roomVersion`.
-3. Lệch phiên bản (409): hỏi chủ cây "Giữ bản trên máy này" hay "Dùng bản mới nhất" (sửa 18/11, xem 6.5).
+4. Mất mạng: hiện "Mất mạng — thay đổi chưa được lưu", không tự thử lại; thao tác tiếp theo lưu lại cả phòng (sửa 19/11, xem 6.5). Chấm trạng thái "Đã lưu / Đang lưu / Chưa lưu".
 4. Mất mạng: giữ bản nháp trong localStorage, thử lại khi có mạng; hiện chấm trạng thái "Đã lưu / Đang lưu / Chưa lưu".
 
 ### 9.4 Bạn bè treo lời nhắn
