@@ -6,7 +6,7 @@
 
 - **Ngày cập nhật:** 19/11/2026
 - **Mốc đang ở:** M2 xong trên nhánh `m2-frontend` (tách từ `m1-backend`; cả hai chưa gộp vào `main`). M1 backend: 6 nhóm route, 118 test server + 40 test shared (M2 thêm 2 test `googleClientId`, nay 120 test server); đã chạy thử với PostgreSQL 16 thật trong Docker ngày 17/11 (mục 1–9 bên dưới đều đạt); mục 10 làm khi lên Azure.
-- **M2 xong** trên nhánh `m2-frontend` (chưa gộp vào `main`): giao diện phòng tự do, 159 test web + 120 test server + 40 test shared (sau thay đổi mất mạng 19/11), typecheck sạch. Bản build JS + CSS ≈ 150 KB gzip (giới hạn 250 KB). Đã chạy thật qua proxy Vite với PostgreSQL trong Docker (18/11): `/` trả HTML, `/api/config` qua proxy, tạo cây 201 với `publicUrl` bắt đầu `http://localhost:5173/c/`, `GET /api/trees/{id}` 200.
+- **M2 xong** trên nhánh `m2-frontend` (chưa gộp vào `main`): giao diện phòng tự do, 161 test web + 120 test server + 40 test shared (sau thay đổi mất mạng 19/11), typecheck sạch. Bản build JS + CSS ≈ 150 KB gzip (giới hạn 250 KB). Đã chạy thật qua proxy Vite với PostgreSQL trong Docker (18/11): `/` trả HTML, `/api/config` qua proxy, tạo cây 201 với `publicUrl` bắt đầu `http://localhost:5173/c/`, `GET /api/trees/{id}` 200.
 - **Việc tiếp theo:** **M3 — bạn bè treo lời nhắn, chủ cây đọc/khoá/đếm ngược, chia sẻ, OG** — chờ chủ dự án duyệt.
 
 ### M2 — danh sách thử tay trên trình duyệt (chủ dự án)
@@ -56,8 +56,17 @@ Chưa làm ở M1: giao diện web (M2–M3), trang quản trị (M3b), OG ảnh
 - M3b: nút "mở khoá PIN" của quản trị phải xoá cả `pin_last_failed_at`.
 - Lưu phòng: nếu giao diện dùng lại cùng `clientId` cho món khác loại (cây ↔ món khác) có thể lỗi 500 — ở M2 sinh `clientId` ổn định cho từng món.
 - Cửa sổ PIN tính từ lần sai **cuối** (chặt hơn "5 lần / 15 phút" của đặc tả một chút) — chấp nhận.
-- Đặc tả mục 10 ghi khoá link riêng "base32", code dùng base64url — đề xuất sửa câu chữ đặc tả.
+- ~~Đặc tả mục 10 ghi khoá link riêng "base32"~~ — đã sửa 17/11.
 - Một số test còn có thể bổ sung (thứ tự kiểm tra honeypot, thử khi giai đoạn BUILD cho kiểm duyệt…).
+
+**Việc nhỏ còn lại từ các lượt duyệt M2** (không ảnh hưởng đúng/sai hay riêng tư):
+- **Cần chủ dự án quyết:** giới hạn server 120 lần lưu/giờ/phòng (mục 10) — hiện trình duyệt tự giãn nhịp lưu khi gần chạm; có thể nâng giới hạn server (ví dụ 600) nếu muốn mượt hơn.
+- Đã cài TanStack Query nhưng chưa dùng; `/api/config` (`googleClientId`) chưa được gọi — dùng hoặc gỡ ở M3.
+- Bảng trượt (Sheet): chưa có `aria-modal`, phím Escape, giữ tiêu điểm — làm trước khi M3 thêm bảng viết lời nhắn.
+- `.strip` khai báo ở cả `app.css` và `room-animations.css`, chỉ đúng nhờ thứ tự nạp CSS.
+- Camera có thể dời 250 ms ngay khi vừa chạm chọn món và bắt đầu kéo (vị trí lưu khi thả vẫn đúng).
+- 7 test trang phòng chờ thật 1,5 giây (thêm ~10 giây chạy test) — nên chuyển sang đồng hồ giả.
+- Cần thử tay trên máy thật ở 360×640 và 390×844: viền món đang chọn, thanh trên một hàng, nút khách không che phòng, camera dời khi kéo.
 
 ## Lịch mốc
 
