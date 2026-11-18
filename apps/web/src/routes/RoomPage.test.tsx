@@ -26,6 +26,15 @@ const ownerRoom = (over: Partial<OwnerRoom> = {}): OwnerRoom => ({
   ...publicRoom(), slots: [], messageCount: 0, newSinceLastVisit: 0, showMessageCount: true, ...over,
 });
 const unauthorized = () => new ApiError(401, 'owner_required', 'x');
+// Tự lưu gộp 1,5 giây (đồng hồ thật) — chờ quá mốc đó.
+const SAVE_WAIT = { timeout: 3000 };
+
+/** Vào chế độ Sửa và đổi phông nền (mặc định 'night') sang "Nhà gỗ". */
+const editBackground = async () => {
+  await userEvent.click(await screen.findByRole('button', { name: /Sửa phòng/ }));
+  await userEvent.click(screen.getByRole('button', { name: 'Phông nền' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Nhà gỗ' }));
+};
 
 beforeEach(() => {
   localStorage.clear();
@@ -173,100 +182,86 @@ describe('RoomPage', () => {
     expect(storage.myTrees()).toEqual([]);
   });
 
-  it('nháp baseVersion 1, server roomVersion 2 → bảng xung đột; "Dùng bản mới nhất" xoá nháp', async () => {
+  it('còn draft:{id} từ bản cũ → xoá khi mở phòng; mở chế độ Xem, không gửi, không hỏi (kể cả StrictMode)', async () => {
     const mine = defaultRoom();
-    mine.background = 'night';
     mine.tree = { ...mine.tree, slotCount: 9 };
     storage.setDraft(ID, { room: mine, baseVersion: 1, savedAt: '' });
     mocked.getOwnerTree.mockResolvedValue(ownerRoom());
-    renderAt();
-    expect(await screen.findByText('Có thay đổi chưa lưu trên máy này, nhưng phòng đã được sửa ở thiết bị khác')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Dùng bản mới nhất' }));
-    expect(screen.queryByText('Dùng bản mới nhất')).not.toBeInTheDocument();
+    renderAt(`/c/${ID}`, true);
+    expect(await screen.findByRole('button', { name: /Sửa phòng/ })).toBeInTheDocument();
     expect(storage.getDraft(ID)).toBeNull();
+    expect(screen.queryByText('Dùng bản mới nhất')).not.toBeInTheDocument();
     expect(mocked.saveRoom).not.toHaveBeenCalled();
   });
 
-  it('nháp cùng bản server → gửi nháp đúng một lần (kể cả StrictMode)', async () => {
-    const mine = defaultRoom();
-    mine.tree = { ...mine.tree, slotCount: 9 };
-    storage.setDraft(ID, { room: mine, baseVersion: 2, savedAt: '' });
+  it('StrictMode: chỉ một bộ tự lưu — sửa một lần thì gửi đúng một lần', async () => {
     mocked.getOwnerTree.mockResolvedValue(ownerRoom());
     mocked.saveRoom.mockResolvedValue({ roomVersion: 3 });
     renderAt(`/c/${ID}`, true);
-    expect(await screen.findByText('Đã lưu')).toBeInTheDocument();
+    await editBackground();
+    expect(await screen.findByText('Đã lưu', undefined, SAVE_WAIT)).toBeInTheDocument();
+    await new Promise((r) => setTimeout(r, 100));
     expect(mocked.saveRoom).toHaveBeenCalledTimes(1);
-    expect(mocked.saveRoom).toHaveBeenCalledWith(ID, 2, mine);
-    expect(screen.queryByText('Dùng bản mới nhất')).not.toBeInTheDocument();
-    expect(storage.getDraft(ID)).toBeNull();
+    expect(mocked.saveRoom).toHaveBeenCalledWith(ID, 2, expect.objectContaining({ background: expect.not.stringMatching(/^night$/) }));
   });
 
   it('lưu bị 401 → "Chào chủ cây" → đăng nhập → tải lại và gửi lại thay đổi', async () => {
-    const mine = defaultRoom();
-    mine.tree = { ...mine.tree, slotCount: 9 };
-    storage.setDraft(ID, { room: mine, baseVersion: 2, savedAt: '' });
     mocked.getOwnerTree.mockResolvedValue(ownerRoom());
     mocked.saveRoom.mockRejectedValueOnce(unauthorized()).mockResolvedValue({ roomVersion: 3 });
     renderAt();
-    expect(await screen.findByRole('dialog', { name: 'Chào chủ cây 👋' })).toBeInTheDocument();
+    await editBackground();
+    expect(await screen.findByRole('dialog', { name: 'Chào chủ cây 👋' }, SAVE_WAIT)).toBeInTheDocument();
     mocked.authPin.mockResolvedValue(undefined);
     await userEvent.type(screen.getByLabelText('Mã PIN 6 số'), '123456');
     await userEvent.click(screen.getByRole('button', { name: 'Vào cây' }));
     await waitFor(() => expect(mocked.saveRoom).toHaveBeenCalledTimes(2));
     expect(mocked.getOwnerTree).toHaveBeenCalledTimes(2);
     expect(await screen.findByText('Đã lưu')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Xong' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Xong' }).length).toBeGreaterThan(0);
   });
 
   it('lưu bị 403 write_closed → về Xem, ẩn "Sửa phòng"', async () => {
-    const mine = defaultRoom();
-    mine.tree = { ...mine.tree, slotCount: 9 };
-    storage.setDraft(ID, { room: mine, baseVersion: 2, savedAt: '' });
     mocked.getOwnerTree.mockResolvedValue(ownerRoom());
     mocked.saveRoom.mockRejectedValue(new ApiError(403, 'write_closed', 'x'));
     renderAt();
-    expect(await screen.findByText('Cây của Lan')).toBeInTheDocument();
-    await waitFor(() => expect(screen.queryByRole('button', { name: 'Xong' })).not.toBeInTheDocument());
+    await editBackground();
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Xong' })).not.toBeInTheDocument(), SAVE_WAIT);
+    expect(screen.getByText('Cây của Lan')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Sửa phòng/ })).not.toBeInTheDocument();
   });
 
-  it('lưu bị lỗi mạng → thông báo "Mất mạng — thay đổi được giữ trên máy"', async () => {
-    const mine = defaultRoom();
-    mine.tree = { ...mine.tree, slotCount: 9 };
-    storage.setDraft(ID, { room: mine, baseVersion: 2, savedAt: '' });
+  it('lưu bị lỗi mạng → "Chưa lưu", thông báo "Mất mạng — thay đổi chưa được lưu", không ghi draft:{id}', async () => {
     mocked.getOwnerTree.mockResolvedValue(ownerRoom());
     mocked.saveRoom.mockRejectedValue(new ApiError(0, 'network', 'x'));
     renderAt();
-    expect(await screen.findByText('Mất mạng — thay đổi được giữ trên máy')).toBeInTheDocument();
+    await editBackground();
+    expect(await screen.findByText('Mất mạng — thay đổi chưa được lưu', undefined, SAVE_WAIT)).toBeInTheDocument();
     expect(screen.getByText('Chưa lưu')).toBeInTheDocument();
+    expect(mocked.saveRoom).toHaveBeenCalledTimes(1);
+    expect(storage.getDraft(ID)).toBeNull();
   });
 
   it('lưu bị 429 → báo lưu hơi nhiều, không báo mất mạng', async () => {
-    const mine = defaultRoom();
-    mine.tree = { ...mine.tree, slotCount: 9 };
-    storage.setDraft(ID, { room: mine, baseVersion: 2, savedAt: '' });
     mocked.getOwnerTree.mockResolvedValue(ownerRoom());
     mocked.saveRoom.mockRejectedValue(new ApiError(429, 'rate_limited', 'x'));
     renderAt();
+    await editBackground();
     expect(
-      await screen.findByText('Bạn lưu hơi nhiều, sẽ tự lưu lại sau ít phút — thay đổi vẫn giữ trên máy.'),
+      await screen.findByText('Bạn lưu hơi nhiều, sẽ tự lưu lại sau ít phút.', undefined, SAVE_WAIT),
     ).toBeInTheDocument();
-    expect(screen.queryByText('Mất mạng — thay đổi được giữ trên máy')).not.toBeInTheDocument();
-    expect(storage.getDraft(ID)).not.toBeNull();
+    expect(screen.queryByText('Mất mạng — thay đổi chưa được lưu')).not.toBeInTheDocument();
   });
 
-  it('lưu bị 404 (cây đã bị xoá ở nơi khác) → "Cây này không còn nữa.", ngừng lưu, giữ nháp', async () => {
-    const mine = defaultRoom();
-    mine.tree = { ...mine.tree, slotCount: 9 };
-    storage.setDraft(ID, { room: mine, baseVersion: 2, savedAt: '' });
+  it('lưu bị 404 (cây đã bị xoá ở nơi khác) → "Cây này không còn nữa.", ngừng lưu; "Xong" vẫn về Xem', async () => {
     mocked.getOwnerTree.mockResolvedValue(ownerRoom());
     mocked.saveRoom.mockRejectedValue(new ApiError(404, 'not_found', 'x'));
     renderAt();
-    expect(await screen.findByText('Cây này không còn nữa.')).toBeInTheDocument();
+    await editBackground();
+    expect(await screen.findByText('Cây này không còn nữa.', undefined, SAVE_WAIT)).toBeInTheDocument();
     await userEvent.click(screen.getAllByRole('button', { name: 'Xong' })[0]!);
-    expect(await screen.findByText('Chưa lưu được — thay đổi vẫn giữ trên máy.')).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: /Sửa phòng/ })).toBeInTheDocument();
+    expect(screen.getByText('Thay đổi chưa được lưu.')).toBeInTheDocument();
     expect(mocked.saveRoom).toHaveBeenCalledTimes(1);
-    expect(storage.getDraft(ID)!.room.tree.slotCount).toBe(9);
   });
 
   it('tên cây có HTML hiển thị nguyên chuỗi dạng text', async () => {
@@ -297,7 +292,6 @@ describe('RoomPage', () => {
     expect(mocked.saveRoom).toHaveBeenCalledTimes(1);
     expect(mocked.saveRoom.mock.calls[0]![1]).toBe(2);
     expect(mocked.saveRoom.mock.calls[0]![2].background).not.toBe('night');
-    expect(storage.getDraft(ID)).toBeNull();
 
     await userEvent.click(screen.getByRole('button', { name: /Sửa phòng/ }));
     await userEvent.click(screen.getByRole('button', { name: 'Phông nền' }));
@@ -309,63 +303,56 @@ describe('RoomPage', () => {
     expect(mocked.saveRoom.mock.calls[1]![1]).toBe(3);
   });
 
-  it('rời trang khi đang sửa (chưa lưu xong / mất mạng) → giữ draft:{id} với thay đổi mới nhất', async () => {
+  it('rời trang khi đang sửa → gửi ngay một lần, không ghi draft:{id}', async () => {
     mocked.getOwnerTree.mockResolvedValue(ownerRoom());
     mocked.saveRoom.mockRejectedValue(new ApiError(0, 'network', 'x'));
     const { unmount } = renderAt();
-    await userEvent.click(await screen.findByRole('button', { name: /Sửa phòng/ }));
-    await userEvent.click(screen.getByRole('button', { name: 'Phông nền' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Nhà gỗ' }));
-    const draft = storage.getDraft(ID);
-    expect(draft!.baseVersion).toBe(2);
+    await editBackground();
     unmount();
     await new Promise((r) => setTimeout(r, 0));
-    await waitFor(() => expect(mocked.saveRoom).toHaveBeenCalledTimes(1)); // rời trang vẫn thử gửi ngay
-    await new Promise((r) => setTimeout(r, 0));
-    expect(storage.getDraft(ID)).toEqual(draft);
+    await waitFor(() => expect(mocked.saveRoom).toHaveBeenCalledTimes(1));
+    expect(mocked.saveRoom.mock.calls[0]![2].background).not.toBe('night');
+    expect(storage.getDraft(ID)).toBeNull();
   });
 
   it('lưu bị 409 slots_in_use → hiện thông báo của server', async () => {
-    const mine = defaultRoom();
-    mine.tree = { ...mine.tree, slotCount: 9 };
-    storage.setDraft(ID, { room: mine, baseVersion: 2, savedAt: '' });
     mocked.getOwnerTree.mockResolvedValue(ownerRoom());
     mocked.saveRoom.mockRejectedValueOnce(new ApiError(409, 'slots_in_use', 'Đã có lời nhắn ở điểm 10.'));
     mocked.saveRoom.mockResolvedValue({ roomVersion: 3 });
     renderAt();
-    expect(await screen.findByText('Đã có lời nhắn ở điểm 10.')).toBeInTheDocument();
+    await editBackground();
+    expect(await screen.findByText('Đã có lời nhắn ở điểm 10.', undefined, SAVE_WAIT)).toBeInTheDocument();
   });
-  it('"Xong" khi mất mạng: ở lại chế độ Sửa, vẫn thử lại; có mạng → Đã lưu → "Xong" mới về Xem', async () => {
+  it('"Xong" khi mất mạng: vẫn về Xem với bản server đã xác nhận, báo "Thay đổi chưa được lưu.", không gửi thêm', async () => {
     mocked.getOwnerTree.mockResolvedValue(ownerRoom());
-    mocked.saveRoom.mockRejectedValueOnce(new ApiError(0, 'network', 'x')).mockResolvedValue({ roomVersion: 3 });
-    renderAt();
-    await userEvent.click(await screen.findByRole('button', { name: /Sửa phòng/ }));
-    await userEvent.click(screen.getByRole('button', { name: 'Phông nền' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Nhà gỗ' }));
-    await userEvent.click(screen.getAllByRole('button', { name: 'Xong' })[0]!);
-    expect(await screen.findByText('Chưa lưu được — thay đổi vẫn giữ trên máy.')).toBeInTheDocument();
-    expect(screen.getByText('Chưa lưu')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /Sửa phòng/ })).not.toBeInTheDocument();
-    expect(mocked.saveRoom).toHaveBeenCalledTimes(1);
-
-    window.dispatchEvent(new Event('online'));
-    expect(await screen.findByText('Đã lưu')).toBeInTheDocument();
-    expect(mocked.saveRoom).toHaveBeenCalledTimes(2);
+    mocked.saveRoom.mockRejectedValue(new ApiError(0, 'network', 'x'));
+    const { container } = renderAt();
+    await editBackground();
     await userEvent.click(screen.getAllByRole('button', { name: 'Xong' })[0]!);
     expect(await screen.findByRole('button', { name: /Sửa phòng/ })).toBeInTheDocument();
+    expect(screen.getByText('Thay đổi chưa được lưu.')).toBeInTheDocument();
+    expect(container.querySelector('img[data-bg]')!.getAttribute('src')).toContain('bg-night');
+    expect(mocked.saveRoom).toHaveBeenCalledTimes(1);
+    window.dispatchEvent(new Event('online'));
+    await new Promise((r) => setTimeout(r, 0));
+    expect(mocked.saveRoom).toHaveBeenCalledTimes(1);
+    expect(storage.getDraft(ID)).toBeNull();
+
+    // Vào Sửa lại: bắt đầu từ bản server, không phải bản chưa lưu.
+    await userEvent.click(screen.getByRole('button', { name: /Sửa phòng/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Phông nền' }));
+    expect(screen.getByRole('button', { name: 'Nhà gỗ' })).toHaveAttribute('aria-pressed', 'false');
+    expect(screen.getByText('Đã lưu')).toBeInTheDocument();
   });
 
-  it('"Xong" gặp 403 write_closed: về Xem với bản server đã nhận, không phải bản bị từ chối; giữ nháp', async () => {
+  it('"Xong" gặp 403 write_closed: về Xem với bản server đã nhận, không phải bản bị từ chối', async () => {
     mocked.getOwnerTree.mockResolvedValue(ownerRoom());
     mocked.saveRoom.mockRejectedValue(new ApiError(403, 'write_closed', 'x'));
     const { container } = renderAt();
-    await userEvent.click(await screen.findByRole('button', { name: /Sửa phòng/ }));
-    await userEvent.click(screen.getByRole('button', { name: 'Phông nền' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Nhà gỗ' }));
+    await editBackground();
     await userEvent.click(screen.getAllByRole('button', { name: 'Xong' })[0]!);
     expect(await screen.findByText('Cây của Lan')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Sửa phòng/ })).not.toBeInTheDocument();
     expect(container.querySelector('img[data-bg]')!.getAttribute('src')).toContain('bg-night');
-    expect(storage.getDraft(ID)!.room.background).not.toBe('night');
   });
 });

@@ -84,14 +84,15 @@ function TreeRoom({ id }: { id: string }) {
       if (!room) return setView({ kind: 'error' });
       remember(id, meta.title);
       setView({ kind: 'owner', data: { meta, room } });
-      // Lần đầu thấy phòng ở vai chủ cây: còn nháp chưa lưu thì mở thẳng chế độ Sửa để gửi/hỏi xung đột.
-      setMode((m) => m ?? (storage.getDraft(id) && phaseAllowsEdit(meta.phase) ? 'edit' : 'view'));
+      setMode((m) => m ?? 'view');
     },
     [id],
   );
 
   useEffect(() => {
     let cancelled = false;
+    // Phòng đã tạo không giữ nháp nữa (chốt 19/11): xoá nháp còn sót từ bản cũ.
+    storage.clearDraft(id);
     // Dùng chung một lượt auth/link (StrictMode chạy effect hai lần).
     link.current ??= (async () => {
       const key = /(?:^#|&)k=([^&]+)/.exec(window.location.hash)?.[1];
@@ -151,7 +152,7 @@ function TreeRoom({ id }: { id: string }) {
             setMode('view');
           }}
           onWriteClosed={(r, roomVersion) => {
-            // Về Xem với bản server đã nhận; bản bị từ chối vẫn nằm trong nháp trên máy.
+            // Về Xem với bản server đã nhận; bản bị từ chối bị bỏ.
             setView({ kind: 'owner', data: { meta: { ...view.data.meta, roomVersion }, room: r } });
             setWriteClosed(true);
             setMode('view');
@@ -218,7 +219,6 @@ function OwnerEditor(props: EditorProps) {
   latest.current = props;
   const mine = useRef<Autosave | null>(null);
   const stopTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const blocks = useRef(0); // số lần xung đột / mất phiên — "Xong" không rời chế độ Sửa nếu vừa gặp
 
   useEffect(() => {
     clearTimeout(stopTimer.current);
@@ -228,28 +228,21 @@ function OwnerEditor(props: EditorProps) {
         store,
         version: data.meta.roomVersion,
         api,
-        storage,
         onState: setSaveState,
         onConflict: (server) => {
-          blocks.current++;
           const room = toRoom(server);
           if (!room) return latest.current.onBadRoom();
           setConflict({ ...server, ...room });
         },
         onSlotsInUse: (m) => latest.current.toast(m),
         onWriteClosed: () => latest.current.onWriteClosed(a.lastSaved(), a.version()),
-        onUnauthorized: () => {
-          blocks.current++;
-          latest.current.onUnauthorized();
-        },
-        onOffline: () => latest.current.toast('Mất mạng — thay đổi được giữ trên máy'),
-        onRateLimited: () =>
-          latest.current.toast('Bạn lưu hơi nhiều, sẽ tự lưu lại sau ít phút — thay đổi vẫn giữ trên máy.'),
+        onUnauthorized: () => latest.current.onUnauthorized(),
+        onOffline: () => latest.current.toast('Mất mạng — thay đổi chưa được lưu'),
+        onRateLimited: () => latest.current.toast('Bạn lưu hơi nhiều, sẽ tự lưu lại sau ít phút.'),
         onGone: () => latest.current.toast('Cây này không còn nữa.'),
       });
       mine.current = a;
       autosaveRef.current = a;
-      if (a.resume(data.meta.roomVersion) === 'conflict') setConflict({ ...data.meta, ...data.room });
     }
     return () => {
       // Hoãn một nhịp: StrictMode gỡ rồi gắn lại effect ngay, không được tạo bộ tự lưu thứ hai.
@@ -269,11 +262,13 @@ function OwnerEditor(props: EditorProps) {
   const done = async () => {
     const a = mine.current;
     if (!a || conflict) return;
-    const before = blocks.current;
     await a.flush();
-    // Chỉ rời chế độ Sửa khi đã lưu thật; mất mạng thì ở lại để bộ tự lưu tiếp tục thử lại.
-    if (blocks.current === before && a.isSaved()) latest.current.onLeave(store.getState().room, a.version());
-    else latest.current.toast('Chưa lưu được — thay đổi vẫn giữ trên máy.');
+    // Chưa lưu được (mất mạng, 429, lỗi khác) vẫn rời chế độ Sửa: bỏ phần chưa lưu, hiện bản server đã xác nhận (chốt 19/11).
+    if (!a.isSaved()) {
+      a.stop();
+      latest.current.toast('Thay đổi chưa được lưu.');
+    }
+    latest.current.onLeave(a.lastSaved(), a.version());
   };
 
   const resolve = (keep: boolean) => {

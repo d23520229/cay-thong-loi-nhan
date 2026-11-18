@@ -1,12 +1,10 @@
-import { RoomSchema, validateRoom, type Room } from '@ctln/shared';
+import { validateRoom, type Room } from '@ctln/shared';
 import { ApiError, type api as apiModule, type PublicRoom } from '../lib/api';
-import type { storage as storageModule } from '../lib/storage';
 import type { EditorStore } from './store';
 
 export type SaveState = 'saved' | 'saving' | 'unsaved';
 
 const DEBOUNCE_MS = 1500;
-const RETRY_MS = 5000;
 // Server giới hạn 120 lần lưu/giờ/cây (đặc tả 10): từ lần gửi thứ 100 trong một giờ thì gộp 60 giây.
 const HOUR_MS = 3600000;
 const SLOW_AFTER = 100;
@@ -17,7 +15,6 @@ type Opts = {
   store: EditorStore;
   version: number;
   api: Pick<typeof apiModule, 'saveRoom'>;
-  storage: Pick<typeof storageModule, 'getDraft' | 'setDraft' | 'clearDraft'>;
   setTimer?: typeof setTimeout;
   clearTimer?: typeof clearTimeout;
   now?: () => number;
@@ -28,21 +25,21 @@ type Opts = {
   onUnauthorized(): void;
   onOffline(): void;
   onRateLimited(): void;
-  /** 404: cây đã bị xoá ở nơi khác — tự lưu đã dừng, nháp vẫn giữ. */
+  /** 404: cây đã bị xoá ở nơi khác — tự lưu đã dừng. */
   onGone(): void;
 };
 
-/** Tự lưu phòng (đặc tả 6.5 "Tự lưu"): gộp 1,5 giây, nháp `draft:{treeId}`, xử lý từng mã lỗi. */
+/** Tự lưu phòng (đặc tả 6.5 "Tự lưu"): gộp 1,5 giây, xử lý từng mã lỗi; không giữ nháp, mất mạng không tự thử lại. */
 export function createAutosave(o: Opts) {
   const setTimer = o.setTimer ?? ((fn: () => void, ms: number) => setTimeout(fn, ms));
   const clearTimer = o.clearTimer ?? ((t: ReturnType<typeof setTimeout>) => clearTimeout(t));
   const now = o.now ?? (() => Date.now());
-  const { store, storage, treeId } = o;
+  const { store, treeId } = o;
 
   let version = o.version;
   let lastSaved: Room = store.getState().room; // phòng server đã xác nhận gần nhất
   let debounce: ReturnType<typeof setTimeout> | undefined;
-  let retry: ReturnType<typeof setTimeout> | undefined;
+  let retry: ReturnType<typeof setTimeout> | undefined; // chỉ dùng cho 429
   let inFlight: Promise<void> | null = null;
   let offline = false;
   let rateLimited = false;
@@ -55,8 +52,6 @@ export function createAutosave(o: Opts) {
     if (retry !== undefined) clearTimer(retry);
     debounce = retry = undefined;
   };
-  const writeDraft = () =>
-    storage.setDraft(treeId, { room: store.getState().room, baseVersion: version, savedAt: new Date().toISOString() });
 
   const send = (): Promise<void> => {
     clearTimers();
@@ -79,16 +74,11 @@ export function createAutosave(o: Opts) {
         lastSaved = room;
         offline = false;
         rateLimited = false;
-        // Đã stop(): vẫn cập nhật nháp cho đúng bản server, nhưng không gọi callback nào.
-        if (store.getState().room === room) {
-          storage.clearDraft(treeId);
-          if (!stopped) o.onState('saved');
-        } else {
-          writeDraft(); // nháp sửa tiếp từ bản vừa lưu
-          if (!stopped) {
-            o.onState('unsaved');
-            next = debounce === undefined;
-          }
+        // Đã stop(): không gọi callback nào.
+        if (!stopped) {
+          const changed = store.getState().room !== room;
+          o.onState(changed ? 'unsaved' : 'saved');
+          next = changed && debounce === undefined;
         }
       } catch (e) {
         if (!stopped) {
@@ -126,18 +116,13 @@ export function createAutosave(o: Opts) {
       }
       if (!stopped) retry = setTimer(() => void send(), SLOW_MS);
     } else if (err.status === 0 || err.status >= 500) {
+      // Không tự thử lại (chốt 19/11): thao tác tiếp theo của chủ cây sẽ lưu lại cả phòng.
       if (!offline) {
         offline = true;
         o.onOffline();
       }
-      if (!stopped) retry = setTimer(() => void send(), RETRY_MS);
     }
   };
-
-  const onOnline = () => {
-    if (offline) void send();
-  };
-  window.addEventListener('online', onOnline);
 
   const schedule = () => {
     if (debounce !== undefined) clearTimer(debounce);
@@ -149,10 +134,9 @@ export function createAutosave(o: Opts) {
     }, rateLimited || recent >= SLOW_AFTER ? SLOW_MS : DEBOUNCE_MS);
   };
 
-  // replaceRoom (resume, useLatest) không tăng revision nên không đi qua đây.
+  // replaceRoom (useLatest) không tăng revision nên không đi qua đây.
   const unsubscribe = store.subscribe((s, prev) => {
     if (s.revision === prev.revision) return;
-    writeDraft();
     o.onState('unsaved');
     schedule();
   });
@@ -160,33 +144,14 @@ export function createAutosave(o: Opts) {
   const stop = () => {
     stopped = true;
     clearTimers();
-    window.removeEventListener('online', onOnline);
     unsubscribe();
   };
 
   return {
-    resume(serverVersion: number): 'none' | 'sent' | 'conflict' {
-      const draft = storage.getDraft(treeId);
-      if (!draft) return 'none';
-      const parsed = RoomSchema.safeParse(draft.room);
-      if (!parsed.success || !validateRoom(parsed.data).ok) {
-        storage.clearDraft(treeId);
-        return 'none';
-      }
-      store.getState().replaceRoom(parsed.data);
-      if (draft.baseVersion === serverVersion) {
-        version = serverVersion;
-        void send();
-        return 'sent';
-      }
-      conflict = true;
-      return 'conflict';
-    },
     keepMine(serverRoom: PublicRoom) {
       conflict = false;
       lastSaved = { background: serverRoom.background, tree: serverRoom.tree, items: serverRoom.items };
       version = serverRoom.roomVersion;
-      writeDraft();
       void send();
     },
     useLatest(serverRoom: PublicRoom) {
@@ -196,7 +161,6 @@ export function createAutosave(o: Opts) {
       store.getState().replaceRoom(room);
       lastSaved = room;
       version = serverRoom.roomVersion;
-      storage.clearDraft(treeId);
       o.onState('saved');
     },
     flush(): Promise<void> {

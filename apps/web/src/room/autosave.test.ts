@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Room } from '@ctln/shared';
 import { ApiError, type PublicRoom } from '../lib/api';
-import { storage } from '../lib/storage';
 import { createAutosave } from './autosave';
 import { defaultRoom } from './model';
 import { createEditorStore, type EditorStore } from './store';
@@ -21,7 +20,7 @@ function setup(opts: { version?: number; store?: EditorStore; saveRoom?: SaveFn 
     onRateLimited: vi.fn(),
     onGone: vi.fn(),
   };
-  const a = createAutosave({ treeId: 't1', store, version: opts.version ?? 3, api: { saveRoom }, storage, ...cb });
+  const a = createAutosave({ treeId: 't1', store, version: opts.version ?? 3, api: { saveRoom }, ...cb });
   return { store, saveRoom, a, ...cb };
 }
 
@@ -43,7 +42,7 @@ afterEach(() => {
 });
 
 describe('autosave', () => {
-  it('gộp các thay đổi: 1 lần saveRoom sau 1500ms kể từ thay đổi cuối; thành công cập nhật version, xoá nháp', async () => {
+  it('gộp các thay đổi: 1 lần saveRoom sau 1500ms kể từ thay đổi cuối; thành công cập nhật version', async () => {
     const t = track(setup());
     const st = t.store.getState();
     st.setTree({ slotCount: 9 });
@@ -58,44 +57,16 @@ describe('autosave', () => {
     expect(t.saveRoom).toHaveBeenCalledTimes(1);
     expect(t.saveRoom).toHaveBeenCalledWith('t1', 3, t.store.getState().room);
     expect(t.a.version()).toBe(4);
-    expect(storage.getDraft('t1')).toBeNull();
     expect(t.onState.mock.calls.map((c) => c[0]).slice(-2)).toEqual(['saving', 'saved']);
   });
 
-  it('ghi nháp ngay khi đổi; mở lại cùng bản server thì gửi nháp, khác bản thì báo xung đột', async () => {
+  it('phòng đã tạo không ghi nháp draft:{treeId} (đặc tả 6.5, chốt 19/11), kể cả khi lưu lỗi', async () => {
     const t = track(setup());
+    t.saveRoom.mockRejectedValue(new ApiError(0, 'network', 'x'));
     t.store.getState().setTree({ slotCount: 9 });
-    const draft = storage.getDraft('t1')!;
-    expect(draft.room).toEqual(t.store.getState().room);
-    expect(draft.baseVersion).toBe(3);
-    t.a.stop();
-
-    const t2 = track(setup({ version: 3 }));
-    expect(t2.a.resume(3)).toBe('sent');
-    await vi.advanceTimersByTimeAsync(0);
-    expect(t2.saveRoom).toHaveBeenCalledWith('t1', 3, draft.room);
-    expect(t2.a.version()).toBe(4);
-
-    storage.setDraft('t1', draft);
-    const t3 = track(setup({ version: 4 }));
-    expect(t3.a.resume(4)).toBe('conflict');
-    expect(t3.store.getState().room).toEqual(draft.room);
-    await vi.advanceTimersByTimeAsync(5000);
-    expect(t3.saveRoom).not.toHaveBeenCalled();
-  });
-
-  it('resume: không có nháp → none; nháp hỏng → xoá, none', () => {
-    const t = track(setup());
-    expect(t.a.resume(3)).toBe('none');
-    localStorage.setItem('draft:t1', JSON.stringify({ room: { foo: 1 }, baseVersion: 3, savedAt: '' }));
-    expect(t.a.resume(3)).toBe('none');
-    expect(localStorage.getItem('draft:t1')).toBeNull();
-    const bad = defaultRoom();
-    bad.items = bad.items.filter((i) => i.type !== 'tree');
-    storage.setDraft('t1', { room: bad, baseVersion: 3, savedAt: '' });
-    expect(t.a.resume(3)).toBe('none');
-    expect(storage.getDraft('t1')).toBeNull();
-    expect(t.saveRoom).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(t.saveRoom).toHaveBeenCalledTimes(1);
+    expect(localStorage.length).toBe(0);
   });
 
   it('409 version_conflict → onConflict; keepMine gửi với roomVersion mới; useLatest thay phòng', async () => {
@@ -120,7 +91,6 @@ describe('autosave', () => {
     expect(t.saveRoom).toHaveBeenLastCalledWith('t1', 7, t.store.getState().room);
     expect(t.store.getState().room.tree.slotCount).toBe(9);
     expect(t.a.version()).toBe(8);
-    expect(storage.getDraft('t1')).toBeNull();
 
     t.store.getState().setTree({ slotCount: 16 });
     await vi.advanceTimersByTimeAsync(1500);
@@ -129,7 +99,6 @@ describe('autosave', () => {
     t.a.useLatest(server);
     expect(t.store.getState().room).toEqual({ background: 'night', tree: other.tree, items: other.items });
     expect(t.a.version()).toBe(7);
-    expect(storage.getDraft('t1')).toBeNull();
     expect(t.onState).toHaveBeenLastCalledWith('saved');
     await vi.advanceTimersByTimeAsync(10000);
     expect(t.saveRoom).toHaveBeenCalledTimes(calls);
@@ -153,7 +122,7 @@ describe('autosave', () => {
     expect(t.onState).toHaveBeenLastCalledWith('saved');
   });
 
-  it('lỗi mạng → unsaved, onOffline 1 lần, thử lại sau 5000ms và ngay khi online', async () => {
+  it('lỗi mạng → unsaved, onOffline 1 lần, không tự thử lại (kể cả sau 5 giây, 60 giây, sự kiện online)', async () => {
     const t = track(
       setup({
         saveRoom: async () => {
@@ -166,32 +135,47 @@ describe('autosave', () => {
     expect(t.saveRoom).toHaveBeenCalledTimes(1);
     expect(t.onState).toHaveBeenLastCalledWith('unsaved');
     expect(t.onOffline).toHaveBeenCalledTimes(1);
-    await vi.advanceTimersByTimeAsync(4999);
+    await vi.advanceTimersByTimeAsync(5000);
     expect(t.saveRoom).toHaveBeenCalledTimes(1);
-    await vi.advanceTimersByTimeAsync(1);
-    expect(t.saveRoom).toHaveBeenCalledTimes(2);
-    expect(t.onOffline).toHaveBeenCalledTimes(1);
-    expect(storage.getDraft('t1')).not.toBeNull();
-
-    t.saveRoom.mockResolvedValueOnce({ roomVersion: 5 });
     window.dispatchEvent(new Event('online'));
-    await vi.advanceTimersByTimeAsync(0);
-    expect(t.saveRoom).toHaveBeenCalledTimes(3);
-    expect(t.a.version()).toBe(5);
-    expect(t.onState).toHaveBeenLastCalledWith('saved');
-    await vi.advanceTimersByTimeAsync(10000);
-    expect(t.saveRoom).toHaveBeenCalledTimes(3);
+    await vi.advanceTimersByTimeAsync(60000);
+    expect(t.saveRoom).toHaveBeenCalledTimes(1);
+    expect(t.onState).toHaveBeenLastCalledWith('unsaved');
   });
 
-  it('lỗi 500 cũng thử lại sau 5000ms', async () => {
+  it('lỗi 500 cũng không tự thử lại', async () => {
     const t = track(setup());
     t.saveRoom.mockRejectedValueOnce(new ApiError(500, 'internal', 'x'));
     t.store.getState().setTree({ slotCount: 9 });
     await vi.advanceTimersByTimeAsync(1500);
     expect(t.onOffline).toHaveBeenCalledTimes(1);
-    await vi.advanceTimersByTimeAsync(5000);
+    await vi.advanceTimersByTimeAsync(60000);
+    expect(t.saveRoom).toHaveBeenCalledTimes(1);
+    expect(t.onState).toHaveBeenLastCalledWith('unsaved');
+  });
+
+  it('mất mạng → thao tác tiếp theo lưu lại cả phòng sau 1,5 giây (gồm thay đổi trước); thông báo chỉ một lần', async () => {
+    const t = track(setup());
+    t.saveRoom
+      .mockRejectedValueOnce(new ApiError(0, 'network', 'x'))
+      .mockRejectedValueOnce(new ApiError(0, 'network', 'x'));
+    t.store.getState().setTree({ slotCount: 9 });
+    await vi.advanceTimersByTimeAsync(1500);
+    t.store.getState().setBackground('night');
+    await vi.advanceTimersByTimeAsync(1499);
+    expect(t.saveRoom).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
     expect(t.saveRoom).toHaveBeenCalledTimes(2);
+    expect(t.onOffline).toHaveBeenCalledTimes(1);
+    t.store.getState().setTree({ slotCount: 25 });
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(t.saveRoom).toHaveBeenCalledTimes(3);
+    const [, version, room] = t.saveRoom.mock.calls[2]!;
+    expect(version).toBe(3);
+    expect(room.background).toBe('night');
+    expect(room.tree.slotCount).toBe(25);
     expect(t.onState).toHaveBeenLastCalledWith('saved');
+    expect(t.a.version()).toBe(4);
   });
 
   it('429 → onRateLimited (không phải onOffline), thử lại sau 60 giây chứ không phải 5 giây', async () => {
@@ -211,7 +195,6 @@ describe('autosave', () => {
     expect(t.saveRoom).toHaveBeenCalledTimes(2);
     expect(t.saveRoom.mock.calls[1]![2].tree.slotCount).toBe(16);
     expect(t.onState).toHaveBeenLastCalledWith('saved');
-    expect(storage.getDraft('t1')).toBeNull();
   });
 
   it('đã gửi 100 lần trong một giờ → lần sửa sau chờ 60 giây; quá một giờ thì về 1,5 giây', async () => {
@@ -236,7 +219,7 @@ describe('autosave', () => {
     expect(t.saveRoom).toHaveBeenCalledTimes(102);
   });
 
-  it('404 (cây đã bị xoá) → onGone, dừng tự lưu, giữ nháp', async () => {
+  it('404 (cây đã bị xoá) → onGone, dừng tự lưu', async () => {
     const t = track(setup());
     t.saveRoom.mockRejectedValueOnce(new ApiError(404, 'not_found', 'x'));
     t.store.getState().setTree({ slotCount: 9 });
@@ -244,13 +227,10 @@ describe('autosave', () => {
     expect(t.onGone).toHaveBeenCalledTimes(1);
     expect(t.onOffline).not.toHaveBeenCalled();
     expect(t.onState).toHaveBeenLastCalledWith('unsaved');
-    expect(storage.getDraft('t1')!.room.tree.slotCount).toBe(9);
     t.store.getState().setTree({ slotCount: 16 });
-    window.dispatchEvent(new Event('online'));
     await vi.advanceTimersByTimeAsync(70000);
     await t.a.flush();
     expect(t.saveRoom).toHaveBeenCalledTimes(1);
-    expect(storage.getDraft('t1')).not.toBeNull();
   });
 
   it('403 write_closed → onWriteClosed; 401 → onUnauthorized', async () => {
@@ -264,7 +244,6 @@ describe('autosave', () => {
     await vi.advanceTimersByTimeAsync(1500);
     expect(t.onUnauthorized).toHaveBeenCalledTimes(1);
     expect(t.onState).toHaveBeenLastCalledWith('unsaved');
-    expect(storage.getDraft('t1')).not.toBeNull();
     expect(t.onOffline).not.toHaveBeenCalled();
   });
 
@@ -275,7 +254,6 @@ describe('autosave', () => {
     t.store.getState().setTree({ slotCount: 9 });
     await vi.advanceTimersByTimeAsync(1500);
     t.store.getState().setTree({ slotCount: 16 });
-    expect(storage.getDraft('t1')!.baseVersion).toBe(3);
     await vi.advanceTimersByTimeAsync(1500);
     expect(t.saveRoom).toHaveBeenCalledTimes(1);
     release({ roomVersion: 4 });
@@ -284,21 +262,19 @@ describe('autosave', () => {
     expect(t.saveRoom).toHaveBeenLastCalledWith('t1', 4, t.store.getState().room);
     expect(t.store.getState().room.tree.slotCount).toBe(16);
     expect(t.onState).toHaveBeenLastCalledWith('saved');
-    expect(storage.getDraft('t1')).toBeNull();
   });
 
-  it('phòng không qua validateRoom thì không gửi, giữ nháp, unsaved', async () => {
+  it('phòng không qua validateRoom thì không gửi, unsaved', async () => {
     const bad = defaultRoom();
     const t = track(setup({ store: createEditorStore(bad) }));
     const tree = bad.items.find((i) => i.type === 'tree')!;
     t.store.setState((s) => ({ room: { ...s.room, items: [...s.room.items, { ...tree }] }, revision: s.revision + 1 }));
     await vi.advanceTimersByTimeAsync(1500);
     expect(t.saveRoom).not.toHaveBeenCalled();
-    expect(storage.getDraft('t1')).not.toBeNull();
     expect(t.onState).toHaveBeenLastCalledWith('unsaved');
   });
 
-  it('flush gửi ngay; stop huỷ hẹn và bỏ lắng nghe online', async () => {
+  it('flush gửi ngay; stop huỷ hẹn và bỏ theo dõi thay đổi', async () => {
     const t = track(setup());
     t.store.getState().setTree({ slotCount: 9 });
     await t.a.flush();
@@ -310,7 +286,6 @@ describe('autosave', () => {
     await vi.advanceTimersByTimeAsync(1500);
     expect(t.saveRoom).toHaveBeenCalledTimes(2);
     t.a.stop();
-    window.dispatchEvent(new Event('online'));
     t.store.getState().setTree({ slotCount: 20 });
     await vi.advanceTimersByTimeAsync(10000);
     expect(t.saveRoom).toHaveBeenCalledTimes(2);
@@ -393,20 +368,7 @@ describe('autosave', () => {
     expect(t.saveRoom.mock.calls[1]![2].tree.slotCount).toBe(20);
   });
 
-  it('mất mạng → sửa tiếp → có mạng thì gửi bản mới nhất', async () => {
-    const t = track(setup());
-    t.saveRoom.mockRejectedValueOnce(new ApiError(0, 'network', 'x'));
-    t.store.getState().setTree({ slotCount: 9 });
-    await vi.advanceTimersByTimeAsync(1500);
-    t.store.getState().setTree({ slotCount: 25 });
-    window.dispatchEvent(new Event('online'));
-    await vi.advanceTimersByTimeAsync(0);
-    expect(t.saveRoom).toHaveBeenCalledTimes(2);
-    expect(t.saveRoom.mock.calls[1]![2].tree.slotCount).toBe(25);
-    expect(t.onState).toHaveBeenLastCalledWith('saved');
-  });
-
-  it('store.replaceRoom không tăng revision nên không ghi nháp hay hẹn lưu', async () => {
+  it('store.replaceRoom không tăng revision nên không hẹn lưu', async () => {
     const t = track(setup());
     const other = defaultRoom();
     other.background = 'night';
@@ -414,7 +376,6 @@ describe('autosave', () => {
     expect(t.store.getState().revision).toBe(0);
     await vi.advanceTimersByTimeAsync(5000);
     expect(t.saveRoom).not.toHaveBeenCalled();
-    expect(storage.getDraft('t1')).toBeNull();
   });
   it('401 rồi đăng nhập lại: flush gửi lại thay đổi chưa lưu dù không còn hẹn giờ nào', async () => {
     const t = track(setup());
