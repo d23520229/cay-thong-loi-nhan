@@ -31,6 +31,24 @@ function setup() {
 }
 
 describe('createDragController', () => {
+  it('onActive: true khi bắt đầu giữ món, false khi thả hoặc huỷ', () => {
+    const store = createEditorStore(defaultRoom());
+    const item = store.getState().room.items.find((i) => i.type === 'pet')!;
+    const el = document.createElement('div');
+    el.setPointerCapture = vi.fn();
+    const calls: boolean[] = [];
+    const drag = createDragController(store, () => 0.5, (a) => calls.push(a));
+    drag.itemRef(item.clientId, el);
+    const down = () => drag.onItemPointerDown(item.clientId, { pointerId: 1, clientX: 0, clientY: 0, currentTarget: el } as never);
+    const fire = (type: string) => el.dispatchEvent(Object.assign(new Event(type), { pointerId: 1, clientX: 0, clientY: 0 }));
+    down();
+    expect(calls).toEqual([true]);
+    fire('pointerup');
+    expect(calls).toEqual([true, false]);
+    down();
+    fire('pointercancel');
+    expect(calls).toEqual([true, false, true, false]);
+  });
   it('chạm: chọn món và bắt con trỏ', () => {
     const { store, item, el, down, ev } = setup();
     down(100, 100);

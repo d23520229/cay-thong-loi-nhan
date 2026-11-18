@@ -1,5 +1,5 @@
 import { StrictMode } from 'react';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -26,8 +26,8 @@ const ownerRoom = (over: Partial<OwnerRoom> = {}): OwnerRoom => ({
   ...publicRoom(), slots: [], messageCount: 0, newSinceLastVisit: 0, showMessageCount: true, ...over,
 });
 const unauthorized = () => new ApiError(401, 'owner_required', 'x');
-// Tự lưu gộp 1,5 giây (đồng hồ thật) — chờ quá mốc đó.
-const SAVE_WAIT = { timeout: 3000 };
+// Tự lưu gộp 1,5 giây: đồng hồ giả (vẫn trôi theo giờ thật cho userEvent/waitFor), tua qua mốc đó thay vì chờ.
+const passDebounce = () => act(() => vi.advanceTimersByTimeAsync(1500));
 
 /** Vào chế độ Sửa và đổi phông nền (mặc định 'night') sang "Nhà gỗ". */
 const editBackground = async () => {
@@ -37,6 +37,7 @@ const editBackground = async () => {
 };
 
 beforeEach(() => {
+  vi.useFakeTimers({ shouldAdvanceTime: true, advanceTimeDelta: 2 });
   localStorage.clear();
   vi.resetAllMocks();
   window.history.replaceState(null, '', '/');
@@ -49,6 +50,7 @@ afterEach(async () => {
   // Gỡ trang rồi chờ một nhịp để bộ tự lưu (dừng hoãn một nhịp) gửi nốt bằng mock của test này, không lấn sang test sau.
   cleanup();
   await new Promise((r) => setTimeout(r, 0));
+  vi.useRealTimers();
   vi.unstubAllGlobals();
 });
 
@@ -207,7 +209,8 @@ describe('RoomPage', () => {
     mocked.saveRoom.mockResolvedValue({ roomVersion: 3 });
     renderAt(`/c/${ID}`, true);
     await editBackground();
-    expect(await screen.findByText('Đã lưu', undefined, SAVE_WAIT)).toBeInTheDocument();
+    await passDebounce();
+    expect(await screen.findByText('Đã lưu')).toBeInTheDocument();
     await new Promise((r) => setTimeout(r, 100));
     expect(mocked.saveRoom).toHaveBeenCalledTimes(1);
     expect(mocked.saveRoom).toHaveBeenCalledWith(ID, 2, expect.objectContaining({ background: expect.not.stringMatching(/^night$/) }));
@@ -218,7 +221,8 @@ describe('RoomPage', () => {
     mocked.saveRoom.mockRejectedValueOnce(unauthorized()).mockResolvedValue({ roomVersion: 3 });
     renderAt();
     await editBackground();
-    expect(await screen.findByRole('dialog', { name: 'Chào chủ cây 👋' }, SAVE_WAIT)).toBeInTheDocument();
+    await passDebounce();
+    expect(await screen.findByRole('dialog', { name: 'Chào chủ cây 👋' })).toBeInTheDocument();
     mocked.authPin.mockResolvedValue(undefined);
     await userEvent.type(screen.getByLabelText('Mã PIN 6 số'), '123456');
     await userEvent.click(screen.getByRole('button', { name: 'Vào cây' }));
@@ -233,7 +237,8 @@ describe('RoomPage', () => {
     mocked.saveRoom.mockRejectedValue(new ApiError(403, 'write_closed', 'x'));
     renderAt();
     await editBackground();
-    await waitFor(() => expect(screen.queryByRole('button', { name: 'Xong' })).not.toBeInTheDocument(), SAVE_WAIT);
+    await passDebounce();
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Xong' })).not.toBeInTheDocument());
     expect(screen.getByText('Cây của Lan')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Sửa phòng/ })).not.toBeInTheDocument();
   });
@@ -243,7 +248,8 @@ describe('RoomPage', () => {
     mocked.saveRoom.mockRejectedValue(new ApiError(0, 'network', 'x'));
     renderAt();
     await editBackground();
-    expect(await screen.findByText('Mất mạng — thay đổi chưa được lưu', undefined, SAVE_WAIT)).toBeInTheDocument();
+    await passDebounce();
+    expect(await screen.findByText('Mất mạng — thay đổi chưa được lưu')).toBeInTheDocument();
     expect(screen.getByText('Chưa lưu')).toBeInTheDocument();
     expect(mocked.saveRoom).toHaveBeenCalledTimes(1);
     expect(storage.getDraft(ID)).toBeNull();
@@ -254,8 +260,9 @@ describe('RoomPage', () => {
     mocked.saveRoom.mockRejectedValue(new ApiError(429, 'rate_limited', 'x'));
     renderAt();
     await editBackground();
+    await passDebounce();
     expect(
-      await screen.findByText('Bạn lưu hơi nhiều, sẽ tự lưu lại sau ít phút.', undefined, SAVE_WAIT),
+      await screen.findByText('Bạn lưu hơi nhiều, sẽ tự lưu lại sau ít phút.'),
     ).toBeInTheDocument();
     expect(screen.queryByText('Mất mạng — thay đổi chưa được lưu')).not.toBeInTheDocument();
   });
@@ -265,7 +272,8 @@ describe('RoomPage', () => {
     mocked.saveRoom.mockRejectedValue(new ApiError(404, 'not_found', 'x'));
     renderAt();
     await editBackground();
-    expect(await screen.findByText('Cây này không còn nữa.', undefined, SAVE_WAIT)).toBeInTheDocument();
+    await passDebounce();
+    expect(await screen.findByText('Cây này không còn nữa.')).toBeInTheDocument();
     await userEvent.click(screen.getAllByRole('button', { name: 'Xong' })[0]!);
     expect(await screen.findByRole('button', { name: /Sửa phòng/ })).toBeInTheDocument();
     expect(screen.getByText('Thay đổi chưa được lưu.')).toBeInTheDocument();
@@ -329,7 +337,8 @@ describe('RoomPage', () => {
     mocked.saveRoom.mockResolvedValue({ roomVersion: 3 });
     renderAt();
     await editBackground();
-    expect(await screen.findByText('Đã có lời nhắn ở điểm 10.', undefined, SAVE_WAIT)).toBeInTheDocument();
+    await passDebounce();
+    expect(await screen.findByText('Đã có lời nhắn ở điểm 10.')).toBeInTheDocument();
   });
   it('"Xong" khi mất mạng: vẫn về Xem với bản server đã xác nhận, báo "Thay đổi chưa được lưu.", không gửi thêm', async () => {
     mocked.getOwnerTree.mockResolvedValue(ownerRoom());

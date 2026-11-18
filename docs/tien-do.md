@@ -6,7 +6,7 @@
 
 - **Ngày cập nhật:** 19/11/2026
 - **Mốc đang ở:** M2 xong trên nhánh `m2-frontend` (tách từ `m1-backend`; cả hai chưa gộp vào `main`). M1 backend: 6 nhóm route, 118 test server + 40 test shared (M2 thêm 2 test `googleClientId`, nay 120 test server); đã chạy thử với PostgreSQL 16 thật trong Docker ngày 17/11 (mục 1–9 bên dưới đều đạt); mục 10 làm khi lên Azure.
-- **M2 xong** trên nhánh `m2-frontend` (chưa gộp vào `main`): giao diện phòng tự do, 161 test web + 120 test server + 40 test shared (sau thay đổi mất mạng 19/11), typecheck sạch. Bản build JS + CSS ≈ 150 KB gzip (giới hạn 250 KB). Đã chạy thật qua proxy Vite với PostgreSQL trong Docker (18/11): `/` trả HTML, `/api/config` qua proxy, tạo cây 201 với `publicUrl` bắt đầu `http://localhost:5173/c/`, `GET /api/trees/{id}` 200.
+- **M2 xong** trên nhánh `m2-frontend` (chưa gộp vào `main`): giao diện phòng tự do, 167 test web + 122 test server + 40 test shared (sau khi sửa việc nhỏ 19/11), typecheck sạch. Bản build JS + CSS ≈ 150 KB gzip (giới hạn 250 KB). Đã chạy thật qua proxy Vite với PostgreSQL trong Docker (18/11): `/` trả HTML, `/api/config` qua proxy, tạo cây 201 với `publicUrl` bắt đầu `http://localhost:5173/c/`, `GET /api/trees/{id}` 200.
 - **Việc tiếp theo:** **M3 — bạn bè treo lời nhắn, chủ cây đọc/khoá/đếm ngược, chia sẻ, OG** — chờ chủ dự án duyệt.
 
 ### M2 — danh sách thử tay trên trình duyệt (chủ dự án)
@@ -52,20 +52,20 @@ Xem đặc tả mục 7, 8.1–8.5, 9.1–9.6 và `apps/server/src/routes/README
 Chưa làm ở M1: giao diện web (M2–M3), trang quản trị (M3b), OG ảnh (M3), triển khai Azure (M4).
 
 **Việc nhỏ còn lại từ các lượt duyệt M1** (không ảnh hưởng đúng/sai hay riêng tư):
-- `clientIp` chưa bỏ cổng của IPv6 dạng `[2001:db8::1]:port` — kiểm ở mục 10 trên.
+- ~~`clientIp` chưa bỏ cổng của IPv6 dạng `[2001:db8::1]:port`~~ — đã sửa 19/11 (vẫn xem định dạng thật ở mục 10).
 - M3b: nút "mở khoá PIN" của quản trị phải xoá cả `pin_last_failed_at`.
-- Lưu phòng: nếu giao diện dùng lại cùng `clientId` cho món khác loại (cây ↔ món khác) có thể lỗi 500 — ở M2 sinh `clientId` ổn định cho từng món.
+- ~~Lưu phòng: dùng lại `clientId` cho món khác loại (cây ↔ món khác) lỗi 500~~ — đã sửa 19/11: xoá dòng cây cũ mang mã khác trước khi upsert.
 - Cửa sổ PIN tính từ lần sai **cuối** (chặt hơn "5 lần / 15 phút" của đặc tả một chút) — chấp nhận.
 - ~~Đặc tả mục 10 ghi khoá link riêng "base32"~~ — đã sửa 17/11.
-- Một số test còn có thể bổ sung (thứ tự kiểm tra honeypot, thử khi giai đoạn BUILD cho kiểm duyệt…).
+- ~~Thứ tự kiểm tra honeypot~~ — chốt 19/11: honeypot trước chặn theo cây / tần suất / ≤3 thiết bị; đã sửa sơ đồ đặc tả 9.4 + test. Kiểm duyệt ở BUILD đã có test (xoá/chặn chạy ở giờ mặc định BUILD).
 
 **Việc nhỏ còn lại từ các lượt duyệt M2** (không ảnh hưởng đúng/sai hay riêng tư):
-- **Cần chủ dự án quyết:** giới hạn server 120 lần lưu/giờ/phòng (mục 10) — hiện trình duyệt tự giãn nhịp lưu khi gần chạm; có thể nâng giới hạn server (ví dụ 600) nếu muốn mượt hơn.
-- Đã cài TanStack Query nhưng chưa dùng; `/api/config` (`googleClientId`) chưa được gọi — dùng hoặc gỡ ở M3.
-- Bảng trượt (Sheet): chưa có `aria-modal`, phím Escape, giữ tiêu điểm — làm trước khi M3 thêm bảng viết lời nhắn.
-- `.strip` khai báo ở cả `app.css` và `room-animations.css`, chỉ đúng nhờ thứ tự nạp CSS.
-- Camera có thể dời 250 ms ngay khi vừa chạm chọn món và bắt đầu kéo (vị trí lưu khi thả vẫn đúng).
-- 7 test trang phòng chờ thật 1,5 giây (thêm ~10 giây chạy test) — nên chuyển sang đồng hồ giả.
+- ~~Giới hạn lưu phòng~~ — chốt 19/11: nâng **600 lần/giờ/phòng** (đặc tả 6.5, 10); trình duyệt giãn nhịp 60 giây từ lần thứ 540.
+- Đã cài TanStack Query nhưng chưa dùng; `/api/config` (`googleClientId`) chưa được gọi — **chốt 19/11: để đến M3** dùng hoặc gỡ.
+- ~~Sheet thiếu `aria-modal`, Escape, giữ tiêu điểm~~ — đã sửa 19/11.
+- ~~Lớp trùng giữa `app.css` và `room-animations.css`~~ — đã sửa 19/11: `.strip` → `.ed-strip`, `.field` → `.ed-field` (ô nhập về đúng kiểu tối `.input`; trước đó `.field input` của room-animations đè thành nền kem). Test `styles.test.ts` chặn trùng mới (trừ `.chip`, `.sheet-body` dùng chung có chủ đích).
+- ~~Camera dời khi vừa chạm chọn món rồi kéo~~ — đã sửa 19/11: camera đứng yên khi còn giữ món, thả ra mới dời.
+- ~~7 test trang phòng chờ thật 1,5 giây~~ — đã chuyển sang đồng hồ giả (file test 15 s → 3,5 s).
 - Cần thử tay trên máy thật ở 360×640 và 390×844: viền món đang chọn, thanh trên một hàng, nút khách không che phòng, camera dời khi kéo.
 
 ## Lịch mốc
@@ -140,6 +140,7 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 - **jsdom** không có `ResizeObserver`, và sự kiện pointer không có `clientX` → test kéo thả qua controller (`drag.ts`) thay vì bắn sự kiện DOM.
 - **React StrictMode** mount hai lần: tự lưu cần dừng trì hoãn (deferred stop), nếu không lần unmount giả sẽ huỷ bộ tự lưu đang chạy.
 - "Xong" luôn rời chế độ Sửa; chưa lưu được thì dừng tự lưu trước khi rời (không thì lượt gửi khi gỡ trang vẫn lưu phần mà chế độ Xem đã bỏ) và hiện `lastSaved()` (sửa 19/11).
+- **Chỉ mục duy nhất một phần** (`uq_one_tree_per_room`) kiểm từng dòng trong `INSERT ... ON CONFLICT` nhiều dòng: xoá dòng cũ có thể va trước khi upsert, đừng trông vào thứ tự dòng.
 - `node --test` không nhận thư mục trên mọi máy → dùng glob `"test/*.test.mjs"`.
 
 ## Tài nguyên
@@ -149,6 +150,7 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 
 ## Nhật ký
 
+- **19/11/2026** — Sửa việc nhỏ M1/M2: lưu phòng không còn 500 khi đổi loại món cùng `clientId`; `clientIp` bỏ cổng `[IPv6]:port`; honeypot giữ trước các kiểm tra khác (sửa đặc tả 9.4); giới hạn lưu 600/giờ; Sheet modal có Escape + giữ tiêu điểm; camera không dời khi đang giữ món; bỏ trùng lớp CSS (`.ed-strip`, `.ed-field`); test trang phòng dùng đồng hồ giả. 167 test web, 122 test server, 40 test shared; build ≈ 150 KB gzip.
 - **19/11/2026** — Mất mạng không cần lưu (chủ dự án chốt, đặc tả 6.5): bỏ nháp `draft:{treeId}`, bỏ hỏi xung đột khi mở lại, bỏ tự thử lại khi lỗi mạng/5xx (5 giây và sự kiện `online`); thao tác tiếp theo lưu lại cả phòng; "Xong" chưa lưu được vẫn về Xem với bản server; mở phòng thì xoá nháp cũ còn sót. Giữ nguyên bảng hỏi 409 khi đang sửa, 429 thử lại sau 60 giây, nháp `/tao`. 159 test web; build ≈ 149 KB gzip.
 - **18/11/2026** — Xong M2 frontend (nhánh `m2-frontend`): trang chủ + "Bạn đã có cây?", tạo cây (`/tao`), trang phòng (`/c/:id`) cho chủ cây và khách, trình sửa phòng (kéo/zoom/lật, dải chọn, mũi tên ‹ ›, bảng bên), tự lưu + nháp cục bộ, bảng xung đột phiên bản. 141 test web, 120 test server, 40 test shared, typecheck sạch; build ≈ 145 KB gzip. Quyết định: dựng theo phương án A (module phòng thuần có test); phòng hiện trọn theo chiều rộng; "Bạn đã có cây?" mở lại bằng mã/link + PIN; lệch phiên bản thì hỏi chủ cây giữ bản nào; "Xong" chỉ rời chế độ Sửa khi đã lưu.
 - **17/11/2026** — Xong M1 backend: config, trees (tạo/đọc/xoá), auth (thiết bị, link riêng, PIN, Google), room (PUT có `room_version`), messages (treo/sửa/gỡ trong 15 phút), owner (đọc, mở, chặn, báo cáo). 109 test server (Vitest + PGlite) + 40 test shared, typecheck sạch. Quyết định chính: giữ chỗ lượt thử PIN nguyên tử trước khi băm; khoá dòng khi lưu phòng và đăng lời nhắn; log request không chứa IP; migration có khoá advisory. `index.ts` nối thật (env → PostgreSQL → migration → listen), production bắt buộc `DATABASE_URL`. Chưa chạy với PostgreSQL thật vì máy chưa có Docker.

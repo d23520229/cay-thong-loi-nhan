@@ -91,6 +91,22 @@ describe('EditorLayout điện thoại (< 900px)', () => {
     act(() => store.getState().select(null));
     expect(room.style.transform).toBe('translateY(0px)');
   });
+
+  it('chạm chọn món rồi kéo: camera đứng yên khi còn giữ, thả ra mới dời', () => {
+    const { store } = setup();
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+      const top = this.dataset.dock !== undefined ? 500 : 0;
+      return { top, bottom: top, left: 0, right: 0, width: 0, height: 0, x: 0, y: top, toJSON: () => ({}) };
+    });
+    const { container } = render(<EditorLayout store={store} topBar={bar} />);
+    const room = container.querySelector<HTMLElement>('[data-camera]')!;
+    const gift = container.querySelector<HTMLElement>('[data-type="gift"]')!;
+    fireEvent.pointerDown(gift);
+    expect(store.getState().selectedId).toBe(gift.dataset.clientId);
+    expect(room.style.transform).toBe('translateY(0px)');
+    act(() => { gift.dispatchEvent(new Event('pointerup')); });
+    expect(room.style.transform).not.toBe('translateY(0px)');
+  });
 });
 
 describe('EditorLayout máy tính (≥ 900px)', () => {
@@ -119,7 +135,7 @@ describe('EditorLayout máy tính (≥ 900px)', () => {
     const { store, select } = setup();
     const { container } = render(<EditorLayout store={store} topBar={bar} />);
     select('gift');
-    expect(container.querySelector('.strip')).toBeNull();
+    expect(container.querySelector('.ed-strip')).toBeNull();
     expect(container.querySelector('.panel')).toBeNull();
     expect(container.querySelectorAll('.strip-panel').length).toBeGreaterThan(0);
   });

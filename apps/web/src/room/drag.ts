@@ -21,7 +21,8 @@ export const dragPosition = (
 
 const TAP_PX = 4;
 
-export function createDragController(store: EditorStore, getScale: () => number) {
+/** `onActive(true)` khi con trỏ bắt đầu giữ một món, `onActive(false)` khi thả hoặc huỷ. */
+export function createDragController(store: EditorStore, getScale: () => number, onActive?: (active: boolean) => void) {
   const els = new Map<string, HTMLDivElement>();
   let activePointer: number | null = null;
 
@@ -31,6 +32,7 @@ export function createDragController(store: EditorStore, getScale: () => number)
     store.getState().select(clientId);
     const item = store.getState().room.items.find((i) => i.clientId === clientId);
     if (!item) return;
+    onActive?.(true);
     el.setPointerCapture?.(e.pointerId);
     activePointer = e.pointerId;
     const ps = { x: e.clientX, y: e.clientY };
@@ -59,6 +61,7 @@ export function createDragController(store: EditorStore, getScale: () => number)
         const p = dragPosition(start, ps, { x: ev.clientX, y: ev.clientY }, scale, item.type);
         store.getState().move(clientId, p.x, p.y);
       }
+      onActive?.(false);
     };
     const onUp = (ev: PointerEvent) => finish(ev, true);
     const onCancel = (ev: PointerEvent) => finish(ev, false);
@@ -77,8 +80,10 @@ export function createDragController(store: EditorStore, getScale: () => number)
   return { onItemPointerDown, itemRef };
 }
 
-export function useDrag(store: EditorStore, getScale: () => number) {
+export function useDrag(store: EditorStore, getScale: () => number, onActive?: (active: boolean) => void) {
   const latest = useRef(getScale);
   latest.current = getScale;
-  return useMemo(() => createDragController(store, () => latest.current()), [store]);
+  const active = useRef(onActive);
+  active.current = onActive;
+  return useMemo(() => createDragController(store, () => latest.current(), (a) => active.current?.(a)), [store]);
 }

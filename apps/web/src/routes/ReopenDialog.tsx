@@ -86,7 +86,7 @@ export function ReopenDialog({ onClose }: { onClose: () => void }) {
           ))}
         </div>
       ) : null}
-      <div className="field">
+      <div className="ed-field">
         <label className="lab" htmlFor={codeId}>Mã cây hoặc link cây</label>
         <input
           id={codeId}

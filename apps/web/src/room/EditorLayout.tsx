@@ -35,7 +35,9 @@ export function EditorLayout({ store, topBar }: Props) {
   const [fit, setFit] = useState<Fit | null>(null);
   const scaleRef = useRef(1);
   scaleRef.current = fit?.scale ?? 1;
-  const { onItemPointerDown, itemRef } = useDrag(store, () => scaleRef.current);
+  // Đang giữ món thì không dời camera (phòng trượt dưới ngón tay làm món lệch khỏi ngón); thả ra mới dời.
+  const [holding, setHolding] = useState(false);
+  const { onItemPointerDown, itemRef } = useDrag(store, () => scaleRef.current, setHolding);
 
   const layoutRef = useRef<HTMLDivElement | null>(null);
   const dockRef = useRef<HTMLDivElement | null>(null);
@@ -45,6 +47,7 @@ export function EditorLayout({ store, topBar }: Props) {
   useLayoutEffect(() => {
     const layout = layoutRef.current;
     const dock = dockRef.current;
+    if (holding) return;
     if (desktop || !selected || !fit || !layout || !dock) {
       setShift(0);
       return;
@@ -53,7 +56,7 @@ export function EditorLayout({ store, topBar }: Props) {
     const itemBottom = selected.y - v.ay * selected.scale + v.h * selected.scale;
     const obstacleTop = dock.getBoundingClientRect().top - layout.getBoundingClientRect().top;
     setShift(cameraShift(itemBottom, fit.top, fit.scale, obstacleTop));
-  }, [desktop, selected, fit, panel]);
+  }, [desktop, selected, fit, panel, holding]);
 
   const stage = (reserveTop: number) => (
     <RoomStage

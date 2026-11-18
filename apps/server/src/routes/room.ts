@@ -1,5 +1,5 @@
 import type { FastifyInstance } from 'fastify';
-import { and, count, eq, gte, notInArray, sql } from 'drizzle-orm';
+import { and, count, eq, gte, ne, notInArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { RoomSchema, validateRoom } from '@ctln/shared';
 import { messages, roomItems, trees } from '../db/schema.js';
@@ -22,7 +22,7 @@ export async function roomRoutes(app: FastifyInstance) {
     await requireOwner(app, req, treeId);
     assertWritable(app);
     const { db, now } = app.deps;
-    if (!(await rateLimit(db.db, 'save:tree:' + treeId, 120, now()))) {
+    if (!(await rateLimit(db.db, 'save:tree:' + treeId, 600, now()))) {
       throw new HttpError(429, 'rate_limited', 'Bạn thao tác nhanh quá, đợi một lát nhé.');
     }
     const body = SaveRoomBodySchema.parse(req.body);
@@ -49,6 +49,12 @@ export async function roomRoutes(app: FastifyInstance) {
       await tx
         .delete(roomItems)
         .where(and(eq(roomItems.treeId, treeId), keep.length ? notInArray(roomItems.clientId, keep) : undefined));
+      // uq_one_tree_per_room kiểm từng dòng khi upsert: dòng cây cũ mang mã khác phải đi trước,
+      // nếu không chèn cây mới sẽ va chỉ mục (500) khi mã cũ được dùng lại cho món khác loại.
+      const newTree = room.items.find((i) => i.type === 'tree')!;
+      await tx
+        .delete(roomItems)
+        .where(and(eq(roomItems.treeId, treeId), eq(roomItems.itemType, 'tree'), ne(roomItems.clientId, newTree.clientId)));
       if (room.items.length > 0) {
         await tx
           .insert(roomItems)

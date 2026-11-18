@@ -78,11 +78,13 @@ describe('app', () => {
 });
 
 describe('guards', () => {
-  it('clientIp bỏ hậu tố :port của IPv4', async () => {
+  it('clientIp bỏ hậu tố :port của IPv4 và [IPv6]:port', async () => {
     t = await makeTestApp();
     expect(clientIp({ ip: '1.2.3.4:5678' } as never)).toBe('1.2.3.4');
     expect(clientIp({ ip: '1.2.3.4' } as never)).toBe('1.2.3.4');
     expect(clientIp({ ip: '2001:db8::1' } as never)).toBe('2001:db8::1');
+    expect(clientIp({ ip: '[2001:db8::1]:5678' } as never)).toBe('2001:db8::1');
+    expect(clientIp({ ip: '[2001:db8::1]' } as never)).toBe('2001:db8::1');
   });
   it('assertWritable theo giai đoạn', async () => {
     t = await makeTestApp();

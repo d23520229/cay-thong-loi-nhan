@@ -5,9 +5,9 @@ import type { EditorStore } from './store';
 export type SaveState = 'saved' | 'saving' | 'unsaved';
 
 const DEBOUNCE_MS = 1500;
-// Server giới hạn 120 lần lưu/giờ/cây (đặc tả 10): từ lần gửi thứ 100 trong một giờ thì gộp 60 giây.
+// Server giới hạn 600 lần lưu/giờ/cây (đặc tả 10): từ lần gửi thứ 540 trong một giờ thì gộp 60 giây.
 const HOUR_MS = 3600000;
-const SLOW_AFTER = 100;
+const SLOW_AFTER = 540;
 const SLOW_MS = 60000;
 
 type Opts = {

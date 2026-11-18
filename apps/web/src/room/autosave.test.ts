@@ -208,26 +208,26 @@ describe('autosave', () => {
     expect(t.saveRoom).toHaveBeenCalledTimes(1);
   });
 
-  it('đã gửi 100 lần trong một giờ → lần sửa sau chờ 60 giây; quá một giờ thì về 1,5 giây', async () => {
+  it('đã gửi 540 lần trong một giờ → lần sửa sau chờ 60 giây; quá một giờ thì về 1,5 giây', async () => {
     const t = track(setup());
-    for (let k = 0; k < 100; k++) {
+    for (let k = 0; k < 540; k++) {
       t.store.getState().setTree({ slotCount: k % 2 ? 12 : 9 });
       await vi.advanceTimersByTimeAsync(1500);
     }
-    expect(t.saveRoom).toHaveBeenCalledTimes(100);
+    expect(t.saveRoom).toHaveBeenCalledTimes(540);
     t.store.getState().setTree({ slotCount: 16 });
     await vi.advanceTimersByTimeAsync(1500);
-    expect(t.saveRoom).toHaveBeenCalledTimes(100);
+    expect(t.saveRoom).toHaveBeenCalledTimes(540);
     await vi.advanceTimersByTimeAsync(60000 - 1500 - 1);
-    expect(t.saveRoom).toHaveBeenCalledTimes(100);
+    expect(t.saveRoom).toHaveBeenCalledTimes(540);
     await vi.advanceTimersByTimeAsync(1);
-    expect(t.saveRoom).toHaveBeenCalledTimes(101);
+    expect(t.saveRoom).toHaveBeenCalledTimes(541);
     expect(t.onRateLimited).not.toHaveBeenCalled();
 
     await vi.advanceTimersByTimeAsync(3600000);
     t.store.getState().setTree({ slotCount: 20 });
     await vi.advanceTimersByTimeAsync(1500);
-    expect(t.saveRoom).toHaveBeenCalledTimes(102);
+    expect(t.saveRoom).toHaveBeenCalledTimes(542);
   });
 
   it('404 (cây đã bị xoá) → onGone, dừng tự lưu', async () => {

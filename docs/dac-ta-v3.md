@@ -294,7 +294,7 @@ Một tên miền cho cả trang và API: cookie đơn giản, không cần cấ
 - **Cấu trúc:** `buildApp({ db, now })` dựng ứng dụng Fastify; test truyền PGlite + đồng hồ giả, chạy thật truyền PostgreSQL. Mọi kiểm tra giai đoạn vẫn qua `phase.ts`.
 - **Phiên chủ cây** hết hạn ở `PURGE_AT` (nhớ thiết bị suốt mùa).
 - **Băm IP:** muối theo ngày = HMAC(`PEPPER`, ngày giờ VN), mọi instance tính ra giống nhau; danh sách chặn IP dùng `BLOCK_IP_KEY` cố định.
-- **Honeypot** (`website` có giá trị): trả kết quả thành công giả, không lưu gì.
+- **Honeypot** (`website` có giá trị): trả kết quả thành công giả, không lưu gì. Kiểm **trước** chặn theo cây, giới hạn tần suất và ≤3/thiết bị (chốt 19/11) để bot không đọc được gì từ mã lỗi.
 - **Chủ cây không treo lời nhắn** lên cây của mình (8.8): có cookie chủ cây → 403.
 - **Giảm số điểm nhắn** (P0): còn lời nhắn ở chỉ số ≥ số điểm mới → 409 kèm lý do; tự dồn là R13 (P1).
 - **Vị trí khi lưu phòng:** món lớp `wall` có y < `floorY`, món khác y ≥ `floorY` (lấy từ `catalog.json`).
@@ -352,7 +352,7 @@ Khách trong phòng bạn bè bấm "Tạo cây của bạn" thấy đúng màn 
 - 403 `write_closed` → chuyển về chế độ Xem, ẩn "Sửa phòng".
 - 401 → mất phiên chủ cây: hiện bảng "Tôi là chủ cây".
 - Lỗi mạng / 5xx → "Chưa lưu", **không tự thử lại** (chủ dự án chốt 19/11); thông báo một lần "Mất mạng — thay đổi chưa được lưu". Thao tác tiếp theo của chủ cây sẽ lưu lại cả phòng như bình thường.
-- 429 (vượt 120 lần lưu/giờ, mục 10) → thông báo "Bạn lưu hơi nhiều, sẽ tự lưu lại sau ít phút.", thử lại sau 60 giây (trong lúc vẫn ở trang); khi đã có ≥ 100 lần lưu trong một giờ thì giãn khoảng chờ lên 60 giây.
+- 429 (vượt 600 lần lưu/giờ, mục 10) → thông báo "Bạn lưu hơi nhiều, sẽ tự lưu lại sau ít phút.", thử lại sau 60 giây (trong lúc vẫn ở trang); khi đã có ≥ 540 lần lưu trong một giờ thì giãn khoảng chờ lên 60 giây.
 - "Xong" → lưu ngay một lần; vẫn chưa lưu được (mất mạng, 429, lỗi khác) → vẫn rời chế độ Sửa, thông báo "Thay đổi chưa được lưu.", chế độ Xem hiện bản server đã xác nhận (phần chưa lưu bị bỏ).
 
 **Chủ cây vào từ máy khác.** Bảng "Chào chủ cây": ô PIN 6 số → `POST auth/pin`; sai → "Mã PIN chưa đúng"; 429 `pin_locked` → "Nhập sai quá nhiều lần, thử lại sau 15 phút" (dùng `retryAt`); dòng "Có link riêng? Mở link đó là vào được ngay".
@@ -858,7 +858,7 @@ sequenceDiagram
     B-->>G: Bảng viết: 20 phụ kiện, để tên/ẩn danh, lời nhắn
     G->>B: "Treo lên cây"
     B->>S: POST messages {slotIndex, ornament, ...}
-    S->>S: Giai đoạn, bị chặn?, ≤3 lời nhắn/thiết bị, honeypot, tần suất, UNIQUE slot
+    S->>S: Giai đoạn, chặn toàn cục?, honeypot, bị chủ cây chặn?, tần suất, ≤3 lời nhắn/thiết bị, UNIQUE slot
     S-->>B: {messageId, editToken, editUntil}
     B->>B: Lưu msg:{treeId}:{slot}
     B-->>G: Phụ kiện rơi vào chỗ + "Còn 15 phút để sửa"
@@ -935,7 +935,7 @@ Khi bị spam tạo phòng hoặc lời nhắn hàng loạt: quản trị viên 
 
 **Chống dò PIN:** 5 lần sai / phòng / 15 phút thì khoá phòng đó với cách PIN; thêm giới hạn 20 lần sai / IP / giờ trên mọi phòng. PIN 6 số có 1 triệu khả năng; với giới hạn này, dò hết mất hàng chục năm.
 
-**Giới hạn tần suất:** tạo phòng 5/giờ/IP; lời nhắn 20/giờ/IP; lưu phòng 120/giờ/phòng; mỗi thiết bị 3 lời nhắn/phòng.
+**Giới hạn tần suất:** tạo phòng 5/giờ/IP; lời nhắn 20/giờ/IP; lưu phòng 600/giờ/phòng; mỗi thiết bị 3 lời nhắn/phòng.
 
 **Ứng dụng web:** hiển thị nội dung bằng `textContent`; CSP chỉ cùng nguồn (trừ Google Identity); truy vấn có tham số; giới hạn kích thước body 64 KB; kiểm tra danh mục cho mọi mã kiểu.
 

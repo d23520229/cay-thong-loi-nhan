@@ -6,7 +6,7 @@ type Props = { value: string; onChange: (v: string) => void; label?: string; dis
 export function PinInput({ value, onChange, label = 'Mã PIN 6 số', disabled }: Props) {
   const id = useId();
   return (
-    <div className="field">
+    <div className="ed-field">
       <label className="lab" htmlFor={id}>{label}</label>
       <input
         id={id}

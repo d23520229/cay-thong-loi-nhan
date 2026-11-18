@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { eq } from 'drizzle-orm';
 import { catalog } from '@ctln/shared';
 import { makeTestApp } from './helpers.js';
-import { messages, ownerSessions, roomItems, trees } from '../src/db/schema.js';
+import { messages, ownerSessions, rateCounters, roomItems, trees } from '../src/db/schema.js';
 import { runMigrations } from '../src/db/migrate.js';
 import { connectPglite } from '../src/db/client.js';
 
@@ -66,6 +66,32 @@ describe('PUT /api/trees/:id/room', () => {
     expect(rows).toHaveLength(7);
   });
 
+  it('dùng lại clientId của cây cho món khác loại (cây ↔ quà) vẫn lưu được, không 500', async () => {
+    const { id, cookies } = await setup();
+    const base = room();
+    const tree = base.items.find((i: { type: string }) => i.type === 'tree')!;
+    // Cây mới mang mã mới, mã cũ của cây giờ là một hộp quà.
+    const next = {
+      ...base,
+      items: [
+        ...base.items.filter((i: { type: string }) => i.type !== 'tree'),
+        { ...tree, clientId: 'newtree' },
+        { ...NEW_ITEM, clientId: tree.clientId },
+      ],
+    };
+    const r = await put(id, cookies, 1, next);
+    expect(r.statusCode).toBe(200);
+    const rows = await t.h.db.select().from(roomItems).where(eq(roomItems.treeId, id));
+    expect(rows.find((x) => x.clientId === tree.clientId)?.itemType).toBe('gift');
+    expect(rows.find((x) => x.clientId === 'newtree')?.itemType).toBe('tree');
+    // Và ngược lại: quà quay về làm cây.
+    const back = await put(id, cookies, 2, base);
+    expect(back.statusCode).toBe(200);
+    const rows2 = await t.h.db.select().from(roomItems).where(eq(roomItems.treeId, id));
+    expect(rows2.find((x) => x.clientId === tree.clientId)?.itemType).toBe('tree');
+    expect(rows2.some((x) => x.clientId === 'newtree')).toBe(false);
+  });
+
   it('409 version_conflict kèm room mới (error.room)', async () => {
     const { id, cookies } = await setup();
     await put(id, cookies, 1, room());
@@ -111,12 +137,16 @@ describe('PUT /api/trees/:id/room', () => {
     expect(r.json().error.code).toBe('write_closed');
   });
 
-  it('lần lưu thứ 121 trong giờ → 429', async () => {
+  it('lần lưu thứ 601 trong giờ → 429', async () => {
     const { id, cookies } = await setup();
-    for (let v = 1; v <= 120; v++) {
-      expect((await put(id, cookies, v, room())).statusCode).toBe(200);
-    }
-    expect((await put(id, cookies, 121, room())).statusCode).toBe(429);
+    const at = t.app.deps.now().getTime();
+    // Dựng sẵn 598 lần đã lưu trong giờ này thay vì gửi 598 request.
+    await t.h.db.insert(rateCounters).values({
+      bucket: 'save:tree:' + id, windowStart: new Date(Math.floor(at / 3600_000) * 3600_000), hits: 598,
+    });
+    expect((await put(id, cookies, 1, room())).statusCode).toBe(200);
+    expect((await put(id, cookies, 2, room())).statusCode).toBe(200);
+    expect((await put(id, cookies, 3, room())).statusCode).toBe(429);
   });
 });
 

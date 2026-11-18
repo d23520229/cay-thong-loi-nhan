@@ -7,9 +7,9 @@ import { deviceHash, hmac, ipBlockHash, randomToken } from './security.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/** IP khách: bỏ hậu tố `:port` của IPv4 (Azure có thể gửi `ip:port`) trước khi băm. */
+/** IP khách: bỏ hậu tố `:port` (Azure có thể gửi `ip:port` hoặc `[ipv6]:port`) trước khi băm. */
 export function clientIp(req: FastifyRequest): string {
-  return req.ip.replace(/^(\d{1,3}(?:\.\d{1,3}){3}):\d+$/, '$1');
+  return req.ip.replace(/^(\d{1,3}(?:\.\d{1,3}){3}):\d+$/, '$1').replace(/^\[([0-9a-f:.]+)\](?::\d+)?$/i, '$1');
 }
 
 export function phaseOf(app: FastifyInstance) {

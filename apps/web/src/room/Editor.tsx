@@ -66,7 +66,7 @@ export function VariantStrip({ store, mode = 'strip' }: M) {
   if (!it || it.type === 'tree') return null;
   const variants = catalog.items[it.type]!.variants;
   return (
-    <div className={mode === 'panel' ? 'strip-panel' : 'strip'}>
+    <div className={mode === 'panel' ? 'strip-panel' : 'ed-strip'}>
       <div className="scroll-x">
         {Object.entries(variants).map(([key, v]) => (
           <button
@@ -101,7 +101,7 @@ export function TreeStrip({ store, mode = 'strip' }: M) {
       <button key={key} type="button" className="chip" aria-pressed={on} onClick={onClick}>{text}</button>
     );
   return (
-    <div className={mode === 'panel' ? 'strip-panel' : 'strip'}>
+    <div className={mode === 'panel' ? 'strip-panel' : 'ed-strip'}>
       <div className="tabs scroll-x" role="tablist">
         {TREE_TABS.map(([k, text]) => (
           <button key={k} type="button" role="tab" className="chip" aria-selected={tab === k} onClick={() => setTreeTab(k)}>
@@ -129,7 +129,7 @@ export function TreeStrip({ store, mode = 'strip' }: M) {
 export function BackgroundStrip({ store, mode = 'strip' }: M) {
   const bg = useEditor(store, (s) => s.room.background);
   return (
-    <div className={mode === 'panel' ? 'strip-panel' : 'strip'}>
+    <div className={mode === 'panel' ? 'strip-panel' : 'ed-strip'}>
       <div className="scroll-x">
         {Object.entries(catalog.backgrounds).map(([key, b]) => (
           <button

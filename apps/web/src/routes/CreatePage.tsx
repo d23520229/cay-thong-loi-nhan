@@ -35,7 +35,7 @@ function CopyRow({ label, value, show }: { label: string; value: string; show: (
     }
   };
   return (
-    <div className="field">
+    <div className="ed-field">
       <span className="lab">{label}</span>
       <div className="row nowrap">
         <input ref={input} className="input" readOnly value={value} aria-label={label} />
@@ -101,7 +101,7 @@ export function CreatePage() {
     return (
       <div className="done-page">
         <h1>Cây của bạn đã sẵn sàng! 🎉</h1>
-        <div className="field">
+        <div className="ed-field">
           <span className="lab">Mã cây</span>
           <strong className="tree-code">{created.id}</strong>
         </div>
@@ -119,11 +119,11 @@ export function CreatePage() {
       <EditorLayout store={store} topBar={{ doneLabel: 'Hoàn tất', onDone: () => setSheet(true) }} />
       {sheet ? (
         <Sheet title="Sắp xong rồi!" onClose={() => setSheet(false)}>
-          <div className="field">
+          <div className="ed-field">
             <label className="lab" htmlFor="owner-name">Tên của bạn</label>
             <input id="owner-name" className="input" maxLength={30} value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
           </div>
-          <div className="field">
+          <div className="ed-field">
             <label className="lab" htmlFor="tree-title">Tên cây (không bắt buộc)</label>
             <input id="tree-title" className="input" maxLength={40} value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
