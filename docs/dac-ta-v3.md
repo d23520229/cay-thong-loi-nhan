@@ -840,8 +840,8 @@ flowchart TD
 
 1. Mọi thao tác (kéo, đổi kiểu, phóng to, thêm, xoá) cập nhật giao diện ngay.
 2. Sau 1,5 giây không thao tác, gửi `PUT /room` kèm `roomVersion`.
+3. Lệch phiên bản (409) khi đang sửa: hỏi chủ cây "Giữ bản trên máy này" hay "Dùng bản mới nhất" (sửa 18/11, xem 6.5).
 4. Mất mạng: hiện "Mất mạng — thay đổi chưa được lưu", không tự thử lại; thao tác tiếp theo lưu lại cả phòng (sửa 19/11, xem 6.5). Chấm trạng thái "Đã lưu / Đang lưu / Chưa lưu".
-4. Mất mạng: giữ bản nháp trong localStorage, thử lại khi có mạng; hiện chấm trạng thái "Đã lưu / Đang lưu / Chưa lưu".
 
 ### 9.4 Bạn bè treo lời nhắn
 
