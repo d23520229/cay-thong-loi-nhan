@@ -675,7 +675,7 @@ Trình duyệt gộp các thay đổi trong 1,5 giây rồi mới gửi, nên k�
 | localStorage | `deviceId` | UUID ngẫu nhiên | Nhận diện thiết bị khi viết lời nhắn |
 | localStorage | `msg:{treeId}:{slot}` | `{ messageId, editToken, editUntil }` | Sửa lời nhắn trong 15 phút |
 | localStorage | `lastName` | tên đã nhập | Điền sẵn lần sau |
-| localStorage | `draft:{treeId}` | trạng thái phòng chưa lưu | Không mất thay đổi khi rớt mạng |
+| localStorage | `draft:new` | phòng đang trang trí ở `/tao`, chưa tạo cây | Không mất công trang trí khi tải lại trang trước khi tạo cây (phòng đã tạo không lưu nháp — chốt 19/11) |
 
 Ghi chú: trình duyệt trong Zalo/Messenger có bộ nhớ riêng, nên chủ cây mở bằng trình duyệt khác cần đăng nhập lại bằng Google hoặc PIN. Đây là lý do bắt buộc chọn cách khôi phục.
 
