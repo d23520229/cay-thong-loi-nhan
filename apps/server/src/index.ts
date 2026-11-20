@@ -1,14 +1,19 @@
-// Khung server Fastify — các route sẽ được thêm ở mốc M1 (xem docs/dac-ta-v3.md, mục 8).
-import Fastify from 'fastify';
-import { currentPhase } from './phase.js';
+// Khởi động server: nạp env → nối PostgreSQL → chạy migration → lắng nghe.
+import { buildApp } from './app.js';
+import { connectPostgres } from './db/client.js';
+import { runMigrations } from './db/migrate.js';
+import { loadEnv } from './env.js';
+import { makeGoogleVerifier } from './google.js';
+import { now } from './phase.js';
 
-const app = Fastify({ logger: true });
+const env = loadEnv();
+const databaseUrl = process.env.DATABASE_URL;
+if (env.production && !databaseUrl) throw new Error('DATABASE_URL là bắt buộc khi chạy production');
 
-app.get('/healthz', async () => ({ ok: true }));
-app.get('/api/config', async () => {
-  const p = currentPhase();
-  return { now: p.now.toISOString(), phase: p.phase, ...p.milestones };
-});
+const db = connectPostgres(databaseUrl || 'postgres://ctln:ctln_dev@localhost:5432/caythong');
+const ran = await runMigrations(db);
+const app = await buildApp({ db, env, now: () => now(), google: makeGoogleVerifier(env.googleClientId) });
+if (ran.length) app.log.info({ migrations: ran }, 'đã chạy migration');
 
 const port = Number(process.env.PORT ?? 3000);
 app.listen({ port, host: '0.0.0.0' }).catch((err) => {

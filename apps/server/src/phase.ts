@@ -10,6 +10,7 @@ export function milestones() {
     unlockAt: env('UNLOCK_AT', '2026-12-24T00:00:00+07:00').toISOString(),
     writeClosesAt: env('WRITE_CLOSES_AT', '2026-12-26T00:00:00+07:00').toISOString(),
     serviceEndsAt: env('SERVICE_ENDS_AT', '2027-01-01T00:00:00+07:00').toISOString(),
+    purgeAt: env('PURGE_AT', '2027-01-07T00:00:00+07:00').toISOString(),
   };
 }
 

@@ -370,6 +370,7 @@ CREATE TABLE trees (
   pin_hash            text,                                           -- scrypt(PIN 6 số); NULL nếu chỉ dùng Google
   pin_failed_count    smallint NOT NULL DEFAULT 0,
   pin_locked_until    timestamptz,
+  pin_last_failed_at  timestamptz,                                    -- thêm ở migration 0002: mốc lần sai PIN cuối (cửa sổ 15 phút)
 
   -- phòng và cấu hình cây
   background          text NOT NULL DEFAULT 'night',
@@ -859,7 +860,7 @@ Khi bị spam tạo phòng hoặc lời nhắn hàng loạt: quản trị viên 
 
 | Đối tượng | Tạo | Lưu | Truyền |
 |---|---|---|---|
-| Khoá link riêng | 128 bit ngẫu nhiên, base32 | HMAC-SHA256 + `PEPPER` | Phần `#k=` của link (không vào log server), gửi trong body |
+| Khoá link riêng | 128 bit ngẫu nhiên, base64url (22 ký tự) | HMAC-SHA256 + `PEPPER` | Phần `#k=` của link (không vào log server), gửi trong body |
 | PIN 6 số | Người dùng đặt | `scrypt` + muối riêng | Body POST qua HTTPS |
 | Phiên chủ cây | 256 bit | HMAC | Cookie HttpOnly, Secure, SameSite=Lax |
 | Token sửa lời nhắn | 128 bit | HMAC | Header `X-Edit-Token` |

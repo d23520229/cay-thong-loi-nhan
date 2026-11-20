@@ -22,6 +22,7 @@ CREATE TABLE trees (
   pin_hash            text,                                           -- scrypt(PIN 6 số); NULL nếu chỉ dùng Google
   pin_failed_count    smallint NOT NULL DEFAULT 0,
   pin_locked_until    timestamptz,
+  pin_last_failed_at  timestamptz,                                    -- thêm ở migration 0002: mốc lần sai PIN cuối (cửa sổ 15 phút)
 
   -- phòng và cấu hình cây
   background          text NOT NULL DEFAULT 'night',
