@@ -3,7 +3,8 @@ import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { catalog } from '@ctln/shared';
 import { makeTestApp, deviceHeaders } from './helpers.js';
-import { messages } from '../src/db/schema.js';
+import { blockedDevices, messages } from '../src/db/schema.js';
+import { deviceHash } from '../src/security.js';
 
 type T = Awaited<ReturnType<typeof makeTestApp>>;
 let t: T;
@@ -95,6 +96,19 @@ describe('POST /api/trees/:id/messages', () => {
     expect(r.statusCode).toBe(201);
     expect(r.json().messageId).toMatch(/^\d+$/);
     expect(await count()).toBe(0);
+  });
+
+  it('honeypot kiểm trước chặn theo cây và ≤3/thiết bị: thiết bị bị chặn vẫn nhận 201 giả, không lưu', async () => {
+    const { id } = await setup();
+    const dev = randomUUID();
+    for (let s = 0; s < 3; s++) expect((await post(id, body(s), deviceHeaders(dev))).statusCode).toBe(201);
+    const full = await post(id, body(3, { website: 'x' }), deviceHeaders(dev));
+    expect(full.statusCode).toBe(201);
+    await t.h.db.insert(blockedDevices).values({ treeId: id, deviceHash: deviceHash(t.app.deps.env, dev) });
+    const blocked = await post(id, body(4, { website: 'x' }), deviceHeaders(dev));
+    expect(blocked.statusCode).toBe(201);
+    expect(await count()).toBe(3);
+    expect((await post(id, body(5), deviceHeaders(dev))).json().error.code).toBe('blocked');
   });
 
   it('thiếu X-Device-Id: 400; cây không có: 404', async () => {

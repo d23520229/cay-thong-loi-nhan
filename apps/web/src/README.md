@@ -1,13 +1,17 @@
-# apps/web/src — sơ đồ thư mục (làm ở mốc M2–M3)
+# apps/web/src — sơ đồ thư mục
 
-| Thư mục | Thành phần dự kiến | Lấy từ bản thiết kế |
+M2 xong; phần M3/M3b chưa làm.
+
+| Thư mục | File hiện có | Trạng thái |
 |---|---|---|
-| `routes/` | `Home`, `CreateRoom` (/tao), `RoomPage` (/c/:id), `AdminApp` (/quan-tri/*) | — |
-| `room/` | `Scene` (dựng phòng từ catalog), `Camera` (tỉ lệ, zoom vào cây, dời tới món đang sửa), `DragLayer` (Pointer Events, cập nhật thẳng transform khi kéo), `Editor` (chọn món, mũi tên ‹ ›, thanh công cụ, tự lưu), `PickerStrip` (dải chọn điện thoại), `SidePanels` (bảng bên máy tính), `Effects` (hiệu ứng chạm) | Bảng "Phòng tự do" |
-| `guest/` | `Compose` (chọn 1/20 phụ kiện, để tên/ẩn danh, lời nhắn; sửa trong 15 phút) | Bảng "Phòng tự do", vai trò bạn bè |
-| `owner/` | `Reader` (đếm ngược, quà còn gói, mở thẻ lời nhắn), `OwnerAuth` (PIN, Google, link riêng) | Bảng "Phụ kiện treo & trạng thái" |
-| `admin/` | `Overview`, `Reports`, `TreeLookup`, `Stats`, `Blocks`, `Words`, `Settings`, `Admins`, `Audit` | Đặc tả mục 3.7, 9.10 |
-| `art/` | Bọc `@ctln/art/pets`, `@ctln/art/ornaments` thành component React | — |
-| `styles/` | `base.css` (đã có), `room-animations.css` (đã có, gom từ bản thiết kế), `admin.css` | — |
+| `routes/` | `Home.tsx`, `ReopenDialog.tsx`, `CreatePage.tsx` (/tao), `RoomPage.tsx` (/c/:id), `OwnerLogin.tsx` | M2 xong. `AdminApp` (/quan-tri/*) chưa làm (M3b) |
+| `room/` | `model.ts`, `fit.ts`, `Scene.tsx`, `RoomStage.tsx`, `store.ts`, `drag.ts`, `Editor.tsx`, `EditorLayout.tsx` (dải chọn, mũi tên ‹ ›, bảng bên), `autosave.ts`, `ConflictDialog.tsx` | M2 xong. `Effects` (hiệu ứng chạm) chưa làm (M3) |
+| `lib/` | `api.ts`, `catalog.ts`, `storage.ts`, `treeRef.ts`, `authError.ts` | M2 xong |
+| `ui/` | `Button.tsx`, `PinInput.tsx`, `Sheet.tsx`, `Toast.tsx` | M2 xong |
+| `guest/` | — (`Compose`: chọn 1/20 phụ kiện, tên/ẩn danh, lời nhắn) | Chưa làm (M3) |
+| `owner/` | — (`Reader`: đếm ngược, mở thẻ; chế độ Xem) | Chưa làm (M3) |
+| `admin/` | — (`Overview`, `Reports`, `TreeLookup`, ...) | Chưa làm (M3b) |
+| `art/` | — (bọc `@ctln/art` thành component) | Chưa làm |
+| `styles/` | `base.css`, `room-animations.css` (gom từ bản thiết kế), `app.css`; `admin.css` chưa có | Một phần |
 
 Ảnh WebP đã xuất nằm ở `apps/web/public/assets/{tree,room}`; đường dẫn và kích thước lấy từ `@ctln/shared/catalog.json`.

@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run"
   },
   "dependencies": {
     "@ctln/art": "workspace:*",
@@ -24,7 +24,9 @@
     "@fontsource/amatic-sc": "^5.1.0",
     "@fontsource/grape-nuts": "^5.1.0",
     "@fontsource/mynerve": "^5.1.0",
+    "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.0",
+    "@testing-library/user-event": "^14.5.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.3.0",

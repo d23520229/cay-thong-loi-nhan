@@ -14,6 +14,7 @@ export async function configRoutes(app: FastifyInstance) {
       serviceEndsAt,
       catalogVersion: catalog.version,
       limits: catalog.limits,
+      googleClientId: app.deps.env.googleClientId ?? null,
     };
   });
 }

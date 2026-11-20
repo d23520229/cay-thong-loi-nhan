@@ -1,6 +1,8 @@
-// Điểm vào React. Bộ định tuyến và các màn hình sẽ được thêm ở mốc M2 (xem docs/dac-ta-v3.md).
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { RouterProvider, createBrowserRouter } from 'react-router';
+import { routes } from './App';
 import '@fontsource/amatic-sc/vietnamese-700.css';
 import '@fontsource/amatic-sc/latin-700.css';
 import '@fontsource/mynerve/vietnamese-400.css';
@@ -9,18 +11,15 @@ import '@fontsource/grape-nuts/vietnamese-400.css';
 import '@fontsource/grape-nuts/latin-400.css';
 import './styles/base.css';
 import './styles/room-animations.css';
+import './styles/app.css';
 
-function Placeholder() {
-  return (
-    <main className="placeholder">
-      <h1>Cây Thông Lời Nhắn</h1>
-      <p>Đang xây dựng. Bản thiết kế nằm trong tools/design-canvas.</p>
-    </main>
-  );
-}
+const router = createBrowserRouter(routes);
+const queryClient = new QueryClient();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <Placeholder />
+    <QueryClientProvider client={queryClient}>
+      <RouterProvider router={router} />
+    </QueryClientProvider>
   </StrictMode>,
 );

@@ -78,11 +78,13 @@ describe('app', () => {
 });
 
 describe('guards', () => {
-  it('clientIp bỏ hậu tố :port của IPv4', async () => {
+  it('clientIp bỏ hậu tố :port của IPv4 và [IPv6]:port', async () => {
     t = await makeTestApp();
     expect(clientIp({ ip: '1.2.3.4:5678' } as never)).toBe('1.2.3.4');
     expect(clientIp({ ip: '1.2.3.4' } as never)).toBe('1.2.3.4');
     expect(clientIp({ ip: '2001:db8::1' } as never)).toBe('2001:db8::1');
+    expect(clientIp({ ip: '[2001:db8::1]:5678' } as never)).toBe('2001:db8::1');
+    expect(clientIp({ ip: '[2001:db8::1]' } as never)).toBe('2001:db8::1');
   });
   it('assertWritable theo giai đoạn', async () => {
     t = await makeTestApp();
@@ -214,5 +216,21 @@ describe('log request', () => {
     expect(out).toContain('/api/config');
     expect(out).not.toContain('203.0.113.7');
     expect(out).not.toContain('x=1');
+  });
+});
+
+describe('/api/config googleClientId', () => {
+  const cfg = async (envSrc: Record<string, string>) => {
+    const h = await connectPglite();
+    await runMigrations(h);
+    const app = await buildApp({ db: h, env: loadEnv(envSrc), now: () => new Date('2026-12-01T10:00:00+07:00'), google: null });
+    t = { app, h } as T; // afterEach đóng app + db
+    return (await app.inject('/api/config')).json();
+  };
+  it('null khi không cấu hình', async () => {
+    expect((await cfg({})).googleClientId).toBeNull();
+  });
+  it('trả giá trị khi có env.googleClientId', async () => {
+    expect((await cfg({ GOOGLE_CLIENT_ID: 'abc.apps.googleusercontent.com' })).googleClientId).toBe('abc.apps.googleusercontent.com');
   });
 });
