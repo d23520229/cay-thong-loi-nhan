@@ -30,7 +30,7 @@ export function SlotsLayer({ rects, views, fx, onTap, hideEmpty }: Props) {
       {rects.map((r) => {
         const v = views[r.index];
         if (!v || (hideEmpty && v.kind === 'empty')) return null;
-        const svg = v.kind === 'empty' ? slotBubbleSVG(null) : ornamentSVGSoft(v.ornament ?? 'ball', 'filled', null);
+        const svg = v.kind === 'empty' ? slotBubbleSVG() : ornamentSVGSoft(v.ornament ?? 'ball', 'filled', null);
         const cls = ['gs-slot', v.kind === 'mine' || v.kind === 'mineExpired' ? 'is-mine' : '', fx[r.index] ? FX_CLASS[fx[r.index]!] : ''].filter(Boolean).join(' ');
         return (
           <button
