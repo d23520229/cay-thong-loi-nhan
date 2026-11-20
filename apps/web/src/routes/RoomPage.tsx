@@ -9,6 +9,7 @@ import { ConflictDialog } from '../room/ConflictDialog';
 import { EditorLayout } from '../room/EditorLayout';
 import { RoomStage } from '../room/RoomStage';
 import { createEditorStore } from '../room/store';
+import { useItemFx } from '../room/useItemFx';
 import { Button } from '../ui/Button';
 import { useToast } from '../ui/Toast';
 import { OwnerLogin } from './OwnerLogin';
@@ -170,7 +171,7 @@ function TreeRoom({ id }: { id: string }) {
   return (
     <div className="room-page">
       <div className="room-stage">
-        <RoomStage
+        <ViewStage
           room={room}
           reserveTop={TOP_RESERVE}
           reserveBottom={view.kind === 'guest' ? GUEST_BOTTOM_RESERVE : 0}
@@ -197,6 +198,12 @@ function TreeRoom({ id }: { id: string }) {
       {toast}
     </div>
   );
+}
+
+/** Chế độ Xem (khách và chủ cây): phòng + hiệu ứng chạm đồ vật. */
+function ViewStage(props: { room: Room; reserveTop: number; reserveBottom: number }) {
+  const { fx, tap } = useItemFx(props.room);
+  return <RoomStage {...props} fx={fx} onItemTap={tap} />;
 }
 
 type EditorProps = {

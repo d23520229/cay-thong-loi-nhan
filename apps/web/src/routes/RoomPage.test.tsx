@@ -1,5 +1,5 @@
 import { StrictMode } from 'react';
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -371,5 +371,29 @@ describe('RoomPage', () => {
     expect(await screen.findByText('Cây của Lan')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Sửa phòng/ })).not.toBeInTheDocument();
     expect(container.querySelector('img[data-bg]')!.getAttribute('src')).toContain('bg-night');
+  });
+});
+
+describe('RoomPage hiệu ứng chạm (G6)', () => {
+  it('khách chạm hộp quà hai lần thấy hai class khác nhau', async () => {
+    mocked.getOwnerTree.mockRejectedValue(unauthorized());
+    mocked.getTree.mockResolvedValue(publicRoom());
+    const { container } = renderAt();
+    await screen.findByText('Tạo cây của bạn');
+    const gift = () => container.querySelector<HTMLElement>('[data-type="gift"]')!;
+    fireEvent.pointerDown(gift());
+    expect(gift().classList.contains('g-hop')).toBe(true);
+    fireEvent.pointerDown(gift());
+    expect(gift().classList.contains('g-shake')).toBe(true);
+    await act(() => vi.advanceTimersByTimeAsync(1900));
+    expect(gift().classList.contains('g-shake')).toBe(false);
+  });
+
+  it('chủ cây ở chế độ Xem chạm thú cưng cũng có hiệu ứng', async () => {
+    mocked.getOwnerTree.mockResolvedValue(ownerRoom());
+    const { container } = renderAt();
+    await screen.findByRole('button', { name: /Sửa phòng/ });
+    fireEvent.pointerDown(container.querySelector<HTMLElement>('[data-type="pet"]')!);
+    expect(container.querySelector('[data-type="pet"]')!.classList.contains('pop')).toBe(true);
   });
 });
