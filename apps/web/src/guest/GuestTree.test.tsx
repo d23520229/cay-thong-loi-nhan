@@ -265,3 +265,35 @@ describe('GuestTree', () => {
     }
   });
 });
+
+describe('GuestTree — sửa sau lượt soát', () => {
+  it('máy chạy nhanh hơn server: khoá msg: còn hạn theo server không bị xoá khi mở trang', async () => {
+    const serverNow = NOW - 86_400_000; // máy nhanh 1 ngày
+    let release!: (v: unknown) => void;
+    mocked.getConfig.mockReturnValue(new Promise((r) => { release = r; }) as never);
+    const until = new Date(serverNow + 7 * 60_000).toISOString();
+    storage.setMine(ID, 2, { messageId: '9', editToken: 'tok', editUntil: until });
+    mocked.getMine.mockResolvedValue(mineMsg(until));
+    const { container } = show(meta({ slots: slotsWith(2) }));
+    expect(storage.getMine(ID, 2)).not.toBeNull();
+    await act(async () => release({ now: new Date(serverNow).toISOString() }));
+    expect(storage.getMine(ID, 2)).not.toBeNull();
+    await zoom(container);
+    await openMine();
+    expect(await screen.findByText('Còn 7 phút để sửa hoặc xoá lời nhắn này.')).toBeInTheDocument();
+  });
+
+  it('đang gửi thì không đóng được bảng (Escape / ✕), chữ không mất', async () => {
+    let finish!: (v: unknown) => void;
+    mocked.postMessage.mockReturnValue(new Promise((r) => { finish = r; }) as never);
+    const { container } = show();
+    await zoom(container);
+    await userEvent.click(bubbles()[0]!);
+    await writeAndSend('Đang gửi');
+    await userEvent.keyboard('{Escape}');
+    await userEvent.click(screen.getByRole('button', { name: 'Đóng' }));
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    await act(async () => finish(posted));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+});

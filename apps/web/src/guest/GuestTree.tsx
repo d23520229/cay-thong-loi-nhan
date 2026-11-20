@@ -37,7 +37,8 @@ const isTransport = (e: ApiError) => e.status === 0 || (e.status >= 500 && e.cod
 export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
   const [slots, setSlots] = useState(meta.slots);
   const [phase, setPhase] = useState(meta.phase);
-  const [mine, setMine] = useState<Record<number, MineEntry>>(() => pruneMine(treeId, meta.slots, serverNow()));
+  // Chỉ đọc khi mở trang; dọn khoá (pruneMine) sau khi đã có giờ server, kẻo máy chạy nhanh xoá nhầm khoá còn hạn.
+  const [mine, setMine] = useState<Record<number, MineEntry>>(() => storage.listMine(treeId));
   const [camera, setCamera] = useState<Camera | null>(null);
   const [open, setOpen] = useState<Open | null>(null);
   const [draft, setDraft] = useState<ComposeDraft>(() => newDraft(''));
@@ -54,16 +55,23 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
     return () => ts.forEach(clearTimeout);
   }, []);
 
-  // Hạn sửa so theo giờ server.
+  const slotsRef = useRef(slots);
+  slotsRef.current = slots;
+
+  // Hạn sửa so theo giờ server; có giờ (hoặc không lấy được) mới dọn khoá, theo trạng thái điểm hiện tại.
   useEffect(() => {
-    api.getConfig().then(
-      (c) => {
-        syncClock(c.now);
-        setMine(pruneMine(treeId, meta.slots, serverNow()));
-      },
-      () => {},
-    );
-  }, [treeId, meta.slots]);
+    let alive = true;
+    const prune = () => {
+      if (alive) setMine(pruneMine(treeId, slotsRef.current, serverNow()));
+    };
+    api.getConfig().then((c) => {
+      syncClock(c.now);
+      prune();
+    }, prune);
+    return () => {
+      alive = false;
+    };
+  }, [treeId]);
 
   const flash = (slot: number, kind: 'ring' | 'drop-in') => {
     setSlotFx((f) => ({ ...f, [slot]: kind }));
@@ -220,6 +228,8 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
   };
 
   const cancel = () => {
+    // Đang gửi thì không đóng: kết quả về sau sẽ đóng/mở đúng bảng này, không lẫn sang bảng khác.
+    if (busy) return;
     // Bỏ bảng viết mới thì bỏ luôn chữ đang giữ.
     if (open?.mode === 'new') held.current = null;
     close();
