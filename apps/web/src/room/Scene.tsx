@@ -16,7 +16,7 @@ export type SceneProps = {
   itemRef?: (clientId: string, el: HTMLDivElement | null) => void;
   /** Hiệu ứng chạm đang chạy trên một món (G6). */
   fx?: { clientId: string; fx: Fx; seed: number } | null;
-  /** Chế độ Xem: nhấn một món (mọi món, kể cả cây). */
+  /** Chế độ Xem: nhấn-thả một món (mọi món, kể cả cây). */
   onItemTap?: (clientId: string) => void;
 };
 
@@ -134,14 +134,8 @@ export function Scene({ room, selectedId, onItemPointerDown, onBackgroundPointer
             data-client-id={it.clientId}
             data-type={it.type}
             className={cls}
-            onPointerDown={
-              onItemPointerDown || onItemTap
-                ? (e) => {
-                    onItemPointerDown?.(it.clientId, e);
-                    onItemTap?.(it.clientId);
-                  }
-                : undefined
-            }
+            onPointerDown={onItemPointerDown ? (e) => onItemPointerDown(it.clientId, e) : undefined}
+            onClick={onItemTap ? () => onItemTap(it.clientId) : undefined}
             style={{
               position: 'absolute',
               left: it.x - v.ax * it.scale,

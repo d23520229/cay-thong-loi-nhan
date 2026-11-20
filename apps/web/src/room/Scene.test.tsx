@@ -80,10 +80,12 @@ describe('Scene hiệu ứng chạm', () => {
     expect(el(container, pet.clientId).querySelector('.say')?.textContent).toBe('Meo~');
   });
 
-  it('onItemTap nhận clientId khi nhấn món', () => {
+  it('onItemTap nhận clientId khi nhấn-thả (click), không phải khi vừa chạm xuống', () => {
     const taps: string[] = [];
     const { container } = render(<Scene room={room} onItemTap={(id) => taps.push(id)} />);
     fireEvent.pointerDown(el(container, gift.clientId));
+    expect(taps).toEqual([]);
+    fireEvent.click(el(container, gift.clientId));
     expect(taps).toEqual([gift.clientId]);
   });
 });

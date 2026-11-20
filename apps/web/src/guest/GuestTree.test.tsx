@@ -55,7 +55,7 @@ const show = (m: PublicRoom = meta()) => {
   );
 };
 const zoom = async (c: HTMLElement) => {
-  fireEvent.pointerDown(c.querySelector('[data-type="tree"]')!);
+  fireEvent.click(c.querySelector('[data-type="tree"]')!);
   await screen.findByRole('button', { name: /Về căn phòng/ });
   await waitFor(() => expect(mocked.getTree).toHaveBeenCalled());
 };
@@ -217,11 +217,11 @@ describe('GuestTree', () => {
 
   it('xoá: confirm → deleteMessage, điểm thành bong bóng', async () => {
     mocked.deleteMessage.mockResolvedValue(undefined);
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
     const { container } = show(withMine(7));
     await zoom(container);
     await openMine();
     await userEvent.click(await screen.findByRole('button', { name: 'Xoá lời nhắn' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Xoá' }));
     expect(mocked.deleteMessage).toHaveBeenCalledWith('9', 'tok');
     await waitFor(() => expect(bubbles()).toHaveLength(12));
     expect(storage.getMine(ID, 2)).toBeNull();
@@ -295,5 +295,51 @@ describe('GuestTree — sửa sau lượt soát', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     await act(async () => finish(posted));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+});
+
+describe('GuestTree — việc nhỏ', () => {
+  it('giai đoạn không cho ghi: lời nhắc đổi thành xem lời nhắn đã treo', () => {
+    show(meta({ phase: 'NOTICE' }));
+    expect(screen.getByText('Chạm vào cây thông để xem các lời nhắn đã treo')).toBeInTheDocument();
+    expect(screen.queryByText('Chạm vào cây thông để treo lời nhắn')).not.toBeInTheDocument();
+  });
+
+  it('mở bảng sửa lỗi mạng: "Chưa tải được, thử lại nhé"', async () => {
+    const m = withMine(7);
+    mocked.getMine.mockRejectedValue(new ApiError(0, 'network', 'x'));
+    const { container } = show(m);
+    await zoom(container);
+    await openMine();
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('Chưa tải được, thử lại nhé'));
+    expect(storage.getMine(ID, 2)).not.toBeNull();
+  });
+
+  it('chạm cây là nhấn-thả (click), không zoom khi chỉ vừa chạm xuống', () => {
+    const { container } = show();
+    fireEvent.pointerDown(container.querySelector('[data-type="tree"]')!);
+    expect(screen.queryByRole('button', { name: /Về căn phòng/ })).not.toBeInTheDocument();
+  });
+
+  it('đang zoom mà đổi cỡ màn hình: camera tính lại theo cỡ mới', async () => {
+    let resize: () => void = () => {};
+    vi.stubGlobal('ResizeObserver', class { constructor(cb: () => void) { resize = cb; } observe() {} disconnect() {} });
+    let w = 390;
+    Object.defineProperty(HTMLElement.prototype, 'clientWidth', { configurable: true, get: () => w });
+    Object.defineProperty(HTMLElement.prototype, 'clientHeight', { configurable: true, get: () => 844 });
+    try {
+      const { container } = show();
+      act(() => resize());
+      await zoom(container);
+      const world = () => container.querySelector<HTMLElement>('[data-room-world]')!.style.transform;
+      const before = world();
+      w = 800;
+      act(() => resize());
+      expect(world()).not.toBe(before);
+      expect(world()).toContain('translate(');
+    } finally {
+      delete (HTMLElement.prototype as unknown as Record<string, unknown>).clientWidth;
+      delete (HTMLElement.prototype as unknown as Record<string, unknown>).clientHeight;
+    }
   });
 });

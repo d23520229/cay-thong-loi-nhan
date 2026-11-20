@@ -382,9 +382,9 @@ describe('RoomPage hiệu ứng chạm (G6)', () => {
     const { container } = renderAt();
     await screen.findByText('Tạo cây của bạn');
     const gift = () => container.querySelector<HTMLElement>('[data-type="gift"]')!;
-    fireEvent.pointerDown(gift());
+    fireEvent.click(gift());
     expect(gift().classList.contains('g-hop')).toBe(true);
-    fireEvent.pointerDown(gift());
+    fireEvent.click(gift());
     expect(gift().classList.contains('g-shake')).toBe(true);
     await act(() => vi.advanceTimersByTimeAsync(1900));
     expect(gift().classList.contains('g-shake')).toBe(false);
@@ -394,7 +394,7 @@ describe('RoomPage hiệu ứng chạm (G6)', () => {
     mocked.getOwnerTree.mockResolvedValue(ownerRoom());
     const { container } = renderAt();
     await screen.findByRole('button', { name: /Sửa phòng/ });
-    fireEvent.pointerDown(container.querySelector<HTMLElement>('[data-type="pet"]')!);
+    fireEvent.click(container.querySelector<HTMLElement>('[data-type="pet"]')!);
     expect(container.querySelector('[data-type="pet"]')!.classList.contains('pop')).toBe(true);
   });
 });

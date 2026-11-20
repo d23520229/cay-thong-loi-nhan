@@ -9,7 +9,7 @@ import { useItemFx } from '../room/useItemFx';
 import { Compose, newDraft, type ComposeDraft } from './Compose';
 import { slotRects, zoomCamera, type Camera } from './geometry';
 import { SlotsLayer } from './SlotsLayer';
-import { canWrite, isFull, minutesLeft, pruneMine, slotViews } from './slots';
+import { canWrite, isFull, pruneMine, slotViews } from './slots';
 
 type Props = {
   treeId: string;
@@ -21,7 +21,7 @@ type Props = {
 
 type Open =
   | { mode: 'new'; slot: number }
-  | { mode: 'edit'; slot: number; messageId: string; token: string; minutesLeft: number };
+  | { mode: 'edit'; slot: number; messageId: string; token: string; editUntil: string };
 
 const TOP_RESERVE = 56;
 // Khối nút của khách: 8 + 44 ("Tạo cây của bạn") + 4 + 44 ("Tôi là chủ cây") + 16 — đo bằng Chrome.
@@ -29,6 +29,7 @@ const GUEST_BOTTOM_RESERVE = 116;
 const SLOT_FX_MS = 950;
 const NOT_EDITABLE = 'Lời nhắn này không sửa được nữa';
 const SEND_FAILED = 'Chưa gửi được, thử lại nhé';
+const LOAD_FAILED = 'Chưa tải được, thử lại nhé';
 
 /** Lỗi không tới được server hoặc server hỏng (trừ tạm dừng khẩn cấp có thông báo riêng). */
 const isTransport = (e: ApiError) => e.status === 0 || (e.status >= 500 && e.code !== 'paused');
@@ -98,6 +99,12 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
   const writable = canWrite(phase);
   const views = slotViews(slots, room.tree.slotCount, mine, serverNow());
 
+  // Đang zoom mà đổi cỡ / xoay màn hình: tính lại camera theo cỡ mới.
+  const onFit = () => {
+    const el = stage.current;
+    if (el) setCamera((c) => (c ? zoomCamera(room, el.clientWidth, el.clientHeight) : c));
+  };
+
   const onItemTap = (clientId: string) => {
     const it = room.items.find((i) => i.clientId === clientId);
     if (it?.type !== 'tree') return tap(clientId);
@@ -141,12 +148,12 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
       const msg = await api.getMine(m.messageId, m.editToken);
       setDraft({ ornament: msg.ornament, anonymous: msg.anonymous, authorName: msg.authorName ?? '', content: msg.content });
       setError(null);
-      setOpen({ mode: 'edit', slot, messageId: m.messageId, token: m.editToken, minutesLeft: minutesLeft(msg.editUntil, serverNow()) });
+      setOpen({ mode: 'edit', slot, messageId: m.messageId, token: m.editToken, editUntil: msg.editUntil });
     } catch (e) {
       if (e instanceof ApiError && (e.status === 403 || e.status === 404)) {
         toast(e.message || NOT_EDITABLE);
         forget(slot);
-      } else toast(SEND_FAILED);
+      } else toast(LOAD_FAILED);
     }
   };
 
@@ -244,6 +251,7 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
           reserveBottom={GUEST_BOTTOM_RESERVE}
           stageRef={stage}
           camera={camera}
+          onFit={onFit}
           fx={fx}
           onItemTap={onItemTap}
           overlay={
@@ -267,7 +275,7 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
         </div>
       ) : (
         <div className="room-bottom">
-          <p className="gs-hint">Chạm vào cây thông để treo lời nhắn</p>
+          <p className="gs-hint">{writable ? 'Chạm vào cây thông để treo lời nhắn' : 'Chạm vào cây thông để xem các lời nhắn đã treo'}</p>
           <Link to={`/?ref=${treeId}`} className="btn btn-primary">Tạo cây của bạn</Link>
           <button type="button" className="linkbtn" onClick={onOwnerLogin}>Tôi là chủ cây</button>
         </div>
@@ -277,7 +285,7 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
           mode={open.mode}
           draft={draft}
           onChange={setDraft}
-          minutesLeft={open.mode === 'edit' ? open.minutesLeft : undefined}
+          editUntil={open.mode === 'edit' ? open.editUntil : undefined}
           busy={busy}
           error={error}
           onSubmit={(input, website) => void submit(input, website)}
