@@ -9,7 +9,7 @@ import { phaseOf } from './guards.js';
 import { authRoutes } from './routes/auth.js';
 import { configRoutes } from './routes/config.js';
 import { messagesRoutes } from './routes/messages.js';
-import { ogRoutes } from './routes/og.js';
+import { indexHtml, ogRoutes } from './routes/og.js';
 import type { OgRoom } from './og/render.js';
 import { ownerRoutes } from './routes/owner.js';
 import { roomRoutes } from './routes/room.js';
@@ -63,7 +63,14 @@ export async function buildApp(deps: AppDeps, opts: { logStream?: { write(msg: s
     }
   });
 
-  app.setNotFoundHandler((_req, reply) => reply.code(404).send(body('not_found', 'Không tìm thấy.')));
+  app.setNotFoundHandler((req, reply) => {
+    // Có bản build web: mọi đường dẫn trang (không phải /api, /og) trả index.html để React Router xử lý (đặc tả 6.6.3).
+    const path = req.url.split('?')[0]!;
+    if (deps.env.webDist && req.method === 'GET' && !path.startsWith('/api/') && !path.startsWith('/og/')) {
+      return reply.code(200).type('text/html; charset=utf-8').header('cache-control', 'no-cache').send(indexHtml(deps.env.webDist));
+    }
+    return reply.code(404).send(body('not_found', 'Không tìm thấy.'));
+  });
 
   app.setErrorHandler((err: Error & { code?: string; statusCode?: number; validation?: unknown }, req, reply) => {
     if (err instanceof HttpError) return reply.code(err.status).send(body(err.code, err.message, err.extra));
