@@ -35,7 +35,7 @@ Chuẩn bị: thư mục gốc `D:\cay-thong-loi-nhan`, Docker Desktop đang ch�
 
 **Chia sẻ + OG (phần 3)**
 17. "🔗 Chia sẻ" → bảng "Gửi cây cho bạn bè": "Sao chép" → dán ra chỗ khác đúng link; trên điện thoại có "Chia sẻ…" (bảng chia sẻ của máy), "Messenger" mở app Messenger; "Zalo" sao chép link và nhắc dán vào Zalo.
-18. Thẻ OG (cần bản build): dừng `pnpm dev`; chạy `pnpm build`, rồi trong `.env` đặt `WEB_DIST=apps/web/dist` và `BASE_URL=http://localhost:3000`, chạy `pnpm --filter @ctln/server start`; mở http://localhost:3000/c/{mã cây} → trang chạy như bình thường; mở http://localhost:3000/og/{mã cây}.png → ảnh căn phòng 1200×630; xem mã nguồn trang (Ctrl+U) thấy các thẻ `og:`. Xong thì xoá `WEB_DIST`, đặt lại `BASE_URL=http://localhost:5173`. (Thử với Zalo/Messenger thật làm khi lên Azure ở M4.)
+18. Thẻ OG (cần bản build): dừng `pnpm dev`; chạy `pnpm build`; rồi trong PowerShell ở thư mục gốc chạy `$env:WEB_DIST="D:\cay-thong-loi-nhanpps\web\dist"; $env:BASE_URL="http://localhost:3000"; node apps/server/dist/index.js` (lệnh `start` không đọc `.env`, nên đặt biến trực tiếp). Mở http://localhost:3000/c/{mã cây} → trang chạy như bình thường; mở http://localhost:3000/og/{mã cây}.png → ảnh căn phòng 1200×630; xem mã nguồn trang (Ctrl+U) thấy các thẻ `og:`. Xong bấm `Ctrl+C`, đóng cửa sổ PowerShell đó (biến chỉ có trong cửa sổ đó). (Thử với Zalo/Messenger thật làm khi lên Azure ở M4.)
 
 **Màn hình**
 19. DevTools chế độ thiết bị 360×640 và 390×844 (và điện thoại thật nếu được): lời nhắc và khối nút không che phòng nhiều, bảng viết / thẻ lời nhắn cuộn được, bong bóng đủ lớn để chạm.
