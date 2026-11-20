@@ -23,4 +23,15 @@ describe('CSS', () => {
     expect(rule).not.toMatch(/border:\s*\d/);
     expect(appCss).toMatch(/@keyframes gs-bubble-blink/);
   });
+
+  it('bong bóng phóng to từ mép tán và thu về mép tán; thời gian ẩn bằng thời gian hiện', () => {
+    const right = /\.gs-bubble--right\s*\{([^}]*)\}/.exec(appCss)?.[1] ?? '';
+    const left = /\.gs-bubble--left\s*\{([^}]*)\}/.exec(appCss)?.[1] ?? '';
+    expect(right).toMatch(/transform-origin:\s*-29px 50%/);
+    expect(left).toMatch(/transform-origin:\s*calc\(100% \+ 29px\) 50%/);
+    const kf = /@keyframes gs-bubble-blink\s*\{([\s\S]*?)\n\}/.exec(appCss)?.[1] ?? '';
+    // 0–12% phóng ra, 12–50% hiện đủ, 50–62% thu lại, 62–100% ẩn: hiện 38% = ẩn 38%.
+    expect(kf).toMatch(/0%,\s*62%,\s*100%\s*\{[^}]*opacity:\s*0[^}]*scale\(0\)/);
+    expect(kf).toMatch(/12%,\s*50%\s*\{[^}]*opacity:\s*1[^}]*scale\(1\)/);
+  });
 });

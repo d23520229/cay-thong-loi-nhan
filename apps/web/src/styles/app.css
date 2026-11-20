@@ -155,8 +155,12 @@
 .gs-bubble--right .gs-bubble-dot--small { left: -29px; }
 .gs-bubble--left .gs-bubble-dot--big { right: -17px; }
 .gs-bubble--left .gs-bubble-dot--small { right: -29px; }
+/* Chu kỳ 3s: 0–12% phóng ra từ mép tán, 12–50% hiện, 50–62% thu về mép tán, 62–100% ẩn (hiện = ẩn) */
 @keyframes gs-bubble-blink {
-  0%, 100% { opacity: 0; transform: translateY(-50%) scale(.9); }
-  20%, 75% { opacity: 1; transform: translateY(-50%) scale(1); }
+  0%, 62%, 100% { opacity: 0; transform: translateY(-50%) scale(0); }
+  12%, 50% { opacity: 1; transform: translateY(-50%) scale(1); }
 }
+/* Tâm phóng/thu: chấm mây nhỏ nhất, sát mép tán */
+.gs-bubble--right { transform-origin: -29px 50%; }
+.gs-bubble--left { transform-origin: calc(100% + 29px) 50%; }
 @media (prefers-reduced-motion: reduce) { .gs-bubble { animation: none; } }
