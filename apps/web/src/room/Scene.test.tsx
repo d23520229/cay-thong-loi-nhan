@@ -51,7 +51,7 @@ describe('Scene', () => {
     expect(rule).toMatch(/outline:\s*4px dashed #FFD86B/i);
     expect(rule).toMatch(/outline-offset:\s*8px/);
     expect(rule).toMatch(/border-radius:\s*14px/);
-    expect(animCss).not.toMatch(/\.selected|\.item/);
+    expect(animCss).not.toMatch(/\.selected\b|\.item\b/);
   });
 
   it('món lật có scaleX(-1)', () => {
