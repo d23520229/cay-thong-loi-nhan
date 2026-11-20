@@ -78,16 +78,26 @@ export function RoomStage({ reserveTop = 0, reserveBottom = 0, stageRef, onFit, 
           filter: 'blur(14px) brightness(.45)',
         }}
       />
-      <div style={{ position: 'absolute', left: fit.left, top: fit.top, width: fit.width, height: fit.height }}>
+      {/* Chế độ Xem: khung phòng giữ nguyên cỡ, zoom vào cây thì phần ngoài khung bị che (đặc tả 6.6.1, sửa 21/11). */}
+      <div
+        style={{
+          position: 'absolute',
+          left: fit.left,
+          top: fit.top,
+          width: fit.width,
+          height: fit.height,
+          overflow: camera !== undefined ? 'hidden' : undefined,
+        }}
+      >
         <div
           data-room-world=""
           style={{
             width: catalog.room.w,
             height: catalog.room.h,
             transformOrigin: '0 0',
-            // Camera tính trong toạ độ vùng sân khấu; khung này đã dời sẵn (fit.left, fit.top).
+            // Camera tính trong khung phòng (góc trên trái khung là 0, 0).
             transform: camera
-              ? `translate(${camera.x - fit.left}px, ${camera.y - fit.top}px) scale(${camera.scale})`
+              ? `translate(${camera.x}px, ${camera.y}px) scale(${camera.scale})`
               : `scale(${fit.scale})`,
             transition: animating ? `transform ${ZOOM_MS}ms ease` : undefined,
           }}

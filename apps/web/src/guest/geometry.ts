@@ -1,13 +1,14 @@
 import { layoutSlots, type Room } from '@ctln/shared';
 import { catalog } from '../lib/catalog';
-import { fitRoom } from '../room/fit';
+import type { Fit } from '../room/fit';
 
 /** Một điểm nhắn trong toạ độ phòng 720×1080 (đặc tả 6.6.1 "Zoom vào cây"). */
 export type SlotRect = { index: number; left: number; top: number; size: number };
-/** translate (px trong vùng sân khấu) + scale của khung phòng 720×1080. */
+/** translate (px, tính trong khung phòng `fit`) + scale của phòng 720×1080. */
 export type Camera = { x: number; y: number; scale: number };
 
 const FRAME = catalog.tree.frame; // khung cây 400×600, chân ở baseY, phóng scaleInRoom khi vào phòng
+const RW = catalog.room.w, RH = catalog.room.h;
 
 const treeItem = (room: Room) => {
   const t = room.items.find((i) => i.type === 'tree');
@@ -29,12 +30,25 @@ export function slotRects(room: Room): SlotRect[] {
   });
 }
 
-/** Camera đưa giữa tán cây ra giữa vùng `areaW × areaH`. */
-export function zoomCamera(room: Room, areaW: number, areaH: number): Camera {
+const MARGIN = 0.04; // chừa 4% mỗi phía quanh cây
+const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+
+/**
+ * Camera zoom vào cây (đặc tả 6.6.1, sửa 21/11): cả cây từ gốc tới ngọn vừa trong khung `fit` (khung phòng giữ nguyên cỡ,
+ * phần ngoài khung bị che); không thu nhỏ hơn lúc chưa zoom; không nhìn ra ngoài phòng.
+ * Toạ độ camera tính trong khung `fit` (góc trên trái của khung là 0, 0).
+ */
+export function zoomCamera(room: Room, fit: Fit): Camera {
   const t = treeItem(room);
-  const zf = 1.6 / Math.max(0.8, t.scale);
-  const cx = t.x;
-  const cy = t.y - 300 * FRAME.scaleInRoom * t.scale;
-  const scale = fitRoom(areaW, areaH).scale * zf;
-  return { x: areaW / 2 - cx * scale, y: areaH / 2 - cy * scale, scale };
+  const k = FRAME.scaleInRoom * t.scale;
+  // Hộp cây: ngang cả khung cây, dọc từ đỉnh khung (trên ngôi sao) tới gốc thân; phần ngoài phòng vốn đã bị cắt.
+  const w = FRAME.w * k, h = (FRAME.baseY + 20) * k;
+  const left = clamp(t.x - w / 2 - w * MARGIN, 0, RW);
+  const right = clamp(t.x + w / 2 + w * MARGIN, 0, RW);
+  const top = clamp(t.y - FRAME.baseY * k - h * MARGIN, 0, RH);
+  const bottom = clamp(t.y + 20 * k + h * MARGIN, 0, RH);
+  const scale = Math.max(fit.scale, Math.min(fit.width / (right - left), fit.height / (bottom - top)));
+  const x = clamp(fit.width / 2 - ((left + right) / 2) * scale, fit.width - RW * scale, 0);
+  const y = clamp(fit.height / 2 - ((top + bottom) / 2) * scale, fit.height - RH * scale, 0);
+  return { x, y, scale };
 }

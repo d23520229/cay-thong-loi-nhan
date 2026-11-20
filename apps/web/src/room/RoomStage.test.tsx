@@ -83,6 +83,13 @@ describe('RoomStage camera và overlay', () => {
     expect(world(container).style.transform).not.toContain('-100px');
   });
 
+  it('chế độ Xem (có prop camera): khung phòng cắt phần tràn ra ngoài', () => {
+    const { container } = render(<RoomStage room={defaultRoom()} camera={{ x: -100, y: -50, scale: 1.2 }} />);
+    expect(world(container).parentElement!.style.overflow).toBe('hidden');
+    const edit = render(<RoomStage room={defaultRoom()} />);
+    expect(world(edit.container).parentElement!.style.overflow).toBe('');
+  });
+
   it('overlay nằm trong khung phòng', () => {
     const { container } = render(<RoomStage room={defaultRoom()} overlay={<div data-testid="ov" />} />);
     expect(world(container).querySelector('[data-testid="ov"]')).not.toBeNull();
