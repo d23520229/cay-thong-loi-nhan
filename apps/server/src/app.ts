@@ -9,12 +9,21 @@ import { phaseOf } from './guards.js';
 import { authRoutes } from './routes/auth.js';
 import { configRoutes } from './routes/config.js';
 import { messagesRoutes } from './routes/messages.js';
+import { ogRoutes } from './routes/og.js';
+import type { OgRoom } from './og/render.js';
 import { ownerRoutes } from './routes/owner.js';
 import { roomRoutes } from './routes/room.js';
 import { treesRoutes } from './routes/trees.js';
 
 export type GoogleVerifier = (idToken: string) => Promise<{ sub: string; name?: string }>;
-export type AppDeps = { db: DbHandle; env: Env; now: () => Date; google: GoogleVerifier | null };
+export type AppDeps = {
+  db: DbHandle;
+  env: Env;
+  now: () => Date;
+  google: GoogleVerifier | null;
+  /** Thay hàm vẽ ảnh OG (chỉ dùng trong test). */
+  renderOg?: (room: OgRoom, assetDir: string) => Promise<Buffer>;
+};
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -78,6 +87,7 @@ export async function buildApp(deps: AppDeps, opts: { logStream?: { write(msg: s
 
   app.get('/healthz', async () => ({ ok: true }));
   await app.register(configRoutes);
+  await app.register(ogRoutes);
   await app.register(treesRoutes);
   await app.register(roomRoutes);
   await app.register(authRoutes);
