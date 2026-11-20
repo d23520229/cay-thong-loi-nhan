@@ -59,6 +59,16 @@ export type MyMessage = {
   editUntil: string;
 };
 
+export type OpenedMessage = {
+  messageId: string;
+  slotIndex: number;
+  ornament: string;
+  anonymous: boolean;
+  authorName: string | null;
+  content: string;
+  createdAt: string;
+};
+
 async function request<T>(method: string, path: string, body?: unknown, extraHeaders: Record<string, string> = {}): Promise<T> {
   const headers: Record<string, string> = { 'x-device-id': storage.deviceId(), ...extraHeaders };
   if (body !== undefined) headers['content-type'] = 'application/json';
@@ -109,4 +119,13 @@ export const api = {
   getMine: (mid: string, t: string) => request<MyMessage>('GET', `${message(mid)}/mine`, undefined, token(t)),
   editMessage: (mid: string, t: string, body: MessageInput) => request<{ ok: true }>('PUT', message(mid), body, token(t)),
   deleteMessage: (mid: string, t: string) => request<void>('DELETE', message(mid), undefined, token(t)),
+  // Chủ cây (đặc tả 8.5)
+  openMessage: (id: string, mid: string) => request<OpenedMessage>('POST', `${tree(id)}/messages/${encodeURIComponent(mid)}/open`),
+  ownerDeleteMessage: (id: string, mid: string) => request<void>('DELETE', `${tree(id)}/messages/${encodeURIComponent(mid)}`),
+  blockSender: (id: string, mid: string) => request<void>('POST', `${tree(id)}/block`, { messageId: mid }),
+  report: (id: string, body: { messageId?: string; reason?: string }) =>
+    request<{ reportId: string }>('POST', `${tree(id)}/reports`, body),
+  setShowCount: (id: string, show: boolean) =>
+    request<{ showMessageCount: boolean }>('PUT', `${tree(id)}/settings`, { showMessageCount: show }),
+  deleteTree: (id: string) => request<void>('DELETE', tree(id)),
 };
