@@ -7,10 +7,9 @@ import { TREE_CODE } from '../lib/treeRef';
 import { createAutosave, type SaveState } from '../room/autosave';
 import { ConflictDialog } from '../room/ConflictDialog';
 import { GuestTree } from '../guest/GuestTree';
+import { OwnerTree } from '../owner/OwnerTree';
 import { EditorLayout } from '../room/EditorLayout';
-import { RoomStage } from '../room/RoomStage';
 import { createEditorStore } from '../room/store';
-import { useItemFx } from '../room/useItemFx';
 import { Button } from '../ui/Button';
 import { useToast } from '../ui/Toast';
 import { OwnerLogin } from './OwnerLogin';
@@ -24,7 +23,6 @@ type View =
   | { kind: 'owner'; data: Loaded<OwnerRoom> }
   | { kind: 'guest'; data: Loaded<PublicRoom> };
 
-const TOP_RESERVE = 56;
 
 /** Phòng nhận từ server phải hợp lệ mới vẽ (không tin dữ liệu ngoài). */
 function toRoom(r: PublicRoom): Room | null {
@@ -54,10 +52,12 @@ function TreeRoom({ id }: { id: string }) {
   const [login, setLogin] = useState<null | 'guest' | 'unauthorized'>(null);
   const autosave = useRef<Autosave | null>(null);
   const link = useRef<Promise<void> | null>(null);
+  // Lượt vào trang: một request /owner dùng chung cho cả hai lần effect của StrictMode (/owner ghi lần ghé, gọi hai lần mất số "mới").
+  const firstOwner = useRef<Promise<OwnerRoom> | null>(null);
   const { toast, show } = useToast();
 
   const load = useCallback(
-    async (cancelled: () => boolean = () => false) => {
+    async (cancelled: () => boolean = () => false, firstVisit = false) => {
       const fail = (e: unknown) => {
         if (cancelled()) return;
         if (e instanceof ApiError && e.status === 404) {
@@ -67,7 +67,7 @@ function TreeRoom({ id }: { id: string }) {
       };
       let meta: OwnerRoom;
       try {
-        meta = await api.getOwnerTree(id);
+        meta = await (firstVisit ? (firstOwner.current ??= api.getOwnerTree(id)) : api.getOwnerTree(id));
       } catch (e) {
         if (!(e instanceof ApiError && e.status === 401)) return fail(e);
         try {
@@ -109,7 +109,7 @@ function TreeRoom({ id }: { id: string }) {
       }
     })();
     void link.current.then(() => {
-      if (!cancelled) return load(() => cancelled);
+      if (!cancelled) return load(() => cancelled, true);
     });
     return () => {
       cancelled = true;
@@ -172,13 +172,13 @@ function TreeRoom({ id }: { id: string }) {
       {view.kind === 'guest' ? (
         <GuestTree treeId={id} meta={meta} room={room} toast={show} onOwnerLogin={() => setLogin('guest')} />
       ) : (
-        <>
-          <div className="room-stage">
-            <ViewStage room={room} reserveTop={TOP_RESERVE} reserveBottom={0} />
-          </div>
-          {/* Chỗ cho M3 phần 2: đếm ngược, số lời nhắn, chia sẻ. */}
-          <div className="room-bottom" />
-        </>
+        <OwnerTree
+          treeId={id}
+          meta={view.data.meta}
+          room={room}
+          toast={show}
+          onUnauthorized={() => setLogin('unauthorized')}
+        />
       )}
       <div className="room-top">
         <h1 className="room-title">{roomTitle(meta)}</h1>
@@ -192,12 +192,6 @@ function TreeRoom({ id }: { id: string }) {
       {toast}
     </div>
   );
-}
-
-/** Chế độ Xem (khách và chủ cây): phòng + hiệu ứng chạm đồ vật. */
-function ViewStage(props: { room: Room; reserveTop: number; reserveBottom: number }) {
-  const { fx, tap } = useItemFx(props.room);
-  return <RoomStage {...props} fx={fx} onItemTap={tap} />;
 }
 
 type EditorProps = {

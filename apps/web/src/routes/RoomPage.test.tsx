@@ -375,6 +375,15 @@ describe('RoomPage', () => {
   });
 });
 
+describe('RoomPage chủ cây (M3 phần 2)', () => {
+  it('StrictMode: vào trang chỉ gọi /owner một lần (giữ số "mới")', async () => {
+    mocked.getOwnerTree.mockResolvedValue(ownerRoom({ messageCount: 3, newSinceLastVisit: 2 }));
+    renderAt(`/c/${ID}`, true);
+    expect(await screen.findByText(/3 lời nhắn · 2 mới/)).toBeInTheDocument();
+    expect(mocked.getOwnerTree).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe('RoomPage hiệu ứng chạm (G6)', () => {
   it('khách chạm hộp quà hai lần thấy hai class khác nhau', async () => {
     mocked.getOwnerTree.mockRejectedValue(unauthorized());
