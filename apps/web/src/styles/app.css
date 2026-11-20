@@ -118,3 +118,4 @@
 .gs-slot.gs-ring > svg { transform-origin: 50% 0; animation: orn-ring .9s ease-in-out; }
 .gs-slot.gs-drop > svg { animation: orn-drop .9s cubic-bezier(.3,1.5,.5,1); }
 @media (prefers-reduced-motion: reduce) { .gs-slots { animation: none; } .gs-slot.gs-ring > svg, .gs-slot.gs-drop > svg { animation: none; } }
+.gs-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
