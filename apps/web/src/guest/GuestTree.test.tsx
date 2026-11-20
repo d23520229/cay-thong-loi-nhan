@@ -87,7 +87,7 @@ describe('GuestTree', () => {
     expect(bubble).toHaveClass('gs-bubble--left');
     expect(container.querySelector('[data-room-world]')!.contains(bubble)).toBe(true);
     await zoom(container);
-    expect(screen.queryByText('Chạm vào cây thông để treo lời nhắn')).not.toBeInTheDocument();
+    expect(screen.getByText('Chạm vào cây thông để treo lời nhắn')).not.toBeVisible();
   });
 
   it('lời nhắc chạm cây; chạm cây → 12 điểm, nút Về căn phòng, gọi lại getTree', async () => {
