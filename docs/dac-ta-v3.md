@@ -394,7 +394,7 @@ M3 chia **3 phần làm nối tiếp**, mỗi phần một kế hoạch, xong ph
 - Khi zoom: hiện lớp điểm nhắn (`z-index: 1000`, mờ dần 0,6 s sau 0,55 s), nút "‹ Về căn phòng", ẩn lời nhắc và nút "Tạo cây của bạn"/"Tôi là chủ cây".
 - Vị trí điểm: `layoutSlots(tree.shape, tree.slotCount)` của `@ctln/shared` (toạ độ trong hệ của cây) → đổi sang toạ độ phòng theo `x, y, scale, flip` của cây. Hàm đổi toạ độ nằm trong module thuần, có test (cây lật, cây thu nhỏ).
 - Mỗi lần zoom vào gọi lại `GET /api/trees/:id` để có trạng thái điểm mới nhất (rẻ, không cần thời gian thực).
-- Điểm trống → bong bóng "+" (`slotBubbleSVG`); điểm có lời nhắn → phụ kiện `ornamentSVGSoft(kind, 'filled')` đung đưa; điểm của chính máy này (có `msg:{treeId}:{slot}` còn hạn) → phụ kiện có viền/nhãn "của bạn".
+- Điểm trống → bong bóng "+" (`slotBubbleSVG`); điểm có lời nhắn → phụ kiện `ornamentSVGSoft(kind, 'filled')` đung đưa; điểm của chính máy này (có `msg:{treeId}:{slot}` còn hạn) → phụ kiện trông như mọi phụ kiện khác, chỉ có nhãn đọc màn hình "Lời nhắn của bạn: …" (chủ dự án bỏ vòng viền vàng 21/11).
 
 **Bảng viết (G3)** — Sheet trượt lên, giữ `aria-modal`, Escape, giữ tiêu điểm như M2:
 - 20 phụ kiện (`catalog.ornaments`, thứ tự catalog), mặc định chọn `ball` như canvas; "Người gửi": **Để tên** / **Ẩn danh**, mặc định Để tên (như canvas); ô tên ≤ 30 (bắt buộc khi Để tên), điền sẵn `lastName`; lời nhắn ≤ 300 ký tự có bộ đếm, bắt buộc, cắt khoảng trắng hai đầu.

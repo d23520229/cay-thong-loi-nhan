@@ -24,6 +24,10 @@ describe('CSS', () => {
     expect(appCss).toMatch(/@keyframes gs-bubble-blink/);
   });
 
+  it('phụ kiện của mình không có vòng viền vàng (chủ dự án bỏ 21/11)', () => {
+    expect(appCss).not.toMatch(/\.is-mine\s*\{/);
+  });
+
   it('bong bóng phóng to từ mép tán và thu về mép tán; thời gian ẩn bằng thời gian hiện', () => {
     const right = /\.gs-bubble--right\s*\{([^}]*)\}/.exec(appCss)?.[1] ?? '';
     const left = /\.gs-bubble--left\s*\{([^}]*)\}/.exec(appCss)?.[1] ?? '';
