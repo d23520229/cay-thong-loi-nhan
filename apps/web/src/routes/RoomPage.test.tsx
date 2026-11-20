@@ -12,7 +12,7 @@ vi.mock('../lib/api', async (orig) => {
   const actual = await orig<typeof import('../lib/api')>();
   return {
     ...actual,
-    api: { getOwnerTree: vi.fn(), getTree: vi.fn(), authLink: vi.fn(), authPin: vi.fn(), saveRoom: vi.fn() },
+    api: { getOwnerTree: vi.fn(), getTree: vi.fn(), authLink: vi.fn(), authPin: vi.fn(), saveRoom: vi.fn(), getConfig: vi.fn() },
   };
 });
 
@@ -40,6 +40,7 @@ beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true, advanceTimeDelta: 2 });
   localStorage.clear();
   vi.resetAllMocks();
+  mocked.getConfig.mockRejectedValue(new Error('không cần trong test này'));
   window.history.replaceState(null, '', '/');
   vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
   vi.stubGlobal('matchMedia', (q: string) => ({

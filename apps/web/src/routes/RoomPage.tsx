@@ -6,6 +6,7 @@ import { storage } from '../lib/storage';
 import { TREE_CODE } from '../lib/treeRef';
 import { createAutosave, type SaveState } from '../room/autosave';
 import { ConflictDialog } from '../room/ConflictDialog';
+import { GuestTree } from '../guest/GuestTree';
 import { EditorLayout } from '../room/EditorLayout';
 import { RoomStage } from '../room/RoomStage';
 import { createEditorStore } from '../room/store';
@@ -24,8 +25,6 @@ type View =
   | { kind: 'guest'; data: Loaded<PublicRoom> };
 
 const TOP_RESERVE = 56;
-// Khối nút của khách: 8 + 44 ("Tạo cây của bạn") + 4 + 44 ("Tôi là chủ cây") + 16 — đo bằng Chrome.
-const GUEST_BOTTOM_RESERVE = 116;
 
 /** Phòng nhận từ server phải hợp lệ mới vẽ (không tin dữ liệu ngoài). */
 function toRoom(r: PublicRoom): Room | null {
@@ -170,13 +169,17 @@ function TreeRoom({ id }: { id: string }) {
 
   return (
     <div className="room-page">
-      <div className="room-stage">
-        <ViewStage
-          room={room}
-          reserveTop={TOP_RESERVE}
-          reserveBottom={view.kind === 'guest' ? GUEST_BOTTOM_RESERVE : 0}
-        />
-      </div>
+      {view.kind === 'guest' ? (
+        <GuestTree treeId={id} meta={meta} room={room} toast={show} onOwnerLogin={() => setLogin('guest')} />
+      ) : (
+        <>
+          <div className="room-stage">
+            <ViewStage room={room} reserveTop={TOP_RESERVE} reserveBottom={0} />
+          </div>
+          {/* Chỗ cho M3 phần 2: đếm ngược, số lời nhắn, chia sẻ. */}
+          <div className="room-bottom" />
+        </>
+      )}
       <div className="room-top">
         <h1 className="room-title">{roomTitle(meta)}</h1>
         {canEdit ? (
@@ -185,15 +188,6 @@ function TreeRoom({ id }: { id: string }) {
           </Button>
         ) : null}
       </div>
-      {view.kind === 'guest' ? (
-        <div className="room-bottom">
-          <Link to={`/?ref=${id}`} className="btn btn-primary">Tạo cây của bạn</Link>
-          <button type="button" className="linkbtn" onClick={() => setLogin('guest')}>Tôi là chủ cây</button>
-        </div>
-      ) : (
-        // Chỗ cho M3: đếm ngược, số lời nhắn, chia sẻ.
-        <div className="room-bottom" />
-      )}
       {loginSheet}
       {toast}
     </div>

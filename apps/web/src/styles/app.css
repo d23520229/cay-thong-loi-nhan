@@ -119,3 +119,6 @@
 .gs-slot.gs-drop > svg { animation: orn-drop .9s cubic-bezier(.3,1.5,.5,1); }
 @media (prefers-reduced-motion: reduce) { .gs-slots { animation: none; } .gs-slot.gs-ring > svg, .gs-slot.gs-drop > svg { animation: none; } }
 .gs-hp { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+/* Lời nhắc của khách: nổi trên phòng, ngay trên khối nút (không chiếm chỗ của phòng). */
+.gs-hint { position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%); margin: 0 0 6px; padding: 6px 14px; border-radius: 999px;
+  background: rgba(44, 38, 51, .82); color: var(--cream); font-size: 17px; white-space: nowrap; pointer-events: none; }
