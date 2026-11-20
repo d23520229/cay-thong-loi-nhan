@@ -238,7 +238,7 @@ Các mốc là biến môi trường (`UNLOCK_AT`, `WRITE_CLOSES_AT`, `SERVICE_E
 | Ngôn ngữ | **TypeScript** cho frontend và backend; riêng `packages/shared` là JavaScript (`.mjs`) có kiểu qua JSDoc, không cần bước build | Dùng chung kiểu dữ liệu, danh mục, xếp điểm nhắn, quy tắc kiểm tra; chạy giống nhau trên Node 22 (Azure) và máy phát triển |
 | Frontend | **React 19 + Vite** | Nhiều màn có trạng thái (trang trí, dải chọn, bảng bên, viết lời nhắn, đọc lời nhắn, quản trị) |
 | Định tuyến | React Router | `/`, `/tao`, `/c/:id`, `/quan-tri/*` |
-| Trạng thái phía trình duyệt | Zustand (phòng đang sửa) + TanStack Query (dữ liệu từ server) | Nhẹ, ít khuôn mẫu |
+| Trạng thái phía trình duyệt | Zustand (phòng đang sửa) + `lib/api.ts` (gọi server; bỏ TanStack Query 21/11) | Nhẹ, ít khuôn mẫu |
 | Kéo thả | Tự viết bằng Pointer Events, cập nhật thẳng `transform` khi đang kéo, chỉ ghi vào state khi thả tay | Giữ 60 khung hình trên điện thoại |
 | Backend | **Fastify 5** + plugin cookie, helmet, static; giới hạn tần suất tự viết trên bảng `rate_counters` (7.4) | Nhanh, có kiểm tra dữ liệu, log có cấu trúc |
 | Kiểm tra dữ liệu | **Zod** (dùng chung frontend/backend) | Một bộ quy tắc cho form và API |
@@ -344,7 +344,7 @@ Khách trong phòng bạn bè bấm "Tạo cây của bạn" thấy đúng màn 
 
 **Kéo thả (`room/DragLayer`).** Pointer Events; khi kéo chỉ đổi `transform` của món qua ref (không render lại React), thả tay mới ghi vị trí vào store và tính lại thứ tự vẽ. Chạm nền bỏ chọn.
 
-**Trạng thái.** Zustand: phòng đang sửa, món đang chọn, dải/bảng đang mở, trạng thái lưu. TanStack Query: dữ liệu từ server (`/api/config`, phòng, `/owner`).
+**Trạng thái.** Zustand: phòng đang sửa, món đang chọn, dải/bảng đang mở, trạng thái lưu. Dữ liệu từ server gọi qua `lib/api.ts` (bỏ TanStack Query — chốt 21/11, mục 6.6).
 
 **Tự lưu (`room/autosave`).** Sau 1,5 giây không thao tác gửi `PUT /api/trees/:id/room` kèm `roomVersion`. Chấm trạng thái: Đã lưu / Đang lưu / Chưa lưu. Mỗi lần lưu gửi **cả phòng**, nên lần lưu thành công sau sẽ mang theo mọi thay đổi trước đó còn trên trang. **Không lưu nháp phòng đã tạo trên máy** (chủ dự án chốt 19/11: mất mạng thì không cần cố giữ thay đổi; chỉ `/tao` giữ nháp `draft:new`). Xử lý trả về:
 - 409 `version_conflict` → **hỏi chủ cây** (chủ dự án chọn 18/11): bảng "Có thay đổi chưa lưu trên máy này, nhưng phòng đã được sửa ở thiết bị khác" với hai nút **"Giữ bản trên máy này"** (gửi lại phòng đang sửa kèm `roomVersion` mới nhận trong `error.room`) và **"Dùng bản mới nhất"** (thay bằng `error.room`).
@@ -369,6 +369,73 @@ Khách trong phòng bạn bè bấm "Tạo cây của bạn" thấy đúng màn 
 - **Thư viện test thêm (devDependencies):** `@testing-library/user-event`, `@testing-library/jest-dom`; `apps/web/vitest.config.ts` dùng jsdom. `pnpm test` ở gốc chạy cả test web.
 
 **Để người làm tự quyết:** chia nhỏ component, tên CSS, hiệu ứng mở/đóng bảng, cách nạp trước ảnh — miễn giữ đúng bản thiết kế canvas và mẫu đã duyệt.
+
+### 6.6 Thiết kế M3 (chốt 21/11)
+
+M3 chia **3 phần làm nối tiếp**, mỗi phần một kế hoạch, xong phần nào thì **dừng cho chủ dự án thử tay** rồi mới làm phần sau: (1) khách treo lời nhắn — G1–G7; (2) chủ cây đọc & quản lý — O2–O5, O10; (3) chia sẻ + OG — S2–S4. Chỉ làm P0. Phần 2 và 3 viết thiết kế khi tới lượt (cần mẫu duyệt cho thanh đếm ngược, thẻ lời nhắn, bảng chia sẻ).
+
+**Quyết định chung (chủ dự án chọn 21/11):**
+- **OG:** server ghép ảnh 1200×630 từ chính căn phòng bằng `sharp` (lớp WebP theo `catalog.json`, SVG cây/đèn/sao/thú cưng ở khung tĩnh), lưu đệm theo `room_version`. Ảnh xem trước là ảnh tĩnh — Zalo/Messenger không phát ảnh động hay video từ link; phòng thật vẫn đủ chuyển động. Đã loại: trình duyệt vẽ rồi tải lên (cần chỗ lưu, kiểm ảnh, chỉ có khi chủ cây mở phòng), một ảnh chung (trái S3).
+- **HTML `/c/:id` có thẻ OG làm ngay ở M3** (kéo từ M4): server phục vụ `apps/web/dist` và chèn thẻ OG vào `index.html` cho `/c/:id`; thử bằng `pnpm build && pnpm start`.
+- **Gỡ TanStack Query** (sửa mục 6.5 "Trạng thái"): dùng tiếp `lib/api.ts`; `/api/config` gọi trực tiếp khi cần.
+
+#### 6.6.1 Phần 1 — Khách treo lời nhắn
+
+**Mục đích.** Bạn bè mở link `/c/:id`, chạm cây, chọn chỗ trống, viết lời nhắn, chọn phụ kiện và treo lên; sửa/gỡ được trong 15 phút trên cùng máy. Đây là hành động chính của sản phẩm (chỉ số "khách mở link → treo lời nhắn ≥ 25%", mục 17). API đã có từ M1 (8.3, 8.4); phần này gần như chỉ là giao diện.
+
+**Mục tiêu:** G1–G7 (mục 3.2), luồng 9.4, 9.5, lỗi 9.11 phía khách; hiệu ứng chạm đồ vật (G6).
+**Không làm:** báo cáo phòng của khách (G8, P1); mọi thứ của chủ cây ngoài hiệu ứng chạm (phần 2); chia sẻ, OG (phần 3); cập nhật thời gian thực (khách khác treo thì chỉ thấy khi tải lại hoặc zoom lại).
+**Không được xảy ra:** khách thấy nội dung hay tên trong lời nhắn của người khác (giao diện chỉ dùng `GET /api/trees/:id`, không có nội dung); mất lời nhắn đang viết vì một lỗi (409/429/mạng) — bảng viết giữ nguyên chữ; treo trùng chỗ mà không báo; bong bóng "+" hiện khi giai đoạn không cho ghi.
+
+**Cách dựng.** Theo bản thiết kế canvas đã duyệt (bảng "Phòng tự do", `tools/design-canvas/build-board-free.mjs`: zoom, `.slots-layer`, bong bóng, `COMPOSE_UI`, `GIFT_FX`/`PET_FX`, `parts()`) và lớp CSS đã có trong `room-animations.css` (`.compose`, `.orn-pick`, `.g-*`, `.p-*`, `.fx-fire`, `.burst`, `.say`). Logic tách module thuần có test như phương án A của M2.
+
+**Zoom vào cây (G2).**
+- Chạm cây (khách, chế độ Xem) → biến đổi khung phòng 0,9 giây về giữa cây: hệ số `zf = 1,6 / max(0,8; tree.scale)`, tâm `(tree.x, tree.y − 300·TS·tree.scale)` như canvas; đúng với cây ở bất kỳ vị trí/cỡ/lật nào. "Giảm chuyển động" → không chuyển tiếp, nhảy thẳng.
+- Khi zoom: hiện lớp điểm nhắn (`z-index: 1000`, mờ dần 0,6 s sau 0,55 s), nút "‹ Về căn phòng", ẩn lời nhắc và nút "Tạo cây của bạn"/"Tôi là chủ cây".
+- Vị trí điểm: `layoutSlots(tree.shape, tree.slotCount)` của `@ctln/shared` (toạ độ trong hệ của cây) → đổi sang toạ độ phòng theo `x, y, scale, flip` của cây. Hàm đổi toạ độ nằm trong module thuần, có test (cây lật, cây thu nhỏ).
+- Mỗi lần zoom vào gọi lại `GET /api/trees/:id` để có trạng thái điểm mới nhất (rẻ, không cần thời gian thực).
+- Điểm trống → bong bóng "+" (`slotBubbleSVG`); điểm có lời nhắn → phụ kiện `ornamentSVGSoft(kind, 'filled')` đung đưa; điểm của chính máy này (có `msg:{treeId}:{slot}` còn hạn) → phụ kiện có viền/nhãn "của bạn".
+
+**Bảng viết (G3)** — Sheet trượt lên, giữ `aria-modal`, Escape, giữ tiêu điểm như M2:
+- 20 phụ kiện (`catalog.ornaments`, thứ tự catalog), mặc định chọn `ball` như canvas; "Người gửi": **Để tên** / **Ẩn danh**, mặc định Để tên (như canvas); ô tên ≤ 30 (bắt buộc khi Để tên), điền sẵn `lastName`; lời nhắn ≤ 300 ký tự có bộ đếm, bắt buộc, cắt khoảng trắng hai đầu.
+- Ô ẩn `website` (honeypot) không hiện với người, gửi kèm.
+- Nút "Treo lên cây" → `POST /api/trees/:id/messages` với `X-Device-Id`. Đang gửi thì khoá nút.
+- Thành công (G4): lưu `msg:{treeId}:{slot}` = `{ messageId, editToken, editUntil }`, lưu `lastName` (nếu Để tên), đóng bảng, phụ kiện rơi vào chỗ (`drop-in`), thông báo "Đã treo! Còn 15 phút để sửa".
+
+**Sửa / gỡ (G5, 9.5).** Chạm phụ kiện của mình:
+- Còn token và `now < editUntil` → `GET /api/messages/:mid/mine` (`X-Edit-Token`) → bảng viết ở chế độ sửa: tiêu đề kèm "còn N phút", nút "Lưu thay đổi" (`PUT`) và "Xoá lời nhắn" (`DELETE`, hỏi lại một lần). Lưu xong rung phụ kiện (`ring`); xoá xong điểm thành bong bóng, xoá khoá `msg:`.
+- Hết hạn, hoặc server trả 403 (`bad_token`, `already_opened`, `edit_expired`) / 404 → hiện thông báo của server (mặc định "Lời nhắn này không sửa được nữa"), đóng bảng, xoá khoá `msg:` của điểm đó.
+- 409 `conflict` (đua tạm thời) → "Lời nhắn vừa thay đổi, thử lại nhé", **giữ** khoá và chữ trong bảng.
+- `GET /mine` chỉ kiểm token, nên bảng sửa có thể mở dù chủ cây vừa mở lời nhắn; khi đó Lưu/Xoá nhận `already_opened` và xử lý như trên. Chấp nhận, không sửa server.
+- Phụ kiện của người khác → không mở gì (rung nhẹ, không lộ thông tin).
+- Khoá `msg:` hết hạn được dọn khi mở phòng.
+- **Đồng hồ:** so `editUntil` theo giờ server, không theo đồng hồ máy: khi mở phòng lấy `now` từ `GET /api/config`, tính độ lệch `serverNow − Date.now()` và dùng cho mọi so sánh hạn sửa/đếm phút (đúng cả khi chạy `FAKE_NOW` và máy lệch giờ). Không lấy được config thì độ lệch = 0.
+
+**Lỗi khi treo (9.11)** — bảng viết giữ nguyên chữ, trừ khi ghi khác:
+- 409 `slot_taken` → "Chỗ này vừa có người treo, chọn chỗ khác nhé", đóng bảng **nhưng giữ chữ trong bộ nhớ trang**, tải lại trạng thái điểm; chạm bong bóng khác thì bảng mở lại với chữ cũ (G7).
+- 409 `device_limit` → "Mỗi người chỉ treo được 3 lời nhắn trên một cây."
+- 403 `blocked` → thông báo trung tính của server, không nêu lý do.
+- 403 `write_closed` → đóng bảng, ẩn bong bóng, "Đã hết thời gian treo lời nhắn".
+- 429 → "Bạn thao tác nhanh quá, đợi một lát nhé."
+- 503 `paused` (tạm dừng khẩn cấp, 9.9) → hiện thông báo của server, giữ chữ, không ẩn bong bóng.
+- 400 → hiện thông báo của server cạnh ô tương ứng nếu có, ngược lại thông báo chung.
+- Lỗi mạng / 5xx → "Chưa gửi được, thử lại nhé", không tự thử lại.
+- Cây đã đầy (không còn điểm trống) → không có bong bóng, dòng "Cây đã đầy lời nhắn" + nút "Tạo cây của bạn".
+
+**Giai đoạn.** Chỉ `BUILD`, `OPEN` mới có bong bóng và cho mở bảng viết/sửa (lấy `phase` trong `GET /api/trees/:id`); `NOTICE` vẫn zoom xem phụ kiện được. Kiểm tra thật vẫn ở server (`assertWritable`).
+
+**Hiệu ứng chạm (G6)** — cho khách và chủ cây ở chế độ Xem (không có ở chế độ Sửa vì chạm là chọn món):
+- Quà / chồng quà: lần lượt 6 kiểu `GIFT_FX`; thú cưng: lần lượt 6 kiểu `PET_FX` (câu nói theo loài `SOUND`); lò sưởi: bùng lửa + tia lửa. Đếm vòng **theo từng món**, nên chạm liên tiếp một món không lặp kiểu (G6 "mỗi lần một hiệu ứng khác").
+- Hạt (pháo giấy/tim/sao/tuyết/lấp lánh) sinh bằng hàm `parts()` có hạt giống, module thuần có test; hiệu ứng tự tắt sau 1,8 giây; "giảm chuyển động" → chỉ hiện câu nói/đổi nhẹ, không bay hạt.
+- Chủ cây chạm cây ở chế độ Xem: phần 1 chưa làm gì (phần 2 thêm mở quà).
+
+**Trên trình duyệt** (7.6, đã có): `deviceId`, `msg:{treeId}:{slot}`, `lastName`. Không thêm khoá mới.
+
+**Kiểm thử (Vitest + RTL).** Module thuần: đổi toạ độ điểm theo cây (lật, cỡ, vị trí), tâm/hệ số zoom, đếm vòng hiệu ứng theo món, `parts()` ổn định theo hạt giống, chọn trạng thái điểm (trống / của người khác / của mình còn hạn / hết hạn). Màn: chạm cây → hiện điểm; bảng viết (bắt buộc lời nhắn, ≤ 300, tên khi Ghi tên, điền `lastName`, honeypot có trong body); treo thành công lưu `msg:` và hiện thông báo; từng mã lỗi ở trên (đặc biệt `slot_taken` giữ chữ); sửa/xoá trong hạn, hết hạn; giai đoạn `NOTICE` không có bong bóng; cây đầy; khách không có đường nào gọi API đọc nội dung người khác. Server: không thêm API; thêm test nếu phải sửa server.
+
+**Danh sách thử tay khi xong phần 1** (chủ dự án, `pnpm dev`): mở link khách ở tab ẩn danh → chạm cây zoom mượt (thử cây đã kéo lệch, thu nhỏ, lật) → treo 1 lời nhắn → thấy rơi vào chỗ → chạm lại sửa và xoá → treo đủ 3 lời nhắn, cái thứ 4 bị chặn → hai tab ẩn danh khác nhau cùng chọn một bong bóng → tab sau được báo, chữ còn nguyên → chạm quà/thú cưng/lò sưởi nhiều lần thấy hiệu ứng đổi → `FAKE_NOW` sang 26/12 không còn bong bóng → thử ở 360×640 và 390×844.
+
+**Để người làm tự quyết:** chia component (`guest/` theo `apps/web/src/README.md`), cách nối vào `RoomPage`/`RoomStage`, tên CSS mới (không trùng `room-animations.css`), chữ thông báo phụ (giữ giọng thân thiện như trên).
 
 ---
 
