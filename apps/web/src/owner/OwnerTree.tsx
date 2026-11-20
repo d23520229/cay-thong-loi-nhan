@@ -14,6 +14,7 @@ import { countdownText } from './countdown';
 import { MessageCard } from './MessageCard';
 import { OwnerOptions } from './OwnerOptions';
 import { ReportSheet } from './ReportSheet';
+import { ShareSheet } from './ShareSheet';
 
 type Props = {
   treeId: string;
@@ -40,7 +41,7 @@ export function OwnerTree({ treeId, meta, room, toast, onUnauthorized }: Props) 
   const [unlockAt, setUnlockAt] = useState<number | null>(null);
   const [now, setNow] = useState(serverNow);
   const [card, setCard] = useState<{ index: number; message: OpenedMessage } | null>(null);
-  const [sheet, setSheet] = useState<null | 'options' | 'report'>(null);
+  const [sheet, setSheet] = useState<null | 'options' | 'report' | 'share'>(null);
   const [busy, setBusy] = useState(false);
   const [ring, setRing] = useState<Record<number, 'ring'>>({});
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
@@ -230,9 +231,14 @@ export function OwnerTree({ treeId, meta, room, toast, onUnauthorized }: Props) 
               <span aria-hidden="true">‹</span> Về căn phòng
             </button>
           ) : (
-            <button type="button" className="btn btn-ghost" onClick={() => setSheet('options')}>
-              <span aria-hidden="true">⋯</span> Tuỳ chọn
-            </button>
+            <>
+              <button type="button" className="btn btn-primary" onClick={() => setSheet('share')}>
+                <span aria-hidden="true">🔗</span> Chia sẻ
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={() => setSheet('options')}>
+                <span aria-hidden="true">⋯</span> Tuỳ chọn
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -251,6 +257,14 @@ export function OwnerTree({ treeId, meta, room, toast, onUnauthorized }: Props) 
         />
       ) : null}
       {sheet === 'report' ? <ReportSheet busy={busy} onSubmit={(r) => void sendReport(r)} onClose={() => setSheet(null)} /> : null}
+      {sheet === 'share' ? (
+        <ShareSheet
+          url={`${window.location.origin}/c/${treeId}`}
+          title={meta.title || `Cây thông của ${meta.ownerName}`}
+          toast={toast}
+          onClose={() => setSheet(null)}
+        />
+      ) : null}
       {sheet === 'options' ? (
         <OwnerOptions
           showCount={showCount}

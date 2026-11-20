@@ -196,6 +196,13 @@ describe('OwnerTree', () => {
     expect(storage.myTrees()).toEqual([]);
   });
 
+  it('nút Chia sẻ mở bảng với link công khai', async () => {
+    show();
+    await userEvent.click(screen.getByRole('button', { name: /Chia sẻ/ }));
+    const sheet = screen.getByRole('dialog', { name: 'Gửi cây cho bạn bè' });
+    expect(within(sheet).getByRole('textbox', { name: 'Link gửi bạn bè' })).toHaveValue(`${window.location.origin}/c/${ID}`);
+  });
+
   it('đếm ngược tự cập nhật', async () => {
     show(meta({ showMessageCount: false }));
     await screen.findByText('Còn 3 ngày 0 giờ nữa là mở quà');
