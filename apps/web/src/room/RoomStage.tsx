@@ -1,4 +1,5 @@
-import { useLayoutEffect, useRef, useState, type Ref } from 'react';
+import { useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react';
+import type { Camera } from '../guest/geometry';
 import { assetUrl, catalog } from '../lib/catalog';
 import { fitRoom, type Fit } from './fit';
 import { Scene, type SceneProps } from './Scene';
@@ -10,9 +11,21 @@ export type RoomStageProps = SceneProps & {
   stageRef?: Ref<HTMLDivElement>;
   /** Gọi mỗi khi cách co phòng thay đổi, để bố cục đặt thanh trên/dưới. */
   onFit?: (fit: Fit) => void;
+  /** Khách zoom vào cây: khác `null` thì thay cách co mặc định. Có prop này (kể cả `null`) thì đổi khung có chuyển tiếp 0,9 giây. */
+  camera?: Camera | null;
+  /** Vẽ trong khung phòng 720×1080, sau Scene (lớp điểm nhắn). */
+  overlay?: ReactNode;
 };
 
-export function RoomStage({ reserveTop = 0, reserveBottom = 0, stageRef, onFit, ...scene }: RoomStageProps) {
+const reducedMotion = () => {
+  try {
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  } catch {
+    return false;
+  }
+};
+
+export function RoomStage({ reserveTop = 0, reserveBottom = 0, stageRef, onFit, camera, overlay, ...scene }: RoomStageProps) {
   const el = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const fit = fitRoom(size.w, size.h, reserveTop, reserveBottom);
@@ -53,8 +66,21 @@ export function RoomStage({ reserveTop = 0, reserveBottom = 0, stageRef, onFit, 
         }}
       />
       <div style={{ position: 'absolute', left: fit.left, top: fit.top, width: fit.width, height: fit.height }}>
-        <div style={{ width: catalog.room.w, height: catalog.room.h, transform: `scale(${fit.scale})`, transformOrigin: '0 0' }}>
+        <div
+          data-room-world=""
+          style={{
+            width: catalog.room.w,
+            height: catalog.room.h,
+            transformOrigin: '0 0',
+            // Camera tính trong toạ độ vùng sân khấu; khung này đã dời sẵn (fit.left, fit.top).
+            transform: camera
+              ? `translate(${camera.x - fit.left}px, ${camera.y - fit.top}px) scale(${camera.scale})`
+              : `scale(${fit.scale})`,
+            transition: camera !== undefined && !reducedMotion() ? 'transform .9s ease' : undefined,
+          }}
+        >
           <Scene {...scene} />
+          {overlay}
         </div>
       </div>
     </div>

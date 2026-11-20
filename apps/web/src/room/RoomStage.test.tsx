@@ -41,3 +41,23 @@ describe('RoomStage', () => {
     expect(fit.top + fit.height).toBeLessThanOrEqual(844 - 400);
   });
 });
+
+describe('RoomStage camera và overlay', () => {
+  const world = (c: HTMLElement) => c.querySelector<HTMLElement>('[data-room-world]')!;
+
+  it('camera đặt transform translate+scale', () => {
+    const { container } = render(<RoomStage room={defaultRoom()} camera={{ x: -100, y: -50, scale: 1.2 }} />);
+    expect(world(container).style.transform).toBe('translate(-100px, -50px) scale(1.2)');
+  });
+
+  it('không camera giữ cách co cũ', () => {
+    const { container } = render(<RoomStage room={defaultRoom()} />);
+    expect(world(container).style.transform).toMatch(/^scale\([\d.]+\)$/);
+    expect(world(container).style.transform).not.toContain('-100px');
+  });
+
+  it('overlay nằm trong khung phòng', () => {
+    const { container } = render(<RoomStage room={defaultRoom()} overlay={<div data-testid="ov" />} />);
+    expect(world(container).querySelector('[data-testid="ov"]')).not.toBeNull();
+  });
+});
