@@ -8,9 +8,10 @@ export function Sheet({ title, onClose, children, className }: { title: string; 
 
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
-    ref.current?.focus();
+    // preventScroll: bảng đang trượt lên, lấy tiêu điểm thường sẽ cuộn cả phòng phía sau (phòng "nảy").
+    ref.current?.focus({ preventScroll: true });
     return () => {
-      if (opener?.isConnected) opener.focus();
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
     };
   }, []);
 

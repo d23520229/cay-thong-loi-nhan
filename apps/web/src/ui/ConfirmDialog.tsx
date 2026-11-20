@@ -14,10 +14,10 @@ export function ConfirmDialog({ title, message, confirmLabel, cancelLabel, onCon
   const safe = useRef<HTMLButtonElement>(null);
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
-    safe.current?.focus();
+    safe.current?.focus({ preventScroll: true });
     // Đóng hộp thì trả tiêu điểm về chỗ cũ (để Escape / Tab của bảng bên dưới vẫn chạy).
     return () => {
-      if (opener?.isConnected) opener.focus();
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
     };
   }, []);
   const sure = useRef<HTMLButtonElement>(null);

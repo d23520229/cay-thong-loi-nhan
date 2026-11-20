@@ -225,9 +225,9 @@ export function OwnerTree({ treeId, meta, room, toast, onUnauthorized, onChange 
   // Trang mở qua 0h 24/12 vẫn chuyển sang mở quà (giai đoạn lúc tải trang có thể đã cũ).
   const unlocked = unlockAt !== null && now >= unlockAt;
   const canRead = meta.phase === 'OPEN' || meta.phase === 'NOTICE' || unlocked;
-  const head = canRead ? 'Quà đã mở!' : unlockAt !== null ? countdownText(unlockAt - now) : null;
-  const countText = showCount ? [`${count} lời nhắn`, ...(newCount > 0 ? [`${newCount} mới`] : [])] : [];
-  const status = [...(head ? [head] : []), ...countText].join(' · ');
+  // Đếm ngược ngắn ở góc trên bên phải (đè lên phòng); số lời nhắn ở khối dưới.
+  const countdown = canRead ? 'Đã mở quà' : unlockAt !== null ? countdownText(unlockAt - now) : null;
+  const status = showCount ? [`${count} lời nhắn`, ...(newCount > 0 ? [`${newCount} mới`] : [])].join(' · ') : '';
   const pos = card ? order.indexOf(card.index) : -1;
 
   return (
@@ -255,6 +255,7 @@ export function OwnerTree({ treeId, meta, room, toast, onUnauthorized, onChange 
           }
         />
       </div>
+      {countdown ? <div className="ow-countdown">{countdown}</div> : null}
       <div className="room-bottom">
         {zoomed ? null : (
           <p className="gs-hint">{canRead ? 'Chạm vào cây để mở quà' : 'Chạm vào cây để xem các món quà đang chờ'}</p>

@@ -133,3 +133,6 @@
 .ow-switch { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 18px; }
 .ow-switch input { width: 22px; height: 22px; }
 .ow-danger { color: #FFB4B4; border-color: #7A3A44; align-self: flex-start; }
+/* Đếm ngược ngắn của chủ cây: góc trên bên phải, ngay dưới thanh tiêu đề, đè lên phòng */
+.ow-countdown { position: absolute; top: 60px; right: 8px; z-index: 5; padding: 6px 12px; border-radius: 999px;
+  background: rgba(44, 38, 51, .82); color: var(--gold); font-size: 17px; white-space: nowrap; pointer-events: none; }

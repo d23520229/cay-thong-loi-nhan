@@ -25,10 +25,10 @@ Chuẩn bị: thư mục gốc `D:\cay-thong-loi-nhan`, Docker Desktop đang ch�
 9. Tắt mạng (DevTools → Network → Offline) rồi treo → "Chưa gửi được, thử lại nhé", chữ còn nguyên; bật mạng, bấm lại → treo được.
 
 **Chủ cây (phần 2)** — ở tab chủ cây, chế độ Xem
-10. Khối dưới có "Còn … ngày … giờ nữa là mở quà · N lời nhắn · K mới", nút "🔗 Chia sẻ" và "⋯ Tuỳ chọn". Tải lại trang: số "mới" về 0 (đã xem).
+10. Vào phòng: phòng hiện thẳng (không phóng to từ góc). Góc trên bên phải có "Còn … ngày … giờ"; khối dưới có "N lời nhắn · K mới", nút "🔗 Chia sẻ" và "⋯ Tuỳ chọn" — mở hai bảng này phòng không nảy. Tải lại trang: số "mới" về 0 (đã xem).
 11. Chạm cây → phụ kiện nhạt có nơ ("Quà còn gói"); chạm → "Quà còn gói — mở được từ 0h 24/12".
 12. "⋯ Tuỳ chọn" → tắt "Hiện số lời nhắn" → số biến mất (tải lại vẫn tắt); bật lại.
-13. Đặt `FAKE_NOW=2026-12-24T08:00:00+07:00` trong `.env`, khởi động lại `pnpm dev`: dòng trạng thái "Quà đã mở!"; chạm cây → phụ kiện chưa đọc lấp lánh; chạm → thẻ "Lời nhắn từ …" (hoặc "Lời nhắn ẩn danh") có nội dung, giờ treo; "Sau ›" / "‹ Trước" chuyển thẻ; phụ kiện đã đọc hết lấp lánh.
+13. Đặt `FAKE_NOW=2026-12-24T08:00:00+07:00` trong `.env`, khởi động lại `pnpm dev`: góc trên bên phải "Đã mở quà"; chạm cây → phụ kiện chưa đọc lấp lánh; chạm → thẻ "Lời nhắn từ …" (hoặc "Lời nhắn ẩn danh") có nội dung, giờ treo; "Sau ›" / "‹ Trước" chuyển thẻ; phụ kiện đã đọc hết lấp lánh.
 14. Trong thẻ: "Báo cáo" (lý do tuỳ ý) → "Đã gửi báo cáo, cảm ơn bạn"; "Chặn người gửi" → hỏi lại → điểm trống, và cửa sổ khách đó gửi lại bị từ chối; "Xoá" → hỏi lại → điểm trống.
 15. Đặt `FAKE_NOW=2026-12-26T00:00:00+07:00`: khách zoom cây vẫn thấy phụ kiện, không còn bong bóng, lời nhắc đổi thành "…xem các lời nhắn đã treo"; chủ cây vẫn đọc được, không còn "Sửa phòng". **Xoá `FAKE_NOW` sau khi thử.**
 16. "⋯ Tuỳ chọn" → "Xoá cây này" → hỏi lại → về trang chủ; mở lại link cây → "Không tìm thấy cây này." (thử trên một cây phụ).

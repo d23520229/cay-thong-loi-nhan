@@ -5,6 +5,15 @@ import { ConfirmDialog } from './ConfirmDialog';
 import { Sheet } from './Sheet';
 
 describe('ConfirmDialog', () => {
+  it('lấy tiêu điểm không cuộn phòng phía sau (preventScroll)', () => {
+    const focus = vi.spyOn(HTMLElement.prototype, 'focus');
+    render(<ConfirmDialog title="Chắc chưa?" confirmLabel="Có" cancelLabel="Không" onConfirm={vi.fn()} onCancel={vi.fn()} />);
+    const no = screen.getByRole('button', { name: 'Không' });
+    const call = focus.mock.calls.find((_, i) => focus.mock.contexts[i] === no);
+    expect(call?.[0]).toEqual({ preventScroll: true });
+    focus.mockRestore();
+  });
+
   it('Tab xoay vòng trong hộp, không lọt ra bảng phía sau', async () => {
     // Như thật: bảng mở trước, hộp xác nhận mở sau.
     const ui = (ask: boolean) => (

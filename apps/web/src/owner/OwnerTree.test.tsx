@@ -79,13 +79,16 @@ const openSheet = async () => {
 describe('OwnerTree', () => {
   it('BUILD: đếm ngược theo giờ server, số lời nhắn và số mới', async () => {
     show();
-    expect(await screen.findByText('Còn 3 ngày 0 giờ nữa là mở quà · 3 lời nhắn · 2 mới')).toBeInTheDocument();
+    const pill = await screen.findByText('Còn 3 ngày 0 giờ');
+    expect(pill).toHaveClass('ow-countdown');
+    expect(screen.getByText('3 lời nhắn · 2 mới')).toBeInTheDocument();
     expect(screen.getByText('Chạm vào cây để xem các món quà đang chờ')).toBeInTheDocument();
   });
 
   it('tắt hiện số lời nhắn thì không có số', async () => {
     show(meta({ showMessageCount: false }));
-    expect(await screen.findByText('Còn 3 ngày 0 giờ nữa là mở quà')).toBeInTheDocument();
+    expect(await screen.findByText('Còn 3 ngày 0 giờ')).toBeInTheDocument();
+    expect(screen.queryByText('3 lời nhắn · 2 mới')).not.toBeInTheDocument();
   });
 
   it('BUILD: zoom → quà còn gói, chạm thì báo, không mở', async () => {
@@ -104,7 +107,8 @@ describe('OwnerTree', () => {
   it('OPEN: "Quà đã mở!", chạm phụ kiện → thẻ lời nhắn, chuyển sang đã đọc', async () => {
     mocked.openMessage.mockResolvedValue(opened(1));
     const { container } = show(openedRoom());
-    expect(await screen.findByText('Quà đã mở! · 3 lời nhắn · 2 mới')).toBeInTheDocument();
+    expect(await screen.findByText('Đã mở quà')).toHaveClass('ow-countdown');
+    expect(screen.getByText('3 lời nhắn · 2 mới')).toBeInTheDocument();
     await zoom(container);
     await userEvent.click(screen.getAllByRole('button', { name: 'Lời nhắn chưa đọc: Chuông' })[0]!);
     expect(mocked.openMessage).toHaveBeenCalledWith(ID, '101');
@@ -211,7 +215,7 @@ describe('OwnerTree', () => {
     mocked.getOwnerTree.mockResolvedValue(meta({ phase: 'OPEN', slots: slots(false) }));
     await act(() => vi.advanceTimersByTimeAsync(90_000));
     expect(screen.getByText('Chạm vào cây để mở quà')).toBeInTheDocument();
-    expect(screen.getByText(/^Quà đã mở!/)).toBeInTheDocument();
+    expect(screen.getByText('Đã mở quà')).toBeInTheDocument();
     expect(mocked.getOwnerTree).toHaveBeenCalledTimes(1);
   });
 
@@ -229,8 +233,8 @@ describe('OwnerTree', () => {
 
   it('đếm ngược tự cập nhật', async () => {
     show(meta({ showMessageCount: false }));
-    await screen.findByText('Còn 3 ngày 0 giờ nữa là mở quà');
+    await screen.findByText('Còn 3 ngày 0 giờ');
     await act(() => vi.advanceTimersByTimeAsync(2 * 3600_000));
-    expect(screen.getByText('Còn 2 ngày 22 giờ nữa là mở quà')).toBeInTheDocument();
+    expect(screen.getByText('Còn 2 ngày 22 giờ')).toBeInTheDocument();
   });
 });

@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode, type Ref } from 'react';
 import type { Camera } from '../guest/geometry';
 import { assetUrl, catalog } from '../lib/catalog';
 import { fitRoom, type Fit } from './fit';
@@ -11,11 +11,13 @@ export type RoomStageProps = SceneProps & {
   stageRef?: Ref<HTMLDivElement>;
   /** Gọi mỗi khi cách co phòng thay đổi, để bố cục đặt thanh trên/dưới. */
   onFit?: (fit: Fit) => void;
-  /** Khách zoom vào cây: khác `null` thì thay cách co mặc định. Có prop này (kể cả `null`) thì đổi khung có chuyển tiếp 0,9 giây. */
+  /** Khách / chủ cây zoom vào cây: khác `null` thì thay cách co mặc định. Chỉ lúc zoom vào / ra mới có chuyển tiếp 0,9 giây. */
   camera?: Camera | null;
   /** Vẽ trong khung phòng 720×1080, sau Scene (lớp điểm nhắn). */
   overlay?: ReactNode;
 };
+
+const ZOOM_MS = 900;
 
 const reducedMotion = () => {
   try {
@@ -29,6 +31,17 @@ export function RoomStage({ reserveTop = 0, reserveBottom = 0, stageRef, onFit, 
   const el = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState({ w: 0, h: 0 });
   const fit = fitRoom(size.w, size.h, reserveTop, reserveBottom);
+  // Chuyển động chỉ khi zoom vào / ra; lúc vào trang (vừa đo xong cỡ) và đổi cỡ thì phòng hiện thẳng.
+  // Bật ngay trong lần render đổi camera (transition phải có cùng lúc với transform mới).
+  const zoomed = camera != null;
+  const [zoomState, setZoomState] = useState({ zoomed, animating: false });
+  if (zoomState.zoomed !== zoomed) setZoomState({ zoomed, animating: !reducedMotion() });
+  useEffect(() => {
+    if (!zoomState.animating) return;
+    const t = setTimeout(() => setZoomState((s) => ({ ...s, animating: false })), ZOOM_MS);
+    return () => clearTimeout(t);
+  }, [zoomState]);
+  const animating = zoomState.zoomed === zoomed && zoomState.animating;
 
   useLayoutEffect(() => {
     const node = el.current;
@@ -76,7 +89,7 @@ export function RoomStage({ reserveTop = 0, reserveBottom = 0, stageRef, onFit, 
             transform: camera
               ? `translate(${camera.x - fit.left}px, ${camera.y - fit.top}px) scale(${camera.scale})`
               : `scale(${fit.scale})`,
-            transition: camera !== undefined && !reducedMotion() ? 'transform .9s ease' : undefined,
+            transition: animating ? `transform ${ZOOM_MS}ms ease` : undefined,
           }}
         >
           <Scene {...scene} />

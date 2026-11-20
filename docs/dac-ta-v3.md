@@ -437,6 +437,8 @@ M3 chia **3 phần làm nối tiếp**, mỗi phần một kế hoạch, xong ph
 
 **Để người làm tự quyết:** chia component (`guest/` theo `apps/web/src/README.md`), cách nối vào `RoomPage`/`RoomStage`, tên CSS mới (không trùng `room-animations.css`), chữ thông báo phụ (giữ giọng thân thiện như trên).
 
+**Chuyển động khung phòng (chủ dự án, 21/11):** chỉ khi zoom vào / ra cây mới có chuyển tiếp 0,9 giây; lúc vào trang và khi đổi cỡ màn hình phòng hiện thẳng. Mở bảng (Tuỳ chọn, Chia sẻ, bảng viết…) không được làm phòng xê dịch — bảng lấy tiêu điểm với `preventScroll`; bảng che phòng là được.
+
 **Bổ sung sau thử nghiệm nội bộ (21/11, chủ dự án yêu cầu):** đóng bảng viết khi đã có chữ (hoặc bảng sửa đã đổi) → hộp xác nhận "Huỷ lời nhắn đang viết?" / "Bỏ thay đổi?" (nút an toàn được chọn sẵn); xoá lời nhắn cũng hỏi bằng hộp này (`ui/ConfirmDialog`, thay `window.confirm`). Tiêu đề bảng sửa kèm "(còn N phút)", tự đếm lùi, hết giờ khoá Lưu/Xoá. Đang gửi thì khoá ô nhập và không đóng được bảng. Chạm đồ vật/cây tính khi nhấn-thả (click). Đang zoom mà đổi cỡ màn hình thì tính lại camera.
 
 #### 6.6.2 Phần 2 — Chủ cây đọc & quản lý (chốt 21/11, chủ dự án giao người làm tự chốt, xem lại khi thử tay)
@@ -448,7 +450,7 @@ M3 chia **3 phần làm nối tiếp**, mỗi phần một kế hoạch, xong ph
 
 **Chế độ Xem của chủ cây** (thay khung trống "Chỗ cho M3"):
 - Khối dưới (chừa 116px như khách): dòng trạng thái + hàng nút **"Chia sẻ"** (phần 3) và **"⋯ Tuỳ chọn"**. Lời nhắc nổi phía trên: BUILD → "Chạm vào cây để xem các món quà đang chờ"; OPEN/NOTICE → "Chạm vào cây để mở quà".
-- Dòng trạng thái: BUILD → đếm ngược "Còn {d} ngày {h} giờ nữa là mở quà" (dưới 1 ngày: "Còn {h} giờ {m} phút…", dưới 1 giờ: "Còn {m} phút…"), tính từ `unlockAt` của `/api/config` theo giờ server, cập nhật mỗi 30 giây; OPEN/NOTICE → "Quà đã mở!". Kèm (nếu `showMessageCount`) "· {n} lời nhắn" và "· {k} mới" khi k > 0 (O10).
+- **Đếm ngược** (sửa 21/11 theo chủ dự án): nhãn ngắn ở **góc trên bên phải**, ngay dưới thanh tiêu đề, đè lên phòng được — "Còn {d} ngày {h} giờ" (dưới 1 ngày: "Còn {h} giờ {m} phút", dưới 1 giờ: "Còn {m} phút"), tính từ `unlockAt` của `/api/config` theo giờ server, cập nhật mỗi 30 giây; từ 0h 24/12 → "Đã mở quà" (trang đang mở qua mốc cũng tự đổi và tải lại trạng thái quà). Dòng trạng thái ở khối dưới chỉ còn số lời nhắn (nếu `showMessageCount`): "{n} lời nhắn" và "· {k} mới" khi k > 0 (O10).
 - Chạm cây → zoom như khách (dùng chung camera). Phụ kiện vẽ theo trạng thái: chưa mở được → `locked` (nhạt, có nơ); chưa đọc → `unread` (lấp lánh); đã đọc → `read`. Không có bong bóng "+" (chủ cây không treo).
 - Chạm phụ kiện khi `locked` → "Quà còn gói — mở được từ 0h 24/12" + rung, không gọi API. Khi mở được → `POST …/messages/:mid/open` → **thẻ lời nhắn** (Sheet): tiêu đề "Lời nhắn từ {tên}" hoặc "Lời nhắn ẩn danh", nội dung (Mynerve ≥ 18px, hiển thị dạng chữ), thời gian treo ("21/11 lúc 20:05", giờ Việt Nam), nút "‹ Trước" / "Sau ›" đi qua các điểm có lời nhắn theo thứ tự điểm, và **Xoá** / **Chặn người gửi** / **Báo cáo**. Mở xong phụ kiện chuyển sang `read`.
 - Xoá → hộp xác nhận "Xoá lời nhắn này?" → `DELETE …/messages/:mid` → điểm trống. Chặn → "Chặn người gửi?" ("Lời nhắn này sẽ bị xoá và người đó không gửi được tới cây của bạn nữa.") → `POST …/block` → điểm trống. Báo cáo → bảng nhỏ: lý do (không bắt buộc, ≤ 200 ký tự) → `POST …/reports` kèm `messageId` → "Đã gửi báo cáo, cảm ơn bạn".
