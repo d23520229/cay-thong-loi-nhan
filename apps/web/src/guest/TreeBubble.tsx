@@ -15,6 +15,9 @@ export function TreeBubble({ room, text }: { room: Room; text: string }) {
   return (
     <div className={`gs-bubble gs-bubble--${p.side}`} style={style}>
       {text}
+      {/* Hai chấm mây nhỏ dẫn về phía cây (kiểu đám mây suy nghĩ trong truyện tranh). */}
+      <span className="gs-bubble-dot gs-bubble-dot--big" aria-hidden="true" />
+      <span className="gs-bubble-dot gs-bubble-dot--small" aria-hidden="true" />
     </div>
   );
 }

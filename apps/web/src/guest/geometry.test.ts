@@ -111,6 +111,14 @@ describe('bubblePlacement — bong bóng thoại của cây', () => {
     expect(r.x).toBeLessThan(520);
   });
 
+  it('cách xa cây: điểm đuôi ra ngoài mép tán ít nhất 0,35 bề ngang khung cây + 24', () => {
+    const k = 1.2;
+    const l = bubblePlacement(withTree({ x: 200, y: 950, scale: 1 }));
+    expect(l.x - 200).toBeGreaterThanOrEqual(0.35 * 400 * k + 24 - 0.01);
+    const r = bubblePlacement(withTree({ x: 520, y: 950, scale: 1 }));
+    expect(520 - r.x).toBeGreaterThanOrEqual(0.35 * 400 * k + 24 - 0.01);
+  });
+
   it('cao 2/3 cây tính từ gốc', () => {
     const p = bubblePlacement(withTree({ x: 200, y: 1000, scale: 0.8 }));
     const k = 1.2 * 0.8;

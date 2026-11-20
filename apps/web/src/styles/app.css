@@ -136,18 +136,27 @@
 /* Đếm ngược ngắn của chủ cây: góc trên bên phải, ngay dưới thanh tiêu đề, đè lên phòng */
 .ow-countdown { position: absolute; top: 60px; right: 8px; z-index: 5; padding: 6px 12px; border-radius: 999px;
   background: rgba(44, 38, 51, .82); color: var(--gold); font-size: 17px; white-space: nowrap; pointer-events: none; }
-/* Bong bóng thoại "cây nói" — toạ độ phòng 720×1080 (vẽ trong khung phòng, co theo phòng) */
+/* Bong bóng thoại "cây nói" — đám mây kem, viền mờ, toạ độ phòng 720×1080 (co theo phòng); hiện/ẩn lặp mỗi 3 giây */
 .gs-bubble { position: absolute; z-index: 900; transform: translateY(-50%); box-sizing: border-box; width: max-content;
-  padding: 14px 22px; border: 4px solid #3A2E2A; border-radius: 34px; background: #FFF6E5; color: #3A2E2A;
-  font-family: 'Mynerve', cursive; font-size: 30px; line-height: 1.25; text-align: center; pointer-events: none;
-  box-shadow: 0 8px 18px rgba(0, 0, 0, .35); animation: gs-bubble-in .5s ease-out .3s both; }
-.gs-bubble--right { margin-left: 22px; }
-.gs-bubble--left { margin-right: 22px; }
-/* Đuôi bong bóng chỉ về phía cây: viền đậm + lõi kem */
-.gs-bubble::before, .gs-bubble::after { content: ''; position: absolute; top: 50%; width: 0; height: 0; border-style: solid; }
-.gs-bubble--right::before { left: -26px; margin-top: -14px; border-width: 14px 26px 14px 0; border-color: transparent #3A2E2A transparent transparent; }
-.gs-bubble--right::after { left: -18px; margin-top: -9px; border-width: 9px 18px 9px 0; border-color: transparent #FFF6E5 transparent transparent; }
-.gs-bubble--left::before { right: -26px; margin-top: -14px; border-width: 14px 0 14px 26px; border-color: transparent transparent transparent #3A2E2A; }
-.gs-bubble--left::after { right: -18px; margin-top: -9px; border-width: 9px 0 9px 18px; border-color: transparent transparent transparent #FFF6E5; }
-@keyframes gs-bubble-in { from { opacity: 0; transform: translateY(-50%) scale(.85); } to { opacity: 1; transform: translateY(-50%) scale(1); } }
+  padding: 8px 14px; border-radius: 999px; background: #FFF6E5; color: #3A2E2A;
+  font-family: 'Mynerve', cursive; font-size: 15px; line-height: 1.25; text-align: center; pointer-events: none;
+  box-shadow: 0 0 6px 3px rgba(255, 246, 229, .75), 0 4px 10px rgba(0, 0, 0, .25);
+  animation: gs-bubble-blink 3s ease-in-out infinite; }
+/* Hai bướu mây phía trên */
+.gs-bubble::before, .gs-bubble::after { content: ''; position: absolute; z-index: -1; border-radius: 50%; background: #FFF6E5;
+  box-shadow: 0 0 6px 3px rgba(255, 246, 229, .75); }
+.gs-bubble::before { width: 26px; height: 26px; top: -11px; left: 18%; }
+.gs-bubble::after { width: 34px; height: 34px; top: -15px; right: 20%; }
+/* Chấm mây dẫn về phía cây */
+.gs-bubble-dot { position: absolute; top: 50%; border-radius: 50%; background: #FFF6E5; box-shadow: 0 0 5px 2px rgba(255, 246, 229, .75); }
+.gs-bubble-dot--big { width: 12px; height: 12px; margin-top: -2px; }
+.gs-bubble-dot--small { width: 7px; height: 7px; margin-top: 2px; }
+.gs-bubble--right .gs-bubble-dot--big { left: -16px; }
+.gs-bubble--right .gs-bubble-dot--small { left: -27px; }
+.gs-bubble--left .gs-bubble-dot--big { right: -16px; }
+.gs-bubble--left .gs-bubble-dot--small { right: -27px; }
+@keyframes gs-bubble-blink {
+  0%, 100% { opacity: 0; transform: translateY(-50%) scale(.9); }
+  20%, 75% { opacity: 1; transform: translateY(-50%) scale(1); }
+}
 @media (prefers-reduced-motion: reduce) { .gs-bubble { animation: none; } }

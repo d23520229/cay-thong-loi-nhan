@@ -71,11 +71,11 @@ export function bubblePlacement(room: Room): BubblePlacement {
   const t = treeItem(room);
   const k = FRAME.scaleInRoom * t.scale;
   const y = clamp(t.y - (2 / 3) * FRAME.baseY * k, 60, RH - 60);
-  const reach = 0.27 * FRAME.w * k; // ra gần mép tán ở độ cao đó
+  const reach = 0.35 * FRAME.w * k + 24; // ra ngoài mép tán ở độ cao đó, cách thêm một khoảng
   if (t.x < RW / 2) {
-    const x = Math.min(RW - EDGE - 120, t.x + reach);
+    const x = Math.min(RW - EDGE - 100, t.x + reach);
     return { side: 'right', x, y, maxWidth: RW - EDGE - x };
   }
-  const x = Math.max(EDGE + 120, t.x - reach);
+  const x = Math.max(EDGE + 100, t.x - reach);
   return { side: 'left', x, y, maxWidth: x - EDGE };
 }
