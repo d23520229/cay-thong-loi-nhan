@@ -71,3 +71,36 @@ describe('OwnerRoom', () => {
     expect(got.slots[1]!.locked).toBe(true);
   });
 });
+
+describe('api lời nhắn', () => {
+  it('getMine gửi x-edit-token và x-device-id', async () => {
+    fetchMock().mockResolvedValue(json(200, { messageId: '12' }));
+    await api.getMine('12', 'tok');
+    const [url, init] = fetchMock().mock.calls[0]!;
+    expect(url).toBe('/api/messages/12/mine');
+    expect(init?.method).toBe('GET');
+    const h = new Headers(init?.headers);
+    expect(h.get('x-edit-token')).toBe('tok');
+    expect(h.get('x-device-id')).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('postMessage gửi đúng body', async () => {
+    fetchMock().mockResolvedValue(json(201, { messageId: '1', editToken: 't', editUntil: 'u' }));
+    const body = { slotIndex: 3, ornament: 'ball', anonymous: true, content: 'Chúc', website: '' };
+    await expect(api.postMessage('abcdefgh', body)).resolves.toEqual({ messageId: '1', editToken: 't', editUntil: 'u' });
+    const [url, init] = fetchMock().mock.calls[0]!;
+    expect(url).toBe('/api/trees/abcdefgh/messages');
+    expect(init?.method).toBe('POST');
+    expect(JSON.parse(init?.body as string)).toEqual(body);
+  });
+
+  it('editMessage PUT và deleteMessage DELETE kèm token', async () => {
+    fetchMock().mockResolvedValueOnce(json(200, { ok: true })).mockResolvedValueOnce(new Response(null, { status: 204 }));
+    await api.editMessage('7', 'tk', { ornament: 'bell', anonymous: false, authorName: 'An', content: 'Hi' });
+    await expect(api.deleteMessage('7', 'tk')).resolves.toBeUndefined();
+    const [u1, i1] = fetchMock().mock.calls[0]!;
+    const [u2, i2] = fetchMock().mock.calls[1]!;
+    expect([u1, i1?.method, u2, i2?.method]).toEqual(['/api/messages/7', 'PUT', '/api/messages/7', 'DELETE']);
+    expect(new Headers(i2?.headers).get('x-edit-token')).toBe('tk');
+  });
+});
