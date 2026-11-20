@@ -4,10 +4,27 @@
 
 ## Hiện tại
 
-- **Ngày cập nhật:** 19/11/2026
+- **Ngày cập nhật:** 21/11/2026
 - **Mốc đang ở:** M2 xong trên nhánh `m2-frontend` (tách từ `m1-backend`; cả hai chưa gộp vào `main`). M1 backend: 6 nhóm route, 118 test server + 40 test shared (M2 thêm 2 test `googleClientId`, nay 120 test server); đã chạy thử với PostgreSQL 16 thật trong Docker ngày 17/11 (mục 1–9 bên dưới đều đạt); mục 10 làm khi lên Azure.
 - **M2 xong** trên nhánh `m2-frontend` (chưa gộp vào `main`): giao diện phòng tự do, 167 test web + 122 test server + 40 test shared (sau khi sửa việc nhỏ 19/11), typecheck sạch. Bản build JS + CSS ≈ 150 KB gzip (giới hạn 250 KB). Đã chạy thật qua proxy Vite với PostgreSQL trong Docker (18/11): `/` trả HTML, `/api/config` qua proxy, tạo cây 201 với `publicUrl` bắt đầu `http://localhost:5173/c/`, `GET /api/trees/{id}` 200.
-- **Việc tiếp theo:** **M3 — bạn bè treo lời nhắn, chủ cây đọc/khoá/đếm ngược, chia sẻ, OG** — chờ chủ dự án duyệt.
+- **M1, M2 đã gộp vào `main`** (PR #1, #2). M3 làm trên nhánh `m3`, chia 3 phần (đặc tả 6.6), xong mỗi phần dừng cho chủ dự án thử tay.
+- **M3 phần 1 xong** (khách treo lời nhắn, nhánh `m3`): 239 test web + 122 test server + 40 test shared, typecheck sạch, build JS + CSS ≈ 151 KB gzip. Đã chạy thật qua Vite + PostgreSQL (21/11): khách treo → 201, `GET /api/trees/{id}` chỉ có `occupied` + phụ kiện, không có nội dung. Kế hoạch: `docs/superpowers/plans/2026-11-21-m3-p1-khach-treo-loi-nhan.md`.
+- **Việc tiếp theo:** **chủ dự án thử tay M3 phần 1** (danh sách bên dưới), sau đó thiết kế phần 2 (chủ cây đọc & quản lý — cần mẫu duyệt thanh đếm ngược, thẻ lời nhắn).
+
+### M3 phần 1 — danh sách thử tay (chủ dự án)
+
+Chuẩn bị: thư mục gốc `D:\cay-thong-loi-nhan`, Docker Desktop đang chạy, `pnpm db:up`, `pnpm dev`, mở http://localhost:5173 và tạo một cây (hoặc dùng cây có sẵn). Mở link gửi bạn bè `/c/{mã cây}` trong **cửa sổ ẩn danh** để vào như khách.
+
+1. Thấy lời nhắc "Chạm vào cây thông để treo lời nhắn". Chạm cây → phòng zoom mượt vào cây (~0,9 giây), hiện bong bóng "+" và nút "‹ Về căn phòng".
+2. Ở tab chủ cây: kéo cây lệch sang một bên, thu nhỏ, lật ngang → tải lại tab khách, zoom lại: bong bóng vẫn nằm trên tán.
+3. Chạm bong bóng → bảng viết: 20 phụ kiện (mặc định Quả châu), Để tên / Ẩn danh, bộ đếm 0/300. "Treo lên cây" → phụ kiện rơi vào chỗ, báo "Đã treo! Còn 15 phút để sửa".
+4. Chạm lại phụ kiện vừa treo → bảng sửa có "Còn N phút"; sửa chữ → "Lưu thay đổi"; mở lại thấy chữ mới; "Xoá lời nhắn" → hỏi lại → điểm thành bong bóng.
+5. Treo đủ 3 lời nhắn; lời thứ 4 báo "Mỗi người chỉ treo được 3 lời nhắn trên một cây." trong bảng, chữ còn nguyên.
+6. Hai cửa sổ ẩn danh **khác trình duyệt** (vd. Chrome ẩn danh + Edge InPrivate, để khác thiết bị) cùng mở một bong bóng, viết chữ; bên gửi sau thấy "Chỗ này vừa có người treo, chọn chỗ khác nhé", chạm bong bóng khác thì chữ cũ vẫn còn.
+7. Chạm hộp quà, chồng quà, thú cưng nhiều lần → mỗi lần một hiệu ứng khác; chạm lò sưởi → bùng lửa. Ở tab chủ cây (chế độ Xem) chạm cũng có hiệu ứng.
+8. Tắt mạng (DevTools → Network → Offline) rồi treo → "Chưa gửi được, thử lại nhé", chữ còn nguyên; bật mạng, bấm lại → treo được.
+9. Đặt `FAKE_NOW=2026-12-26T00:00:00+07:00` trong `.env`, khởi động lại `pnpm dev` → zoom cây vẫn thấy phụ kiện nhưng không còn bong bóng. Xoá `FAKE_NOW` sau khi thử.
+10. DevTools chế độ thiết bị 360×640 và 390×844 (và điện thoại thật nếu được): lời nhắc không che phòng nhiều, bảng viết cuộn được, bong bóng đủ lớn để chạm.
 
 ### M2 — danh sách thử tay trên trình duyệt (chủ dự án)
 
@@ -61,7 +78,7 @@ Chưa làm ở M1: giao diện web (M2–M3), trang quản trị (M3b), OG ảnh
 
 **Việc nhỏ còn lại từ các lượt duyệt M2** (không ảnh hưởng đúng/sai hay riêng tư):
 - ~~Giới hạn lưu phòng~~ — chốt 19/11: nâng **600 lần/giờ/phòng** (đặc tả 6.5, 10); trình duyệt giãn nhịp 60 giây từ lần thứ 540.
-- Đã cài TanStack Query nhưng chưa dùng; `/api/config` (`googleClientId`) chưa được gọi — **chốt 19/11: để đến M3** dùng hoặc gỡ.
+- ~~Đã cài TanStack Query nhưng chưa dùng~~ — **gỡ 21/11** (đặc tả 6.6); `/api/config` nay được gọi ở trang khách để lấy giờ server.
 - ~~Sheet thiếu `aria-modal`, Escape, giữ tiêu điểm~~ — đã sửa 19/11.
 - ~~Lớp trùng giữa `app.css` và `room-animations.css`~~ — đã sửa 19/11: `.strip` → `.ed-strip`, `.field` → `.ed-field` (ô nhập về đúng kiểu tối `.input`; trước đó `.field input` của room-animations đè thành nền kem). Test `styles.test.ts` chặn trùng mới (trừ `.chip`, `.sheet-body` dùng chung có chủ đích).
 - ~~Camera dời khi vừa chạm chọn món rồi kéo~~ — đã sửa 19/11: camera đứng yên khi còn giữ món, thả ra mới dời.
@@ -75,7 +92,7 @@ Chưa làm ở M1: giao diện web (M2–M3), trang quản trị (M3b), OG ảnh
 | M0 | 16–18/11 | Đặc tả v3, CSDL, đồ hoạ, khung repo | **Xong** |
 | M1 | 18–25/11 | Backend: migration, giai đoạn, xác thực, API phòng + lời nhắn, test | **Xong** (17/11) |
 | M2 | 25/11–02/12 | Frontend phòng tự do: kéo thả, xếp lớp, mũi tên ‹ ›, dải chọn, tự lưu | **Xong** (18/11, nhánh `m2-frontend`) |
-| M3 | 02–07/12 | Bạn bè treo lời nhắn; chủ cây đọc, khoá, đếm ngược; chia sẻ, OG | |
+| M3 | 02–07/12 | Bạn bè treo lời nhắn; chủ cây đọc, khoá, đếm ngược; chia sẻ, OG | Phần 1 (khách) xong 21/11, chờ thử tay |
 | M3b | 05–08/12 | Trang quản trị P0 | |
 | M4 | 07–10/12 | Hoàn thiện, triển khai Azure (kèm Blob cho ảnh, câu trung thực về riêng tư trong chính sách) | |
 | M5 | 10–12/12 | Chạy thử kín | |
@@ -142,6 +159,8 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 - "Xong" luôn rời chế độ Sửa; chưa lưu được thì dừng tự lưu trước khi rời (không thì lượt gửi khi gỡ trang vẫn lưu phần mà chế độ Xem đã bỏ) và hiện `lastSaved()` (sửa 19/11).
 - **Chỉ mục duy nhất một phần** (`uq_one_tree_per_room`) kiểm từng dòng trong `INSERT ... ON CONFLICT` nhiều dòng: xoá dòng cũ có thể va trước khi upsert, đừng trông vào thứ tự dòng.
 - `node --test` không nhận thư mục trên mọi máy → dùng glob `"test/*.test.mjs"`.
+- **Chủ dự án gộp PR trên GitHub:** `main` trên máy không tự cập nhật — `git fetch` rồi `git merge --ff-only origin/main` trước khi tách nhánh mới.
+- **Lớp hiệu ứng điểm nhắn** không được tên `.ring`/`.drop-in`/`.ornament` trong `app.css` (trùng `room-animations.css`, test chặn) → dùng `gs-ring`/`gs-drop` và đặt hoạt ảnh trên `<svg>` con.
 
 ## Tài nguyên
 
@@ -149,6 +168,8 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 - Đặc tả: `docs/dac-ta-v3.md` · Schema: `docs/schema.postgres.sql` · Bản v2 cũ: `docs/archive/dac-ta-v2.md`.
 
 ## Nhật ký
+
+- **21/11/2026** — Thiết kế M3 (đặc tả 6.6): 3 phần nối tiếp, OG do server ghép bằng `sharp`, HTML `/c/:id` có thẻ OG làm ngay ở M3, gỡ TanStack Query. Xong **phần 1 — khách treo lời nhắn** (nhánh `m3`): zoom vào cây, bong bóng "+", bảng viết 20 phụ kiện, treo / sửa / gỡ trong 15 phút (hạn tính theo giờ server), xử lý từng mã lỗi (giữ chữ khi `slot_taken`), giai đoạn không cho ghi thì ẩn bong bóng, cây đầy, hiệu ứng chạm quà / thú cưng / lò sưởi (khách và chủ cây ở chế độ Xem). Không sửa server. 239 test web; build ≈ 151 KB gzip.
 
 - **19/11/2026** — Sửa việc nhỏ M1/M2: lưu phòng không còn 500 khi đổi loại món cùng `clientId`; `clientIp` bỏ cổng `[IPv6]:port`; honeypot giữ trước các kiểm tra khác (sửa đặc tả 9.4); giới hạn lưu 600/giờ; Sheet modal có Escape + giữ tiêu điểm; camera không dời khi đang giữ món; bỏ trùng lớp CSS (`.ed-strip`, `.ed-field`); test trang phòng dùng đồng hồ giả. 167 test web, 122 test server, 40 test shared; build ≈ 150 KB gzip.
 - **19/11/2026** — Mất mạng không cần lưu (chủ dự án chốt, đặc tả 6.5): bỏ nháp `draft:{treeId}`, bỏ hỏi xung đột khi mở lại, bỏ tự thử lại khi lỗi mạng/5xx (5 giây và sự kiện `online`); thao tác tiếp theo lưu lại cả phòng; "Xong" chưa lưu được vẫn về Xem với bản server; mở phòng thì xoá nháp cũ còn sót. Giữ nguyên bảng hỏi 409 khi đang sửa, 429 thử lại sau 60 giây, nháp `/tao`. 159 test web; build ≈ 149 KB gzip.
