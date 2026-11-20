@@ -178,6 +178,9 @@ function TreeRoom({ id }: { id: string }) {
           room={room}
           toast={show}
           onUnauthorized={() => setLogin('unauthorized')}
+          onChange={(patch) =>
+            setView((v) => (v.kind === 'owner' ? { kind: 'owner', data: { ...v.data, meta: { ...v.data.meta, ...patch } } } : v))
+          }
         />
       )}
       <div className="room-top">

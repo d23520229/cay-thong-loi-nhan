@@ -20,10 +20,17 @@ export function ConfirmDialog({ title, message, confirmLabel, cancelLabel, onCon
       if (opener?.isConnected) opener.focus();
     };
   }, []);
+  const sure = useRef<HTMLButtonElement>(null);
   const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.key !== 'Escape') return;
-    e.stopPropagation();
-    onCancel();
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      onCancel();
+    } else if (e.key === 'Tab') {
+      // Giữ tiêu điểm trong hộp (hai nút), không để bẫy Tab của bảng phía sau kéo ra ngoài.
+      e.stopPropagation();
+      e.preventDefault();
+      (document.activeElement === safe.current ? sure : safe).current?.focus();
+    }
   };
   return (
     <div className="cfm-backdrop" onKeyDown={onKeyDown}>
@@ -31,7 +38,7 @@ export function ConfirmDialog({ title, message, confirmLabel, cancelLabel, onCon
         <div className="sheet-title">{title}</div>
         {message ? <p className="hint">{message}</p> : null}
         <div className="row" style={{ justifyContent: 'flex-end' }}>
-          <button type="button" className="chip" onClick={onConfirm}>{confirmLabel}</button>
+          <button ref={sure} type="button" className="chip" onClick={onConfirm}>{confirmLabel}</button>
           <button ref={safe} type="button" className="btn btn-primary" onClick={onCancel}>{cancelLabel}</button>
         </div>
       </div>

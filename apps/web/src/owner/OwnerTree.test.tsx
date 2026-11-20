@@ -203,6 +203,30 @@ describe('OwnerTree', () => {
     expect(within(sheet).getByRole('textbox', { name: 'Link gửi bạn bè' })).toHaveValue(`${window.location.origin}/c/${ID}`);
   });
 
+  it('trang mở qua 0h 24/12: tự chuyển sang mở quà và tải lại trạng thái quà', async () => {
+    mocked.getConfig.mockResolvedValue({ now: new Date(NOW).toISOString(), unlockAt: new Date(NOW + 60_000).toISOString() } as never);
+    show();
+    expect(await screen.findByText('Chạm vào cây để xem các món quà đang chờ')).toBeInTheDocument();
+    mocked.getOwnerTree.mockClear();
+    mocked.getOwnerTree.mockResolvedValue(meta({ phase: 'OPEN', slots: slots(false) }));
+    await act(() => vi.advanceTimersByTimeAsync(90_000));
+    expect(screen.getByText('Chạm vào cây để mở quà')).toBeInTheDocument();
+    expect(screen.getByText(/^Quà đã mở!/)).toBeInTheDocument();
+    expect(mocked.getOwnerTree).toHaveBeenCalledTimes(1);
+  });
+
+  it('xoá lời nhắn xong: tiêu điểm về nút "Về căn phòng"', async () => {
+    mocked.openMessage.mockResolvedValue(opened(1));
+    mocked.ownerDeleteMessage.mockResolvedValue(undefined);
+    const { container } = show(meta({ phase: 'OPEN', slots: slots(false) }));
+    await zoom(container);
+    await userEvent.click(screen.getAllByRole('button', { name: /Lời nhắn chưa đọc/ })[0]!);
+    await userEvent.click(await screen.findByRole('button', { name: 'Xoá' }));
+    await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Xoá' }));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+    expect(document.activeElement).toBe(screen.getByRole('button', { name: /Về căn phòng/ }));
+  });
+
   it('đếm ngược tự cập nhật', async () => {
     show(meta({ showMessageCount: false }));
     await screen.findByText('Còn 3 ngày 0 giờ nữa là mở quà');

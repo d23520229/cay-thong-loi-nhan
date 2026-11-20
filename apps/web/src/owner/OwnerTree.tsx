@@ -22,6 +22,8 @@ type Props = {
   room: Room;
   toast: (m: string) => void;
   onUnauthorized: () => void;
+  /** Báo trạng thái mới để trang giữ lại khi chủ cây vào Sửa phòng rồi quay về. */
+  onChange?: (patch: Pick<OwnerRoom, 'slots' | 'messageCount' | 'showMessageCount'>) => void;
 };
 
 const TOP_RESERVE = 56;
@@ -33,7 +35,7 @@ const LOAD_FAILED = 'Chưa tải được, thử lại nhé';
 const stateOf = (s: OwnerSlot): OwnerState => (s.locked ? 'locked' : s.unread ? 'unread' : 'read');
 
 /** Chế độ Xem của chủ cây: đếm ngược, số lời nhắn, mở quà, xoá / chặn / báo cáo, tuỳ chọn (đặc tả 6.6.2). */
-export function OwnerTree({ treeId, meta, room, toast, onUnauthorized }: Props) {
+export function OwnerTree({ treeId, meta, room, toast, onUnauthorized, onChange }: Props) {
   const navigate = useNavigate();
   const [slots, setSlots] = useState<OwnerSlot[]>(meta.slots);
   const [count, setCount] = useState(meta.messageCount);
@@ -48,6 +50,26 @@ export function OwnerTree({ treeId, meta, room, toast, onUnauthorized }: Props) 
   const { camera, stageRef, zoomIn, zoomOut, onFit } = useTreeZoom(room);
   const { fx, tap } = useItemFx(room);
   const newCount = meta.newSinceLastVisit; // giữ số "mới" lúc vào trang
+  const backBtn = useRef<HTMLButtonElement>(null);
+  const [focusBack, setFocusBack] = useState(false);
+  const report = useRef(onChange);
+  report.current = onChange;
+  const first = useRef(true);
+
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    report.current?.({ slots, messageCount: count, showMessageCount: showCount });
+  }, [slots, count, showCount]);
+
+  // Xoá/chặn xong: nút phụ kiện vừa mở đã biến mất, đưa tiêu điểm về "Về căn phòng".
+  useEffect(() => {
+    if (!focusBack || card) return;
+    backBtn.current?.focus();
+    setFocusBack(false);
+  }, [focusBack, card]);
 
   useEffect(() => {
     const ts = timers.current;
@@ -87,6 +109,16 @@ export function OwnerTree({ treeId, meta, room, toast, onUnauthorized }: Props) 
     }
   };
 
+  // Vừa qua mốc mở quà khi trang đang mở: tải lại một lần để phụ kiện hết "còn gói".
+  const wasUnlocked = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (unlockAt === null) return;
+    const u = serverNow() >= unlockAt;
+    if (wasUnlocked.current === false && u && meta.phase === 'BUILD') void refresh();
+    wasUnlocked.current = u;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [now, unlockAt]);
+
   const zoomed = camera !== null;
   const views = slotViews(slots, room.tree.slotCount, {}, now);
   const states: Record<number, OwnerState> = {};
@@ -125,6 +157,7 @@ export function OwnerTree({ treeId, meta, room, toast, onUnauthorized }: Props) 
     setSlots((ss) => ss.map((x) => (x.index === index ? { index, occupied: false, locked: x.locked } : x)));
     setCount((n) => Math.max(0, n - 1));
     setCard(null);
+    setFocusBack(true);
   };
 
   const act = async (run: () => Promise<unknown>, done: string, index: number) => {
@@ -189,7 +222,9 @@ export function OwnerTree({ treeId, meta, room, toast, onUnauthorized }: Props) 
     }
   };
 
-  const canRead = meta.phase === 'OPEN' || meta.phase === 'NOTICE';
+  // Trang mở qua 0h 24/12 vẫn chuyển sang mở quà (giai đoạn lúc tải trang có thể đã cũ).
+  const unlocked = unlockAt !== null && now >= unlockAt;
+  const canRead = meta.phase === 'OPEN' || meta.phase === 'NOTICE' || unlocked;
   const head = canRead ? 'Quà đã mở!' : unlockAt !== null ? countdownText(unlockAt - now) : null;
   const countText = showCount ? [`${count} lời nhắn`, ...(newCount > 0 ? [`${newCount} mới`] : [])] : [];
   const status = [...(head ? [head] : []), ...countText].join(' · ');
@@ -227,7 +262,7 @@ export function OwnerTree({ treeId, meta, room, toast, onUnauthorized }: Props) 
         {status ? <p className="ow-status">{status}</p> : null}
         <div className="row" style={{ justifyContent: 'center' }}>
           {zoomed ? (
-            <button type="button" className="btn btn-ghost" onClick={zoomOut}>
+            <button ref={backBtn} type="button" className="btn btn-ghost" onClick={zoomOut}>
               <span aria-hidden="true">‹</span> Về căn phòng
             </button>
           ) : (

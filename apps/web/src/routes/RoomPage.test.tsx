@@ -12,7 +12,7 @@ vi.mock('../lib/api', async (orig) => {
   const actual = await orig<typeof import('../lib/api')>();
   return {
     ...actual,
-    api: { getOwnerTree: vi.fn(), getTree: vi.fn(), authLink: vi.fn(), authPin: vi.fn(), saveRoom: vi.fn(), getConfig: vi.fn() },
+    api: { getOwnerTree: vi.fn(), getTree: vi.fn(), authLink: vi.fn(), authPin: vi.fn(), saveRoom: vi.fn(), getConfig: vi.fn(), setShowCount: vi.fn() },
   };
 });
 
@@ -376,6 +376,21 @@ describe('RoomPage', () => {
 });
 
 describe('RoomPage chủ cây (M3 phần 2)', () => {
+  it('đổi tuỳ chọn rồi Sửa phòng → Xong: chế độ Xem giữ trạng thái mới (không về bản lúc tải trang)', async () => {
+    mocked.getOwnerTree.mockResolvedValue(ownerRoom({ messageCount: 3, newSinceLastVisit: 0 }));
+    mocked.setShowCount.mockResolvedValue({ showMessageCount: false });
+    renderAt();
+    expect(await screen.findByText(/3 lời nhắn/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Tuỳ chọn/ }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Hiện số lời nhắn' }));
+    await waitFor(() => expect(screen.queryByText(/3 lời nhắn/)).not.toBeInTheDocument());
+    await userEvent.click(screen.getByRole('button', { name: 'Đóng' }));
+    await userEvent.click(screen.getByRole('button', { name: /Sửa phòng/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Xong' }));
+    await screen.findByRole('button', { name: /Sửa phòng/ });
+    expect(screen.queryByText(/3 lời nhắn/)).not.toBeInTheDocument();
+  });
+
   it('StrictMode: vào trang chỉ gọi /owner một lần (giữ số "mới")', async () => {
     mocked.getOwnerTree.mockResolvedValue(ownerRoom({ messageCount: 3, newSinceLastVisit: 2 }));
     renderAt(`/c/${ID}`, true);
