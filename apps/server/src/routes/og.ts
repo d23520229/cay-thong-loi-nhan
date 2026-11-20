@@ -42,7 +42,7 @@ const indexCache = new Map<string, string>();
 export async function ogRoutes(app: FastifyInstance) {
   const { db, env } = app.deps;
   const render = app.deps.renderOg ?? defaultRender;
-  const cache = new Map<string, Buffer>(); // giữ thứ tự chèn: phần tử đầu là cũ nhất
+  const cache = new Map<string, Promise<Buffer>>(); // giữ thứ tự chèn: phần tử đầu là lâu chưa dùng nhất
 
   app.get<{ Params: { file: string } }>('/og/:file', async (req, reply) => {
     const m = /^([a-z2-9]{8})\.png$/.exec(req.params.file);
@@ -50,12 +50,16 @@ export async function ogRoutes(app: FastifyInstance) {
     const room = id && TREE_ID.test(id) ? await buildPublicRoom(db.db, id) : null;
     if (!id || !room) throw new HttpError(404, 'not_found', 'Không tìm thấy cây này.');
     const key = `${id}:${room.roomVersion}:${room.slots.filter((s) => s.occupied).map((s) => `${s.index}=${s.ornament}`).join(',')}`;
-    let png = cache.get(key);
-    if (!png) {
-      png = await render(room, env.assetDir);
-      cache.set(key, png);
-      if (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value!);
+    // Đệm cả lời hứa đang vẽ: nhiều trình đọc link cùng lúc chỉ vẽ một lần. Dùng lại thì dời xuống cuối (LRU).
+    let job = cache.get(key);
+    if (job) cache.delete(key);
+    else {
+      job = render(room, env.assetDir);
+      job.catch(() => cache.delete(key));
     }
+    cache.set(key, job);
+    if (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value!);
+    const png = await job;
     return reply.header('content-type', 'image/png').header('cache-control', 'public, max-age=300').send(png);
   });
 

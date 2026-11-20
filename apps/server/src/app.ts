@@ -40,13 +40,20 @@ export function reqSerializer(req: { method?: string; url?: string }) {
 /** Cấu hình logger production: dùng reqSerializer để không ghi IP. */
 export const loggerOptions = { serializers: { req: reqSerializer } };
 
-const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+/** Đường dẫn trang của SPA: không phải /api, /og, không có đuôi file (file thiếu phải 404, không trả HTML). */
+const isPagePath = (path: string) =>
+  path !== '/api' && !path.startsWith('/api/') && !path.startsWith('/og/') && !/\.[a-z0-9]+$/i.test(path);
+
+const WRITE_METHODS =new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 export async function buildApp(deps: AppDeps, opts: { logStream?: { write(msg: string): void } } = {}): Promise<FastifyInstance> {
   const app = Fastify({ logger: opts.logStream ? { ...loggerOptions, stream: opts.logStream } : process.env.VITEST ? false : loggerOptions, bodyLimit: 65536, trustProxy: (_addr: string, hop: number) => hop < deps.env.trustProxyHops });
   app.decorate('deps', deps);
   await app.register(cookie);
-  await app.register(helmet);
+  // Chưa production: bỏ upgrade-insecure-requests để mở bản build qua http trong mạng LAN (thử trên điện thoại).
+  await app.register(helmet, {
+    contentSecurityPolicy: { directives: { upgradeInsecureRequests: deps.env.production ? [] : null } },
+  });
 
   app.addHook('onRequest', async (req, reply) => {
     const path = req.url.split('?')[0]!;
@@ -66,7 +73,7 @@ export async function buildApp(deps: AppDeps, opts: { logStream?: { write(msg: s
   app.setNotFoundHandler((req, reply) => {
     // Có bản build web: mọi đường dẫn trang (không phải /api, /og) trả index.html để React Router xử lý (đặc tả 6.6.3).
     const path = req.url.split('?')[0]!;
-    if (deps.env.webDist && req.method === 'GET' && !path.startsWith('/api/') && !path.startsWith('/og/')) {
+    if (deps.env.webDist && (req.method === 'GET' || req.method === 'HEAD') && isPagePath(path)) {
       return reply.code(200).type('text/html; charset=utf-8').header('cache-control', 'no-cache').send(indexHtml(deps.env.webDist));
     }
     return reply.code(404).send(body('not_found', 'Không tìm thấy.'));

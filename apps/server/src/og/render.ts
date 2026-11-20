@@ -89,12 +89,13 @@ function ornaments(room: OgRoom, tree: Item): OverlayOptions[] {
 
 export async function renderOg(room: OgRoom, assetDir: string): Promise<Buffer> {
   const bgPath = join(assetDir, 'assets', catalog.backgrounds[room.background]!.asset);
-  const order = room.items.map((it, i) => ({ it, i })).sort((a, b) => rank(a.it) - rank(b.it) || a.i - b.i).map((x) => x.it);
+  // Món không có trong danh mục (dữ liệu cũ/lạ) bị bỏ qua, không làm hỏng cả ảnh.
+  const known = room.items.filter((it) => items[it.type]?.variants[it.variant]);
+  const order = known.map((it, i) => ({ it, i })).sort((a, b) => rank(a.it) - rank(b.it) || a.i - b.i).map((x) => x.it);
 
   const overlays: OverlayOptions[] = [{ input: await layer(bgPath, RW, RH), left: PAD, top: PAD }];
   for (const it of order) {
-    const v = items[it.type]?.variants[it.variant];
-    if (!v) continue;
+    const v = items[it.type]!.variants[it.variant]!;
     const w = v.w * it.scale, h = v.h * it.scale;
     overlays.push({ input: await itemImage(it, room, assetDir, w, h), left: Math.round(PAD + it.x - v.ax * it.scale), top: Math.round(PAD + it.y - v.ay * it.scale) });
     if (it.type === 'tree') overlays.push(...ornaments(room, it));
@@ -113,6 +114,6 @@ export async function renderOg(room: OgRoom, assetDir: string): Promise<Buffer> 
   const backdrop = await sharp(bgPath).resize(W, H, { fit: 'cover' }).blur(18).modulate({ brightness: 0.55 }).png().toBuffer();
   return sharp(backdrop)
     .composite([{ input: roomImg, left: Math.round((W - roomW) / 2), top: 0 }])
-    .png()
+    .png({ palette: true, quality: 90, effort: 7 }) // ảnh bảng màu: nhẹ hơn nhiều lần, đủ đẹp cho ảnh xem trước
     .toBuffer();
 }

@@ -149,3 +149,51 @@ describe('trang web + thẻ OG', () => {
     expect((await t!.app.inject({ method: 'GET', url: '/api/config' })).statusCode).toBe(200);
   });
 });
+
+describe('sửa sau lượt soát phần 2–3', () => {
+  const dist = () => {
+    const dir = mkdtempSync(join(tmpdir(), 'ctln-dist-'));
+    writeFileSync(join(dir, 'index.html'), '<!doctype html><html><head><title>Cây Thông Lời Nhắn</title></head><body><div id="root"></div></body></html>');
+    return dir;
+  };
+
+  it('WEB_DIST đặt sai thì env báo lỗi để server ghi cảnh báo', () => {
+    expect(loadEnv({ WEB_DIST: join(tmpdir(), 'khong-co-thu-muc-nay') }).webDistProblem).toMatch(/index\.html/);
+    expect(loadEnv({}).webDistProblem).toBeUndefined();
+  });
+
+  it('khi chưa production: CSP không có upgrade-insecure-requests (thử qua http trong mạng LAN)', async () => {
+    t = await makeTestApp();
+    const r = await t!.app.inject({ method: 'GET', url: '/api/config' });
+    expect(String(r.headers['content-security-policy'])).not.toContain('upgrade-insecure-requests');
+  });
+
+  it('đường dẫn có đuôi file hoặc /api trần không rơi vào trang; HEAD trang trả 200', async () => {
+    t = await makeTestApp({ env: { WEB_DIST: dist() } });
+    expect((await t!.app.inject({ method: 'GET', url: '/assets/cu-da-xoa.js' })).statusCode).toBe(404);
+    expect((await t!.app.inject({ method: 'GET', url: '/api' })).statusCode).toBe(404);
+    expect((await t!.app.inject({ method: 'HEAD', url: '/tao' })).statusCode).toBe(200);
+  });
+
+  it('nhiều request cùng lúc chỉ vẽ một lần', async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    const render = vi.fn(async () => { await gate; return Buffer.from('png'); });
+    t = await makeTestApp({ renderOg: render });
+    const { id } = await create();
+    const reqs = [1, 2, 3].map(() => t!.app.inject({ method: 'GET', url: `/og/${id}.png` }));
+    await new Promise((r) => setTimeout(r, 50));
+    release();
+    const res = await Promise.all(reqs);
+    expect(res.map((r) => r.statusCode)).toEqual([200, 200, 200]);
+    expect(render).toHaveBeenCalledTimes(1);
+  });
+
+  it('renderOg bỏ qua món không có trong danh mục; ảnh nhỏ hơn 400 KB', async () => {
+    const rm = room();
+    rm.items.push({ clientId: 'x', type: 'khong-co', variant: 'v', x: 100, y: 900, scale: 1, flip: false } as never);
+    const buf = await renderOg({ ...rm, slots: [] }, loadEnv({}).assetDir);
+    expect((await sharp(buf).metadata()).width).toBe(1200);
+    expect(buf.length).toBeLessThan(400_000);
+  }, 60_000);
+});

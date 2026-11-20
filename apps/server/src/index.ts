@@ -14,6 +14,7 @@ const db = connectPostgres(databaseUrl || 'postgres://ctln:ctln_dev@localhost:54
 const ran = await runMigrations(db);
 const app = await buildApp({ db, env, now: () => now(), google: makeGoogleVerifier(env.googleClientId) });
 if (ran.length) app.log.info({ migrations: ran }, 'đã chạy migration');
+if (env.webDistProblem) app.log.warn(env.webDistProblem);
 
 const port = Number(process.env.PORT ?? 3000);
 app.listen({ port, host: '0.0.0.0' }).catch((err) => {
