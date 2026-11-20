@@ -437,6 +437,41 @@ M3 chia **3 phần làm nối tiếp**, mỗi phần một kế hoạch, xong ph
 
 **Để người làm tự quyết:** chia component (`guest/` theo `apps/web/src/README.md`), cách nối vào `RoomPage`/`RoomStage`, tên CSS mới (không trùng `room-animations.css`), chữ thông báo phụ (giữ giọng thân thiện như trên).
 
+**Bổ sung sau thử nghiệm nội bộ (21/11, chủ dự án yêu cầu):** đóng bảng viết khi đã có chữ (hoặc bảng sửa đã đổi) → hộp xác nhận "Huỷ lời nhắn đang viết?" / "Bỏ thay đổi?" (nút an toàn được chọn sẵn); xoá lời nhắn cũng hỏi bằng hộp này (`ui/ConfirmDialog`, thay `window.confirm`). Tiêu đề bảng sửa kèm "(còn N phút)", tự đếm lùi, hết giờ khoá Lưu/Xoá. Đang gửi thì khoá ô nhập và không đóng được bảng. Chạm đồ vật/cây tính khi nhấn-thả (click). Đang zoom mà đổi cỡ màn hình thì tính lại camera.
+
+#### 6.6.2 Phần 2 — Chủ cây đọc & quản lý (chốt 21/11, chủ dự án giao người làm tự chốt, xem lại khi thử tay)
+
+**Mục đích.** Chủ cây ở chế độ Xem thấy đếm ngược tới 0h 24/12, số lời nhắn, chạm cây để xem các "món quà"; từ 0h 24/12 mở từng lời nhắn, xoá / chặn / báo cáo; bật/tắt hiện số lời nhắn; xoá cả cây. API đã có từ M1 (8.3, 8.5).
+
+**Mục tiêu:** O2, O3, O4, O5, O10 (mục 3.3), luồng 9.6. **Không làm:** danh sách thẻ (O6), tải ảnh (O7), đổi PIN (O8), trả lời (O9), biểu ngữ giai đoạn (M4).
+**Không được xảy ra:** đọc được nội dung trước `UNLOCK_AT` (server đã chặn 423; giao diện không gọi `open` khi `locked`); chủ cây mất số "mới" vì trang gọi `/owner` hai lần (StrictMode) — lượt tải đầu chỉ gọi một lần.
+
+**Chế độ Xem của chủ cây** (thay khung trống "Chỗ cho M3"):
+- Khối dưới (chừa 116px như khách): dòng trạng thái + hàng nút **"Chia sẻ"** (phần 3) và **"⋯ Tuỳ chọn"**. Lời nhắc nổi phía trên: BUILD → "Chạm vào cây để xem các món quà đang chờ"; OPEN/NOTICE → "Chạm vào cây để mở quà".
+- Dòng trạng thái: BUILD → đếm ngược "Còn {d} ngày {h} giờ nữa là mở quà" (dưới 1 ngày: "Còn {h} giờ {m} phút…", dưới 1 giờ: "Còn {m} phút…"), tính từ `unlockAt` của `/api/config` theo giờ server, cập nhật mỗi 30 giây; OPEN/NOTICE → "Quà đã mở!". Kèm (nếu `showMessageCount`) "· {n} lời nhắn" và "· {k} mới" khi k > 0 (O10).
+- Chạm cây → zoom như khách (dùng chung camera). Phụ kiện vẽ theo trạng thái: chưa mở được → `locked` (nhạt, có nơ); chưa đọc → `unread` (lấp lánh); đã đọc → `read`. Không có bong bóng "+" (chủ cây không treo).
+- Chạm phụ kiện khi `locked` → "Quà còn gói — mở được từ 0h 24/12" + rung, không gọi API. Khi mở được → `POST …/messages/:mid/open` → **thẻ lời nhắn** (Sheet): tiêu đề "Lời nhắn từ {tên}" hoặc "Lời nhắn ẩn danh", nội dung (Mynerve ≥ 18px, hiển thị dạng chữ), thời gian treo ("21/11 lúc 20:05", giờ Việt Nam), nút "‹ Trước" / "Sau ›" đi qua các điểm có lời nhắn theo thứ tự điểm, và **Xoá** / **Chặn người gửi** / **Báo cáo**. Mở xong phụ kiện chuyển sang `read`.
+- Xoá → hộp xác nhận "Xoá lời nhắn này?" → `DELETE …/messages/:mid` → điểm trống. Chặn → "Chặn người gửi?" ("Lời nhắn này sẽ bị xoá và người đó không gửi được tới cây của bạn nữa.") → `POST …/block` → điểm trống. Báo cáo → bảng nhỏ: lý do (không bắt buộc, ≤ 200 ký tự) → `POST …/reports` kèm `messageId` → "Đã gửi báo cáo, cảm ơn bạn".
+- Lỗi: 423 → thông báo của server; 404 → "Lời nhắn này không còn nữa", tải lại; 401 → bảng "Tôi là chủ cây" (như M2); mạng/5xx → "Chưa tải được, thử lại nhé".
+- **"⋯ Tuỳ chọn"** (Sheet): công tắc "Hiện số lời nhắn" (`PUT …/settings`, O10); "Xoá cây này" → hộp xác nhận "Xoá cây và mọi lời nhắn?" ("Không khôi phục được.") → `DELETE /api/trees/:id` → xoá khỏi `myTrees`, về trang chủ (O5).
+- Mỗi lần zoom gọi lại `/owner` để cập nhật điểm (giữ nguyên số "mới" đã hiện lúc vào trang).
+
+**Kiểm thử:** đếm ngược (thuần, theo mốc); trạng thái phụ kiện; chạm `locked` không gọi API; mở → thẻ, nội dung có thẻ HTML hiện nguyên chữ; trước/sau; xoá, chặn, báo cáo (gọi đúng API, hộp xác nhận); tắt số lời nhắn; xoá cây; StrictMode chỉ một lượt `/owner` lúc vào trang.
+
+#### 6.6.3 Phần 3 — Chia sẻ + OG (chốt 21/11, người làm tự chốt)
+
+**Chia sẻ (S2).** Nút "Chia sẻ" của chủ cây mở Sheet "Gửi cây cho bạn bè": ô link công khai `{origin}/c/{id}` + nút **Sao chép**; **"Chia sẻ…"** (chỉ hiện khi có `navigator.share`) gọi Web Share với tiêu đề + link; **Messenger**: trên điện thoại mở `fb-messenger://share/?link={link}`, trên máy tính sao chép link và báo "Đã sao chép — dán vào Messenger nhé"; **Zalo**: sao chép link và báo "Đã sao chép — mở Zalo và dán vào nhé" (nút chia sẻ chính thức của Zalo cần tài khoản Zalo OA — chưa có, để M4 nếu có). Sao chép dùng `navigator.clipboard`, lỗi thì chọn sẵn chữ trong ô để người dùng tự sao chép.
+
+**Ghi nhận lời mời (S4)** đã có từ M2 (`/?ref=` → `ref` khi tạo phòng); không đổi.
+
+**Ảnh xem trước (S3) — `GET /og/:id.png`** (`apps/server/src/routes/og.ts` + `og/render.ts`): ảnh PNG 1200×630: phông nền của phòng phủ kín (làm mờ, tối nhẹ) + cả căn phòng 720×1080 thu về cao 630 (420×630) đặt giữa, vẽ bằng `sharp` theo đúng thứ tự `drawOrder`: ảnh WebP của từng món (theo `catalog.json`, lật bằng `flop`), cây = thân + tán + đèn + sao (SVG `@ctln/art/tree`), thú cưng SVG, phụ kiện đã treo (`filled`) tại vị trí điểm nhắn. Không có chữ trong ảnh (tránh thiếu phông tiếng Việt trên server); chữ nằm ở thẻ OG. Thư mục ảnh: `WEB_DIST` (mặc định `apps/web/dist`), khi phát triển dùng `apps/web/public`. Lưu đệm trong bộ nhớ theo `id + room_version + chuỗi phụ kiện đã treo` (tối đa 200 ảnh), `Cache-Control: public, max-age=300`. Không có cây → 404.
+
+**HTML `/c/:id` có thẻ OG** (`og.ts`): khi có `WEB_DIST/index.html` (bản build), server phục vụ tĩnh `WEB_DIST` (`@fastify/static`) và trả `index.html` cho mọi đường dẫn trang không phải `/api/*`, `/og/*` (SPA). Riêng `/c/:id` có cây: chèn vào `<head>` — `og:title` "{tên cây hoặc 'Cây thông của {chủ cây}'}", `og:description` "Treo một lời nhắn Giáng sinh lên cây của {chủ cây} — mở vào đêm 24/12.", `og:image` `{BASE_URL}/og/{id}.png`, `og:url`, `og:type=website`, `twitter:card=summary_large_image`, và `<title>` tương ứng; mọi giá trị thoát HTML. Không có cây → `index.html` gốc, mã 404. Khi phát triển (Vite) thẻ OG không có; thử bằng `pnpm build && pnpm start` (`BASE_URL` đúng cổng server).
+
+**Kiểm thử (server, Vitest + PGlite):** `/og/:id.png` trả PNG 1200×630, 404 khi không có cây, đổi phòng (room_version) thì ảnh đổi, gọi lại trả bản đệm; `/c/:id` có đủ thẻ OG và thoát HTML (`ownerName` chứa `"<>&`), 404 vẫn trả HTML; `/tao` trả `index.html`; `/api/...` không bị ảnh hưởng; không có `WEB_DIST` thì không đăng ký phục vụ tĩnh. Web: Sheet chia sẻ (sao chép, ẩn "Chia sẻ…" khi không có Web Share, Messenger trên điện thoại/máy tính, Zalo).
+
+**Danh sách thử tay gộp khi xong cả M3** ghi ở `docs/tien-do.md`.
+
 ---
 
 ## 7. Thiết kế cơ sở dữ liệu
