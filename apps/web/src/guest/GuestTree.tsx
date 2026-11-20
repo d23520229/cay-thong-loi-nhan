@@ -7,9 +7,10 @@ import { storage, type MineEntry } from '../lib/storage';
 import { RoomStage } from '../room/RoomStage';
 import { useItemFx } from '../room/useItemFx';
 import { Compose, newDraft, type ComposeDraft } from './Compose';
-import { slotRects, zoomCamera, type Camera } from './geometry';
+import { slotRects } from './geometry';
 import { SlotsLayer } from './SlotsLayer';
 import { canWrite, isFull, pruneMine, slotViews } from './slots';
+import { useTreeZoom } from './useTreeZoom';
 
 type Props = {
   treeId: string;
@@ -40,14 +41,13 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
   const [phase, setPhase] = useState(meta.phase);
   // Chỉ đọc khi mở trang; dọn khoá (pruneMine) sau khi đã có giờ server, kẻo máy chạy nhanh xoá nhầm khoá còn hạn.
   const [mine, setMine] = useState<Record<number, MineEntry>>(() => storage.listMine(treeId));
-  const [camera, setCamera] = useState<Camera | null>(null);
+  const { camera, stageRef: stage, zoomIn, zoomOut, onFit } = useTreeZoom(room);
   const [open, setOpen] = useState<Open | null>(null);
   const [draft, setDraft] = useState<ComposeDraft>(() => newDraft(''));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [slotFx, setSlotFx] = useState<Record<number, 'ring' | 'drop-in'>>({});
   const held = useRef<ComposeDraft | null>(null); // chữ giữ lại sau slot_taken
-  const stage = useRef<HTMLDivElement | null>(null);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const { fx, tap } = useItemFx(room);
 
@@ -99,18 +99,11 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
   const writable = canWrite(phase);
   const views = slotViews(slots, room.tree.slotCount, mine, serverNow());
 
-  // Đang zoom mà đổi cỡ / xoay màn hình: tính lại camera theo cỡ mới.
-  const onFit = () => {
-    const el = stage.current;
-    if (el) setCamera((c) => (c ? zoomCamera(room, el.clientWidth, el.clientHeight) : c));
-  };
-
   const onItemTap = (clientId: string) => {
     const it = room.items.find((i) => i.clientId === clientId);
     if (it?.type !== 'tree') return tap(clientId);
     if (zoomed) return;
-    const el = stage.current;
-    setCamera(zoomCamera(room, el?.clientWidth ?? 0, el?.clientHeight ?? 0));
+    zoomIn();
     void refresh();
   };
 
@@ -269,7 +262,7 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
               <Link to={`/?ref=${treeId}`} className="btn btn-primary">Tạo cây của bạn</Link>
             </>
           ) : null}
-          <button type="button" className="btn btn-ghost" onClick={() => setCamera(null)}>
+          <button type="button" className="btn btn-ghost" onClick={zoomOut}>
             <span aria-hidden="true">‹</span> Về căn phòng
           </button>
         </div>
