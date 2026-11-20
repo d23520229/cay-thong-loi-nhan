@@ -17,7 +17,7 @@ describe('CSS', () => {
 
   it('bong bóng thoại của cây: đám mây kem, chữ nhỏ, hiện/ẩn lặp chu kỳ 3 giây', () => {
     const rule = /\.gs-bubble\s*\{([^}]*)\}/.exec(appCss)?.[1] ?? '';
-    expect(rule).toMatch(/font-size:\s*15px/);
+    expect(rule).toMatch(/font-size:\s*20px/);
     expect(rule).toMatch(/background:\s*#FFF6E5/i);
     expect(rule).toMatch(/animation:\s*gs-bubble-blink 3s[^;]*infinite/);
     expect(rule).not.toMatch(/border:\s*\d/);

@@ -71,7 +71,7 @@ export function bubblePlacement(room: Room): BubblePlacement {
   const t = treeItem(room);
   const k = FRAME.scaleInRoom * t.scale;
   const y = clamp(t.y - (2 / 3) * FRAME.baseY * k, 60, RH - 60);
-  const reach = 0.35 * FRAME.w * k + 24; // ra ngoài mép tán ở độ cao đó, cách thêm một khoảng
+  const reach = 0.22 * FRAME.w * k + 8; // sát mép tán ở độ cao đó
   if (t.x < RW / 2) {
     const x = Math.min(RW - EDGE - 100, t.x + reach);
     return { side: 'right', x, y, maxWidth: RW - EDGE - x };
