@@ -5,28 +5,40 @@
 ## Hiện tại
 
 - **Ngày cập nhật:** 21/11/2026
-- **Mốc đang ở:** M2 xong trên nhánh `m2-frontend` (tách từ `m1-backend`; cả hai chưa gộp vào `main`). M1 backend: 6 nhóm route, 118 test server + 40 test shared (M2 thêm 2 test `googleClientId`, nay 120 test server); đã chạy thử với PostgreSQL 16 thật trong Docker ngày 17/11 (mục 1–9 bên dưới đều đạt); mục 10 làm khi lên Azure.
-- **M2 xong** trên nhánh `m2-frontend` (chưa gộp vào `main`): giao diện phòng tự do, 167 test web + 122 test server + 40 test shared (sau khi sửa việc nhỏ 19/11), typecheck sạch. Bản build JS + CSS ≈ 150 KB gzip (giới hạn 250 KB). Đã chạy thật qua proxy Vite với PostgreSQL trong Docker (18/11): `/` trả HTML, `/api/config` qua proxy, tạo cây 201 với `publicUrl` bắt đầu `http://localhost:5173/c/`, `GET /api/trees/{id}` 200.
-- **M1, M2 đã gộp vào `main`** (PR #1, #2). M3 làm trên nhánh `m3`, chia 3 phần (đặc tả 6.6), xong mỗi phần dừng cho chủ dự án thử tay.
-- **M3 phần 1 xong** (khách treo lời nhắn, nhánh `m3`): 241 test web + 122 test server + 40 test shared, typecheck sạch, build JS + CSS ≈ 151 KB gzip. Đã chạy thật qua Vite + PostgreSQL (21/11): khách treo → 201, `GET /api/trees/{id}` chỉ có `occupied` + phụ kiện, không có nội dung. Kế hoạch: `docs/superpowers/plans/2026-11-21-m3-p1-khach-treo-loi-nhan.md`.
-- **Việc tiếp theo:** **chủ dự án thử tay M3 phần 1** (danh sách bên dưới), sau đó thiết kế phần 2 (chủ cây đọc & quản lý — cần mẫu duyệt thanh đếm ngược, thẻ lời nhắn).
+- **Mốc đang ở:** **M3 xong** trên nhánh `m3` (chưa push, chưa gộp). M1, M2 đã gộp vào `main` (PR #1, #2). M3 gồm 3 phần (đặc tả 6.6): (1) khách treo lời nhắn, (2) chủ cây đọc & quản lý, (3) chia sẻ + OG. Chủ dự án chọn làm liền cả 3 phần rồi thử tay một lần (21/11).
+- **Số liệu:** 286 test web + 131 test server + 40 test shared, typecheck sạch, build JS + CSS ≈ 155 KB gzip (giới hạn 250 KB). Đã chạy thật (21/11): qua Vite + PostgreSQL khách treo → 201, `GET /api/trees/{id}` không có nội dung; server từ bản build (`WEB_DIST=apps/web/dist`, cổng 3001) trả `/c/{id}` có đủ thẻ OG, `/og/{id}.png` PNG 1200×630, `/tao` trả trang, file tĩnh và API chạy. Kế hoạch: `docs/superpowers/plans/2026-11-21-m3-p1-khach-treo-loi-nhan.md`, `docs/superpowers/plans/2026-11-21-m3-p2-p3-chu-cay-chia-se-og.md`.
+- **Việc tiếp theo:** **chủ dự án thử tay M3** (danh sách bên dưới) → sửa lỗi nếu có → push `m3`, mở PR gộp vào `main` → M3b (trang quản trị).
 
-**Việc nhỏ còn lại từ lượt soát M3 phần 1** (không ảnh hưởng đúng/sai hay riêng tư): "Còn N phút" nằm ở dòng gợi ý thay vì tiêu đề bảng sửa và không tự đếm; lời nhắc "Chạm vào cây thông để treo lời nhắn" vẫn hiện từ 26/12; lỗi tải bảng sửa báo "Chưa gửi được"; đang zoom mà xoay màn hình thì camera lệch; chữ gõ thêm trong lúc đang gửi có thể không được giữ khi `slot_taken`.
+### M3 — danh sách thử tay (chủ dự án)
 
-### M3 phần 1 — danh sách thử tay (chủ dự án)
+Chuẩn bị: thư mục gốc `D:\cay-thong-loi-nhan`, Docker Desktop đang chạy, `pnpm db:up`, `pnpm dev`, mở http://localhost:5173 và tạo một cây. Mở link gửi bạn bè `/c/{mã cây}` trong **cửa sổ ẩn danh** để vào như khách.
 
-Chuẩn bị: thư mục gốc `D:\cay-thong-loi-nhan`, Docker Desktop đang chạy, `pnpm db:up`, `pnpm dev`, mở http://localhost:5173 và tạo một cây (hoặc dùng cây có sẵn). Mở link gửi bạn bè `/c/{mã cây}` trong **cửa sổ ẩn danh** để vào như khách.
-
+**Khách (phần 1)**
 1. Thấy lời nhắc "Chạm vào cây thông để treo lời nhắn". Chạm cây → phòng zoom mượt vào cây (~0,9 giây), hiện bong bóng "+" và nút "‹ Về căn phòng".
-2. Ở tab chủ cây: kéo cây lệch sang một bên, thu nhỏ, lật ngang → tải lại tab khách, zoom lại: bong bóng vẫn nằm trên tán.
+2. Ở tab chủ cây: "Sửa phòng", kéo cây lệch sang một bên, thu nhỏ, lật ngang → "Xong" → tải lại tab khách, zoom lại: bong bóng vẫn nằm trên tán.
 3. Chạm bong bóng → bảng viết: 20 phụ kiện (mặc định Quả châu), Để tên / Ẩn danh, bộ đếm 0/300. "Treo lên cây" → phụ kiện rơi vào chỗ, báo "Đã treo! Còn 15 phút để sửa".
-4. Chạm lại phụ kiện vừa treo → bảng sửa có "Còn N phút"; sửa chữ → "Lưu thay đổi"; mở lại thấy chữ mới; "Xoá lời nhắn" → hỏi lại → điểm thành bong bóng.
-5. Treo đủ 3 lời nhắn; lời thứ 4 báo "Mỗi người chỉ treo được 3 lời nhắn trên một cây." trong bảng, chữ còn nguyên.
-6. Hai cửa sổ ẩn danh **khác trình duyệt** (vd. Chrome ẩn danh + Edge InPrivate, để khác thiết bị) cùng mở một bong bóng, viết chữ; bên gửi sau thấy "Chỗ này vừa có người treo, chọn chỗ khác nhé", chạm bong bóng khác thì chữ cũ vẫn còn.
-7. Chạm hộp quà, chồng quà, thú cưng nhiều lần → mỗi lần một hiệu ứng khác; chạm lò sưởi → bùng lửa. Ở tab chủ cây (chế độ Xem) chạm cũng có hiệu ứng.
-8. Tắt mạng (DevTools → Network → Offline) rồi treo → "Chưa gửi được, thử lại nhé", chữ còn nguyên; bật mạng, bấm lại → treo được.
-9. Đặt `FAKE_NOW=2026-12-26T00:00:00+07:00` trong `.env`, khởi động lại `pnpm dev` → zoom cây vẫn thấy phụ kiện nhưng không còn bong bóng. Xoá `FAKE_NOW` sau khi thử.
-10. DevTools chế độ thiết bị 360×640 và 390×844 (và điện thoại thật nếu được): lời nhắc không che phòng nhiều, bảng viết cuộn được, bong bóng đủ lớn để chạm.
+4. Viết dở rồi bấm ✕ (hoặc Escape) → hỏi "Huỷ lời nhắn đang viết?": "Viết tiếp" giữ chữ, "Huỷ lời nhắn" đóng bảng. Bảng chưa viết gì thì đóng luôn.
+5. Chạm lại phụ kiện vừa treo → tiêu đề "Sửa lời nhắn của bạn (còn N phút)"; sửa chữ → "Lưu thay đổi"; mở lại thấy chữ mới; "Xoá lời nhắn" → hộp hỏi lại → điểm thành bong bóng.
+6. Treo đủ 3 lời nhắn; lời thứ 4 báo "Mỗi người chỉ treo được 3 lời nhắn trên một cây." trong bảng, chữ còn nguyên.
+7. Hai cửa sổ ẩn danh **khác trình duyệt** (vd. Chrome ẩn danh + Edge InPrivate) cùng mở một bong bóng, viết chữ; bên gửi sau thấy "Chỗ này vừa có người treo, chọn chỗ khác nhé", chạm bong bóng khác thì chữ cũ vẫn còn.
+8. Chạm hộp quà, chồng quà, thú cưng nhiều lần → mỗi lần một hiệu ứng khác; chạm lò sưởi → bùng lửa (cả khách lẫn chủ cây ở chế độ Xem).
+9. Tắt mạng (DevTools → Network → Offline) rồi treo → "Chưa gửi được, thử lại nhé", chữ còn nguyên; bật mạng, bấm lại → treo được.
+
+**Chủ cây (phần 2)** — ở tab chủ cây, chế độ Xem
+10. Khối dưới có "Còn … ngày … giờ nữa là mở quà · N lời nhắn · K mới", nút "🔗 Chia sẻ" và "⋯ Tuỳ chọn". Tải lại trang: số "mới" về 0 (đã xem).
+11. Chạm cây → phụ kiện nhạt có nơ ("Quà còn gói"); chạm → "Quà còn gói — mở được từ 0h 24/12".
+12. "⋯ Tuỳ chọn" → tắt "Hiện số lời nhắn" → số biến mất (tải lại vẫn tắt); bật lại.
+13. Đặt `FAKE_NOW=2026-12-24T08:00:00+07:00` trong `.env`, khởi động lại `pnpm dev`: dòng trạng thái "Quà đã mở!"; chạm cây → phụ kiện chưa đọc lấp lánh; chạm → thẻ "Lời nhắn từ …" (hoặc "Lời nhắn ẩn danh") có nội dung, giờ treo; "Sau ›" / "‹ Trước" chuyển thẻ; phụ kiện đã đọc hết lấp lánh.
+14. Trong thẻ: "Báo cáo" (lý do tuỳ ý) → "Đã gửi báo cáo, cảm ơn bạn"; "Chặn người gửi" → hỏi lại → điểm trống, và cửa sổ khách đó gửi lại bị từ chối; "Xoá" → hỏi lại → điểm trống.
+15. Đặt `FAKE_NOW=2026-12-26T00:00:00+07:00`: khách zoom cây vẫn thấy phụ kiện, không còn bong bóng, lời nhắc đổi thành "…xem các lời nhắn đã treo"; chủ cây vẫn đọc được, không còn "Sửa phòng". **Xoá `FAKE_NOW` sau khi thử.**
+16. "⋯ Tuỳ chọn" → "Xoá cây này" → hỏi lại → về trang chủ; mở lại link cây → "Không tìm thấy cây này." (thử trên một cây phụ).
+
+**Chia sẻ + OG (phần 3)**
+17. "🔗 Chia sẻ" → bảng "Gửi cây cho bạn bè": "Sao chép" → dán ra chỗ khác đúng link; trên điện thoại có "Chia sẻ…" (bảng chia sẻ của máy), "Messenger" mở app Messenger; "Zalo" sao chép link và nhắc dán vào Zalo.
+18. Thẻ OG (cần bản build): dừng `pnpm dev`; chạy `pnpm build`, rồi trong `.env` đặt `WEB_DIST=apps/web/dist` và `BASE_URL=http://localhost:3000`, chạy `pnpm --filter @ctln/server start`; mở http://localhost:3000/c/{mã cây} → trang chạy như bình thường; mở http://localhost:3000/og/{mã cây}.png → ảnh căn phòng 1200×630; xem mã nguồn trang (Ctrl+U) thấy các thẻ `og:`. Xong thì xoá `WEB_DIST`, đặt lại `BASE_URL=http://localhost:5173`. (Thử với Zalo/Messenger thật làm khi lên Azure ở M4.)
+
+**Màn hình**
+19. DevTools chế độ thiết bị 360×640 và 390×844 (và điện thoại thật nếu được): lời nhắc và khối nút không che phòng nhiều, bảng viết / thẻ lời nhắn cuộn được, bong bóng đủ lớn để chạm.
 
 ### M2 — danh sách thử tay trên trình duyệt (chủ dự án)
 
@@ -94,7 +106,7 @@ Chưa làm ở M1: giao diện web (M2–M3), trang quản trị (M3b), OG ảnh
 | M0 | 16–18/11 | Đặc tả v3, CSDL, đồ hoạ, khung repo | **Xong** |
 | M1 | 18–25/11 | Backend: migration, giai đoạn, xác thực, API phòng + lời nhắn, test | **Xong** (17/11) |
 | M2 | 25/11–02/12 | Frontend phòng tự do: kéo thả, xếp lớp, mũi tên ‹ ›, dải chọn, tự lưu | **Xong** (18/11, nhánh `m2-frontend`) |
-| M3 | 02–07/12 | Bạn bè treo lời nhắn; chủ cây đọc, khoá, đếm ngược; chia sẻ, OG | Phần 1 (khách) xong 21/11, chờ thử tay |
+| M3 | 02–07/12 | Bạn bè treo lời nhắn; chủ cây đọc, khoá, đếm ngược; chia sẻ, OG | **Xong** (21/11, nhánh `m3`), chờ thử tay |
 | M3b | 05–08/12 | Trang quản trị P0 | |
 | M4 | 07–10/12 | Hoàn thiện, triển khai Azure (kèm Blob cho ảnh, câu trung thực về riêng tư trong chính sách) | |
 | M5 | 10–12/12 | Chạy thử kín | |
@@ -118,6 +130,7 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 - Dịch vụ chạy đến hết 31/12; từ 26/12 hiện thông báo tải ảnh; xoá dữ liệu 07/01/2027.
 - Chủ cây vào phòng: mặc định chế độ **"Xem"** (phòng như khách thấy + đếm ngược + số lời nhắn + nút chia sẻ), nút **"Sửa phòng"** mở khung chỉnh sửa.
 - **M2 (chốt 18/11, chi tiết đặc tả 6.5):** trang chủ luôn hiện khung giới thiệu + "Bắt đầu tạo cây" + nút "Bạn đã có cây?" (mở lại bằng mã cây/link + PIN hoặc Google); không giới hạn số cây trên một máy; phòng luôn hiện trọn theo chiều rộng (sửa phương án C: camera chỉ dời khi dải chọn che món); lệch phiên bản khi đang sửa → hỏi chủ cây giữ bản nào (không còn hỏi khi mở lại vì không còn nháp); mất mạng: không cố lưu, không nháp cho phòng đã tạo (chốt 19/11) — không tự thử lại, thao tác tiếp theo lưu lại cả phòng, "Xong" chưa lưu được vẫn rời chế độ Sửa và hiện bản server; chỉ `/tao` giữ nháp `draft:new`; dựng theo phương án A (module phòng thuần có test).
+- **M3 (chốt 21/11, đặc tả 6.6):** chia 3 phần; OG do server ghép bằng `sharp` (ảnh tĩnh, không chữ); server phục vụ bản build + thẻ OG ngay từ M3 (`WEB_DIST`); gỡ TanStack Query; Zalo chưa có nút chia sẻ chính thức (cần Zalo OA) nên sao chép link; huỷ bảng viết có chữ thì hỏi lại.
 - **Hiện số lời nhắn** cho chủ cây (O10): trong app, kèm số mới kể từ lần vào trước; bật/tắt được, mặc định hiện. Không làm thông báo đẩy.
 
 **Đồ hoạ**
@@ -170,6 +183,8 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 - Đặc tả: `docs/dac-ta-v3.md` · Schema: `docs/schema.postgres.sql` · Bản v2 cũ: `docs/archive/dac-ta-v2.md`.
 
 ## Nhật ký
+
+- **21/11/2026** — Sửa hết việc nhỏ từ lượt soát phần 1 + hỏi lại khi huỷ bảng viết (chủ dự án yêu cầu). Xong **M3 phần 2** (chủ cây: đếm ngược theo giờ server, số lời nhắn + số mới, zoom xem quà còn gói / chưa đọc / đã đọc, thẻ lời nhắn có trước/sau, xoá / chặn / báo cáo, tuỳ chọn bật-tắt số lời nhắn, xoá cây; vào trang chỉ gọi `/owner` một lần kể cả StrictMode) và **phần 3** (bảng chia sẻ: sao chép, Web Share, Messenger, Zalo; server ghép ảnh OG 1200×630 bằng `sharp`, lưu đệm; có `WEB_DIST` thì phục vụ bản build, `/c/:id` chèn thẻ OG đã thoát HTML). Thiết kế ở đặc tả 6.6.2, 6.6.3 (người làm tự chốt theo yêu cầu chủ dự án). 286 test web, 131 test server.
 
 - **21/11/2026** — Thiết kế M3 (đặc tả 6.6): 3 phần nối tiếp, OG do server ghép bằng `sharp`, HTML `/c/:id` có thẻ OG làm ngay ở M3, gỡ TanStack Query. Xong **phần 1 — khách treo lời nhắn** (nhánh `m3`): zoom vào cây, bong bóng "+", bảng viết 20 phụ kiện, treo / sửa / gỡ trong 15 phút (hạn tính theo giờ server), xử lý từng mã lỗi (giữ chữ khi `slot_taken`), giai đoạn không cho ghi thì ẩn bong bóng, cây đầy, hiệu ứng chạm quà / thú cưng / lò sưởi (khách và chủ cây ở chế độ Xem). Không sửa server. 241 test web; build ≈ 151 KB gzip. Lượt soát cuối: sửa 2 lỗi (dọn khoá msg: trước khi có giờ server; đóng bảng khi đang gửi), 6 việc nhỏ để sau (xem dưới).
 
