@@ -14,8 +14,8 @@
 Chuẩn bị: thư mục gốc `D:\cay-thong-loi-nhan`, Docker Desktop đang chạy, `pnpm db:up`, `pnpm dev`, mở http://localhost:5173 và tạo một cây. Mở link gửi bạn bè `/c/{mã cây}` trong **cửa sổ ẩn danh** để vào như khách.
 
 **Khách (phần 1)**
-1. Thấy lời nhắc "Chạm vào cây thông để treo lời nhắn". Chạm cây → phòng zoom mượt vào cây (~0,9 giây), hiện bong bóng "+" và nút "‹ Về căn phòng".
-2. Ở tab chủ cây: "Sửa phòng", kéo cây lệch sang một bên, thu nhỏ, lật ngang → "Xong" → tải lại tab khách, zoom lại: bong bóng vẫn nằm trên tán.
+1. Cây "nói" bằng bong bóng thoại "Chạm vào cây thông để treo lời nhắn" (cao 2/3 cây, nằm phía không có cây). Chạm cây → phòng zoom mượt (~0,9 giây) cho **thấy trọn cây từ gốc tới ngọn**, khung phòng giữ nguyên cỡ (phần ngoài khung bị che), hiện bong bóng "+" và nút "‹ Về căn phòng".
+2. Ở tab chủ cây: "Sửa phòng", kéo cây lệch sang một bên, thu nhỏ (50%) rồi phóng to (160%), lật ngang → "Xong" → tải lại tab khách: bong bóng thoại đổi phía theo cây; zoom lại vẫn thấy trọn cây, bong bóng "+" nằm trên tán.
 3. Chạm bong bóng → bảng viết: 20 phụ kiện (mặc định Quả châu), Để tên / Ẩn danh, bộ đếm 0/300. "Treo lên cây" → phụ kiện rơi vào chỗ, báo "Đã treo! Còn 15 phút để sửa".
 4. Viết dở rồi bấm ✕ (hoặc Escape) → hỏi "Huỷ lời nhắn đang viết?": "Viết tiếp" giữ chữ, "Huỷ lời nhắn" đóng bảng. Bảng chưa viết gì thì đóng luôn.
 5. Chạm lại phụ kiện vừa treo → tiêu đề "Sửa lời nhắn của bạn (còn N phút)"; sửa chữ → "Lưu thay đổi"; mở lại thấy chữ mới; "Xoá lời nhắn" → hộp hỏi lại → điểm thành bong bóng.
@@ -26,7 +26,7 @@ Chuẩn bị: thư mục gốc `D:\cay-thong-loi-nhan`, Docker Desktop đang ch�
 
 **Chủ cây (phần 2)** — ở tab chủ cây, chế độ Xem
 10. Vào phòng: phòng hiện thẳng (không phóng to từ góc). Góc trên bên phải có "Còn … ngày … giờ"; khối dưới có "N lời nhắn · K mới", nút "🔗 Chia sẻ" và "⋯ Tuỳ chọn" — mở hai bảng này phòng không nảy. Tải lại trang: số "mới" về 0 (đã xem).
-11. Chạm cây → phụ kiện nhạt có nơ ("Quà còn gói"); chạm → "Quà còn gói — mở được từ 0h 24/12".
+11. Cây nói "Chạm vào cây để xem lời nhắn". Chạm cây → phụ kiện nhạt có nơ ("Quà còn gói"); chạm → "Quà còn gói — mở được từ 0h 24/12".
 12. "⋯ Tuỳ chọn" → tắt "Hiện số lời nhắn" → số biến mất (tải lại vẫn tắt); bật lại.
 13. Đặt `FAKE_NOW=2026-12-24T08:00:00+07:00` trong `.env`, khởi động lại `pnpm dev`: góc trên bên phải "Đã mở quà"; chạm cây → phụ kiện chưa đọc lấp lánh; chạm → thẻ "Lời nhắn từ …" (hoặc "Lời nhắn ẩn danh") có nội dung, giờ treo; "Sau ›" / "‹ Trước" chuyển thẻ; phụ kiện đã đọc hết lấp lánh.
 14. Trong thẻ: "Báo cáo" (lý do tuỳ ý) → "Đã gửi báo cáo, cảm ơn bạn"; "Chặn người gửi" → hỏi lại → điểm trống, và cửa sổ khách đó gửi lại bị từ chối; "Xoá" → hỏi lại → điểm trống.

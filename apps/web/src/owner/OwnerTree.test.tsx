@@ -82,7 +82,7 @@ describe('OwnerTree', () => {
     const pill = await screen.findByText('Còn 3 ngày 0 giờ');
     expect(pill).toHaveClass('ow-countdown');
     expect(screen.getByText('3 lời nhắn · 2 mới')).toBeInTheDocument();
-    expect(screen.getByText('Chạm vào cây để xem các món quà đang chờ')).toBeInTheDocument();
+    expect(screen.getByText('Chạm vào cây để xem lời nhắn')).toHaveClass('gs-bubble');
   });
 
   it('tắt hiện số lời nhắn thì không có số', async () => {
@@ -210,7 +210,7 @@ describe('OwnerTree', () => {
   it('trang mở qua 0h 24/12: tự chuyển sang mở quà và tải lại trạng thái quà', async () => {
     mocked.getConfig.mockResolvedValue({ now: new Date(NOW).toISOString(), unlockAt: new Date(NOW + 60_000).toISOString() } as never);
     show();
-    expect(await screen.findByText('Chạm vào cây để xem các món quà đang chờ')).toBeInTheDocument();
+    expect(await screen.findByText('Chạm vào cây để xem lời nhắn')).toBeInTheDocument();
     mocked.getOwnerTree.mockClear();
     mocked.getOwnerTree.mockResolvedValue(meta({ phase: 'OPEN', slots: slots(false) }));
     await act(() => vi.advanceTimersByTimeAsync(90_000));

@@ -79,6 +79,17 @@ const withMine = (minutes: number) => {
 const openMine = async () => userEvent.click(await screen.findByRole('button', { name: 'Lời nhắn của bạn: Chuông' }));
 
 describe('GuestTree', () => {
+  it('lời nhắc là bong bóng thoại của cây, nằm phía không có cây; zoom vào thì ẩn', async () => {
+    const { container } = show();
+    const bubble = screen.getByText('Chạm vào cây thông để treo lời nhắn');
+    expect(bubble).toHaveClass('gs-bubble');
+    // Cây mặc định ở nửa phải phòng (x 492) → bong bóng bên trái cây.
+    expect(bubble).toHaveClass('gs-bubble--left');
+    expect(container.querySelector('[data-room-world]')!.contains(bubble)).toBe(true);
+    await zoom(container);
+    expect(screen.queryByText('Chạm vào cây thông để treo lời nhắn')).not.toBeInTheDocument();
+  });
+
   it('lời nhắc chạm cây; chạm cây → 12 điểm, nút Về căn phòng, gọi lại getTree', async () => {
     const { container } = show();
     expect(screen.getByText('Chạm vào cây thông để treo lời nhắn')).toBeInTheDocument();

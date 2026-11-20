@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { layoutSlots, type Room } from '@ctln/shared';
 import { fitRoom } from '../room/fit';
 import { defaultRoom } from '../room/model';
-import { slotRects, zoomCamera } from './geometry';
+import { bubblePlacement, slotRects, zoomCamera } from './geometry';
 
 const withTree = (over: Partial<{ x: number; y: number; scale: number; flip: boolean }>): Room => {
   const r = defaultRoom();
@@ -98,5 +98,29 @@ describe('zoomCamera — trọn cây trong khung cố định', () => {
     const b = treeBox(360, 800, 0.6);
     expect(((b.left + b.right) / 2) * c.scale + c.x).toBeCloseTo(fit.width / 2, 0);
     expect(((b.top + b.bottom) / 2) * c.scale + c.y).toBeCloseTo(fit.height / 2, 0);
+  });
+});
+
+describe('bubblePlacement — bong bóng thoại của cây', () => {
+  it('cây nửa trái → bong bóng bên phải cây; cây nửa phải → bên trái', () => {
+    const l = bubblePlacement(withTree({ x: 200, y: 950, scale: 1 }));
+    expect(l.side).toBe('right');
+    expect(l.x).toBeGreaterThan(200);
+    const r = bubblePlacement(withTree({ x: 520, y: 950, scale: 1 }));
+    expect(r.side).toBe('left');
+    expect(r.x).toBeLessThan(520);
+  });
+
+  it('cao 2/3 cây tính từ gốc', () => {
+    const p = bubblePlacement(withTree({ x: 200, y: 1000, scale: 0.8 }));
+    const k = 1.2 * 0.8;
+    expect(p.y).toBeCloseTo(1000 - (2 / 3) * 538 * k);
+  });
+
+  it('bề rộng tối đa không vượt mép phòng', () => {
+    const l = bubblePlacement(withTree({ x: 300, y: 950, scale: 1.2 }));
+    expect(l.x + l.maxWidth).toBeLessThanOrEqual(720);
+    const r = bubblePlacement(withTree({ x: 420, y: 950, scale: 1.2 }));
+    expect(r.x - r.maxWidth).toBeGreaterThanOrEqual(0);
   });
 });

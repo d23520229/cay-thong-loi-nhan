@@ -9,6 +9,7 @@ import { useItemFx } from '../room/useItemFx';
 import { Compose, newDraft, type ComposeDraft } from './Compose';
 import { slotRects } from './geometry';
 import { SlotsLayer } from './SlotsLayer';
+import { TreeBubble } from './TreeBubble';
 import { canWrite, isFull, pruneMine, slotViews } from './slots';
 import { useTreeZoom } from './useTreeZoom';
 
@@ -250,7 +251,9 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
           overlay={
             zoomed ? (
               <SlotsLayer rects={slotRects(room)} views={views} fx={slotFx} onTap={(i) => void onSlotTap(i)} hideEmpty={!writable} />
-            ) : null
+            ) : (
+              <TreeBubble room={room} text={writable ? 'Chạm vào cây thông để treo lời nhắn' : 'Chạm vào cây thông để xem các lời nhắn đã treo'} />
+            )
           }
         />
       </div>
@@ -268,7 +271,6 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
         </div>
       ) : (
         <div className="room-bottom">
-          <p className="gs-hint">{writable ? 'Chạm vào cây thông để treo lời nhắn' : 'Chạm vào cây thông để xem các lời nhắn đã treo'}</p>
           <Link to={`/?ref=${treeId}`} className="btn btn-primary">Tạo cây của bạn</Link>
           <button type="button" className="linkbtn" onClick={onOwnerLogin}>Tôi là chủ cây</button>
         </div>

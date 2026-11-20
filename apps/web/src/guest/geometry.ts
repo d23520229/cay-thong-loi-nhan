@@ -52,3 +52,30 @@ export function zoomCamera(room: Room, fit: Fit): Camera {
   const y = clamp(fit.height / 2 - ((top + bottom) / 2) * scale, fit.height - RH * scale, 0);
   return { x, y, scale };
 }
+
+export type BubblePlacement = {
+  /** Bong bóng nằm phía nào của cây (ngược với nửa phòng chứa cây, để không tràn ra ngoài). */
+  side: 'left' | 'right';
+  /** Điểm đuôi bong bóng chỉ vào (cạnh tán cây), toạ độ phòng. */
+  x: number;
+  /** Tâm dọc của bong bóng: cao 2/3 cây tính từ gốc. */
+  y: number;
+  /** Bề rộng tối đa để bong bóng không vượt mép phòng. */
+  maxWidth: number;
+};
+
+const EDGE = 12;
+
+/** Vị trí bong bóng thoại "cây nói" (đặc tả 6.6.1, sửa 21/11). */
+export function bubblePlacement(room: Room): BubblePlacement {
+  const t = treeItem(room);
+  const k = FRAME.scaleInRoom * t.scale;
+  const y = clamp(t.y - (2 / 3) * FRAME.baseY * k, 60, RH - 60);
+  const reach = 0.27 * FRAME.w * k; // ra gần mép tán ở độ cao đó
+  if (t.x < RW / 2) {
+    const x = Math.min(RW - EDGE - 120, t.x + reach);
+    return { side: 'right', x, y, maxWidth: RW - EDGE - x };
+  }
+  const x = Math.max(EDGE + 120, t.x - reach);
+  return { side: 'left', x, y, maxWidth: x - EDGE };
+}

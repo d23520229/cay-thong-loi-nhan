@@ -9,6 +9,7 @@ import { useItemFx } from '../room/useItemFx';
 import { slotRects } from '../guest/geometry';
 import { slotViews } from '../guest/slots';
 import { SlotsLayer, type OwnerState } from '../guest/SlotsLayer';
+import { TreeBubble } from '../guest/TreeBubble';
 import { useTreeZoom } from '../guest/useTreeZoom';
 import { countdownText } from './countdown';
 import { MessageCard } from './MessageCard';
@@ -251,15 +252,14 @@ export function OwnerTree({ treeId, meta, room, toast, onUnauthorized, onChange 
           overlay={
             zoomed ? (
               <SlotsLayer rects={slotRects(room)} views={views} fx={ring} onTap={(i) => void openAt(i)} hideEmpty states={states} />
-            ) : null
+            ) : (
+              <TreeBubble room={room} text={canRead ? 'Chạm vào cây để mở quà' : 'Chạm vào cây để xem lời nhắn'} />
+            )
           }
         />
       </div>
       {countdown ? <div className="ow-countdown">{countdown}</div> : null}
       <div className="room-bottom">
-        {zoomed ? null : (
-          <p className="gs-hint">{canRead ? 'Chạm vào cây để mở quà' : 'Chạm vào cây để xem các món quà đang chờ'}</p>
-        )}
         {status ? <p className="ow-status">{status}</p> : null}
         <div className="row" style={{ justifyContent: 'center' }}>
           {zoomed ? (
