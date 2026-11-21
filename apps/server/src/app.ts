@@ -9,12 +9,21 @@ import { phaseOf } from './guards.js';
 import { authRoutes } from './routes/auth.js';
 import { configRoutes } from './routes/config.js';
 import { messagesRoutes } from './routes/messages.js';
+import { indexHtml, ogRoutes } from './routes/og.js';
+import type { OgRoom } from './og/render.js';
 import { ownerRoutes } from './routes/owner.js';
 import { roomRoutes } from './routes/room.js';
 import { treesRoutes } from './routes/trees.js';
 
 export type GoogleVerifier = (idToken: string) => Promise<{ sub: string; name?: string }>;
-export type AppDeps = { db: DbHandle; env: Env; now: () => Date; google: GoogleVerifier | null };
+export type AppDeps = {
+  db: DbHandle;
+  env: Env;
+  now: () => Date;
+  google: GoogleVerifier | null;
+  /** Thay hàm vẽ ảnh OG (chỉ dùng trong test). */
+  renderOg?: (room: OgRoom, assetDir: string) => Promise<Buffer>;
+};
 
 declare module 'fastify' {
   interface FastifyInstance {
@@ -31,13 +40,20 @@ export function reqSerializer(req: { method?: string; url?: string }) {
 /** Cấu hình logger production: dùng reqSerializer để không ghi IP. */
 export const loggerOptions = { serializers: { req: reqSerializer } };
 
-const WRITE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+/** Đường dẫn trang của SPA: không phải /api, /og, không có đuôi file (file thiếu phải 404, không trả HTML). */
+const isPagePath = (path: string) =>
+  path !== '/api' && !path.startsWith('/api/') && !path.startsWith('/og/') && !/\.[a-z0-9]+$/i.test(path);
+
+const WRITE_METHODS =new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 export async function buildApp(deps: AppDeps, opts: { logStream?: { write(msg: string): void } } = {}): Promise<FastifyInstance> {
   const app = Fastify({ logger: opts.logStream ? { ...loggerOptions, stream: opts.logStream } : process.env.VITEST ? false : loggerOptions, bodyLimit: 65536, trustProxy: (_addr: string, hop: number) => hop < deps.env.trustProxyHops });
   app.decorate('deps', deps);
   await app.register(cookie);
-  await app.register(helmet);
+  // Chưa production: bỏ upgrade-insecure-requests để mở bản build qua http trong mạng LAN (thử trên điện thoại).
+  await app.register(helmet, {
+    contentSecurityPolicy: { directives: { upgradeInsecureRequests: deps.env.production ? [] : null } },
+  });
 
   app.addHook('onRequest', async (req, reply) => {
     const path = req.url.split('?')[0]!;
@@ -54,7 +70,14 @@ export async function buildApp(deps: AppDeps, opts: { logStream?: { write(msg: s
     }
   });
 
-  app.setNotFoundHandler((_req, reply) => reply.code(404).send(body('not_found', 'Không tìm thấy.')));
+  app.setNotFoundHandler((req, reply) => {
+    // Có bản build web: mọi đường dẫn trang (không phải /api, /og) trả index.html để React Router xử lý (đặc tả 6.6.3).
+    const path = req.url.split('?')[0]!;
+    if (deps.env.webDist && (req.method === 'GET' || req.method === 'HEAD') && isPagePath(path)) {
+      return reply.code(200).type('text/html; charset=utf-8').header('cache-control', 'no-cache').send(indexHtml(deps.env.webDist));
+    }
+    return reply.code(404).send(body('not_found', 'Không tìm thấy.'));
+  });
 
   app.setErrorHandler((err: Error & { code?: string; statusCode?: number; validation?: unknown }, req, reply) => {
     if (err instanceof HttpError) return reply.code(err.status).send(body(err.code, err.message, err.extra));
@@ -78,6 +101,7 @@ export async function buildApp(deps: AppDeps, opts: { logStream?: { write(msg: s
 
   app.get('/healthz', async () => ({ ok: true }));
   await app.register(configRoutes);
+  await app.register(ogRoutes);
   await app.register(treesRoutes);
   await app.register(roomRoutes);
   await app.register(authRoutes);

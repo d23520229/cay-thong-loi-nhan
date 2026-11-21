@@ -6,8 +6,9 @@ import { storage } from '../lib/storage';
 import { TREE_CODE } from '../lib/treeRef';
 import { createAutosave, type SaveState } from '../room/autosave';
 import { ConflictDialog } from '../room/ConflictDialog';
+import { GuestTree } from '../guest/GuestTree';
+import { OwnerTree } from '../owner/OwnerTree';
 import { EditorLayout } from '../room/EditorLayout';
-import { RoomStage } from '../room/RoomStage';
 import { createEditorStore } from '../room/store';
 import { Button } from '../ui/Button';
 import { useToast } from '../ui/Toast';
@@ -22,9 +23,6 @@ type View =
   | { kind: 'owner'; data: Loaded<OwnerRoom> }
   | { kind: 'guest'; data: Loaded<PublicRoom> };
 
-const TOP_RESERVE = 56;
-// Khối nút của khách: 8 + 44 ("Tạo cây của bạn") + 4 + 44 ("Tôi là chủ cây") + 16 — đo bằng Chrome.
-const GUEST_BOTTOM_RESERVE = 116;
 
 /** Phòng nhận từ server phải hợp lệ mới vẽ (không tin dữ liệu ngoài). */
 function toRoom(r: PublicRoom): Room | null {
@@ -54,10 +52,12 @@ function TreeRoom({ id }: { id: string }) {
   const [login, setLogin] = useState<null | 'guest' | 'unauthorized'>(null);
   const autosave = useRef<Autosave | null>(null);
   const link = useRef<Promise<void> | null>(null);
+  // Lượt vào trang: một request /owner dùng chung cho cả hai lần effect của StrictMode (/owner ghi lần ghé, gọi hai lần mất số "mới").
+  const firstOwner = useRef<Promise<OwnerRoom> | null>(null);
   const { toast, show } = useToast();
 
   const load = useCallback(
-    async (cancelled: () => boolean = () => false) => {
+    async (cancelled: () => boolean = () => false, firstVisit = false) => {
       const fail = (e: unknown) => {
         if (cancelled()) return;
         if (e instanceof ApiError && e.status === 404) {
@@ -67,7 +67,7 @@ function TreeRoom({ id }: { id: string }) {
       };
       let meta: OwnerRoom;
       try {
-        meta = await api.getOwnerTree(id);
+        meta = await (firstVisit ? (firstOwner.current ??= api.getOwnerTree(id)) : api.getOwnerTree(id));
       } catch (e) {
         if (!(e instanceof ApiError && e.status === 401)) return fail(e);
         try {
@@ -109,7 +109,7 @@ function TreeRoom({ id }: { id: string }) {
       }
     })();
     void link.current.then(() => {
-      if (!cancelled) return load(() => cancelled);
+      if (!cancelled) return load(() => cancelled, true);
     });
     return () => {
       cancelled = true;
@@ -169,13 +169,20 @@ function TreeRoom({ id }: { id: string }) {
 
   return (
     <div className="room-page">
-      <div className="room-stage">
-        <RoomStage
+      {view.kind === 'guest' ? (
+        <GuestTree treeId={id} meta={meta} room={room} toast={show} onOwnerLogin={() => setLogin('guest')} />
+      ) : (
+        <OwnerTree
+          treeId={id}
+          meta={view.data.meta}
           room={room}
-          reserveTop={TOP_RESERVE}
-          reserveBottom={view.kind === 'guest' ? GUEST_BOTTOM_RESERVE : 0}
+          toast={show}
+          onUnauthorized={() => setLogin('unauthorized')}
+          onChange={(patch) =>
+            setView((v) => (v.kind === 'owner' ? { kind: 'owner', data: { ...v.data, meta: { ...v.data.meta, ...patch } } } : v))
+          }
         />
-      </div>
+      )}
       <div className="room-top">
         <h1 className="room-title">{roomTitle(meta)}</h1>
         {canEdit ? (
@@ -184,15 +191,6 @@ function TreeRoom({ id }: { id: string }) {
           </Button>
         ) : null}
       </div>
-      {view.kind === 'guest' ? (
-        <div className="room-bottom">
-          <Link to={`/?ref=${id}`} className="btn btn-primary">Tạo cây của bạn</Link>
-          <button type="button" className="linkbtn" onClick={() => setLogin('guest')}>Tôi là chủ cây</button>
-        </div>
-      ) : (
-        // Chỗ cho M3: đếm ngược, số lời nhắn, chia sẻ.
-        <div className="room-bottom" />
-      )}
       {loginSheet}
       {toast}
     </div>

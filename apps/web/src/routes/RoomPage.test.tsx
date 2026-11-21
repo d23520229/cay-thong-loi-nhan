@@ -1,5 +1,5 @@
 import { StrictMode } from 'react';
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -12,7 +12,7 @@ vi.mock('../lib/api', async (orig) => {
   const actual = await orig<typeof import('../lib/api')>();
   return {
     ...actual,
-    api: { getOwnerTree: vi.fn(), getTree: vi.fn(), authLink: vi.fn(), authPin: vi.fn(), saveRoom: vi.fn() },
+    api: { getOwnerTree: vi.fn(), getTree: vi.fn(), authLink: vi.fn(), authPin: vi.fn(), saveRoom: vi.fn(), getConfig: vi.fn(), setShowCount: vi.fn() },
   };
 });
 
@@ -40,6 +40,7 @@ beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true, advanceTimeDelta: 2 });
   localStorage.clear();
   vi.resetAllMocks();
+  mocked.getConfig.mockRejectedValue(new Error('không cần trong test này'));
   window.history.replaceState(null, '', '/');
   vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
   vi.stubGlobal('matchMedia', (q: string) => ({
@@ -371,5 +372,53 @@ describe('RoomPage', () => {
     expect(await screen.findByText('Cây của Lan')).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /Sửa phòng/ })).not.toBeInTheDocument();
     expect(container.querySelector('img[data-bg]')!.getAttribute('src')).toContain('bg-night');
+  });
+});
+
+describe('RoomPage chủ cây (M3 phần 2)', () => {
+  it('đổi tuỳ chọn rồi Sửa phòng → Xong: chế độ Xem giữ trạng thái mới (không về bản lúc tải trang)', async () => {
+    mocked.getOwnerTree.mockResolvedValue(ownerRoom({ messageCount: 3, newSinceLastVisit: 0 }));
+    mocked.setShowCount.mockResolvedValue({ showMessageCount: false });
+    renderAt();
+    expect(await screen.findByText(/3 lời nhắn/)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Tuỳ chọn/ }));
+    await userEvent.click(screen.getByRole('checkbox', { name: 'Hiện số lời nhắn' }));
+    await waitFor(() => expect(screen.queryByText(/3 lời nhắn/)).not.toBeInTheDocument());
+    await userEvent.click(screen.getByRole('button', { name: 'Đóng' }));
+    await userEvent.click(screen.getByRole('button', { name: /Sửa phòng/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Xong' }));
+    await screen.findByRole('button', { name: /Sửa phòng/ });
+    expect(screen.queryByText(/3 lời nhắn/)).not.toBeInTheDocument();
+  });
+
+  it('StrictMode: vào trang chỉ gọi /owner một lần (giữ số "mới")', async () => {
+    mocked.getOwnerTree.mockResolvedValue(ownerRoom({ messageCount: 3, newSinceLastVisit: 2 }));
+    renderAt(`/c/${ID}`, true);
+    expect(await screen.findByText(/3 lời nhắn · 2 mới/)).toBeInTheDocument();
+    expect(mocked.getOwnerTree).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('RoomPage hiệu ứng chạm (G6)', () => {
+  it('khách chạm hộp quà hai lần thấy hai class khác nhau', async () => {
+    mocked.getOwnerTree.mockRejectedValue(unauthorized());
+    mocked.getTree.mockResolvedValue(publicRoom());
+    const { container } = renderAt();
+    await screen.findByText('Tạo cây của bạn');
+    const gift = () => container.querySelector<HTMLElement>('[data-type="gift"]')!;
+    fireEvent.click(gift());
+    expect(gift().classList.contains('g-hop')).toBe(true);
+    fireEvent.click(gift());
+    expect(gift().classList.contains('g-shake')).toBe(true);
+    await act(() => vi.advanceTimersByTimeAsync(1900));
+    expect(gift().classList.contains('g-shake')).toBe(false);
+  });
+
+  it('chủ cây ở chế độ Xem chạm thú cưng cũng có hiệu ứng', async () => {
+    mocked.getOwnerTree.mockResolvedValue(ownerRoom());
+    const { container } = renderAt();
+    await screen.findByRole('button', { name: /Sửa phòng/ });
+    fireEvent.click(container.querySelector<HTMLElement>('[data-type="pet"]')!);
+    expect(container.querySelector('[data-type="pet"]')!.classList.contains('pop')).toBe(true);
   });
 });

@@ -10,5 +10,5 @@ Mốc M1: các file đánh dấu **có rồi** đã làm xong; `og.ts` và `admi
 | `auth.ts` | `/api/trees/:id/auth/*`, `/api/auth/google` | 8.2 | có rồi |
 | `messages.ts` | `POST /api/trees/:id/messages`, `/api/messages/:mid*` | 8.4 | có rồi |
 | `owner.ts` | `/owner`, `/open`, `/block`, `/reports` | 8.5 | có rồi |
-| `og.ts` | `GET /c/:id`, `GET /og/:id.png` | 8.6 | sau (M3) |
+| `og.ts` | `GET /og/:id.png` (ảnh vẽ ở `../og/render.ts`); có `WEB_DIST` thì phục vụ bản build web, `GET /c/:id` chèn thẻ OG, đường dẫn trang khác trả `index.html` | 8.6, 6.6.3 | có rồi (M3) |
 | `admin.ts` | `/api/admin/*` | 8.7 | sau (M3b) |

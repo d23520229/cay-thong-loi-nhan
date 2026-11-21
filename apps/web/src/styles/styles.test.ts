@@ -14,4 +14,28 @@ describe('CSS', () => {
     const clash = [...classes(appCss)].filter((c) => anim.has(c) && !SHARED_ON_PURPOSE.includes(c));
     expect(clash).toEqual([]);
   });
+
+  it('bong bóng thoại của cây: đám mây kem, chữ nhỏ, hiện/ẩn lặp chu kỳ 6 giây', () => {
+    const rule = /\.gs-bubble\s*\{([^}]*)\}/.exec(appCss)?.[1] ?? '';
+    expect(rule).toMatch(/font-size:\s*20px/);
+    expect(rule).toMatch(/background:\s*#FFF6E5/i);
+    expect(rule).toMatch(/animation:\s*gs-bubble-blink 6s[^;]*infinite/);
+    expect(rule).not.toMatch(/border:\s*\d/);
+    expect(appCss).toMatch(/@keyframes gs-bubble-blink/);
+  });
+
+  it('phụ kiện của mình không có vòng viền vàng (chủ dự án bỏ 21/11)', () => {
+    expect(appCss).not.toMatch(/\.is-mine\s*\{/);
+  });
+
+  it('bong bóng phóng to từ mép tán và thu về mép tán; thời gian ẩn bằng thời gian hiện', () => {
+    const right = /\.gs-bubble--right\s*\{([^}]*)\}/.exec(appCss)?.[1] ?? '';
+    const left = /\.gs-bubble--left\s*\{([^}]*)\}/.exec(appCss)?.[1] ?? '';
+    expect(right).toMatch(/transform-origin:\s*-29px 50%/);
+    expect(left).toMatch(/transform-origin:\s*calc\(100% \+ 29px\) 50%/);
+    const kf = /@keyframes gs-bubble-blink\s*\{([\s\S]*?)\n\}/.exec(appCss)?.[1] ?? '';
+    // 0–12% phóng ra, 12–50% hiện đủ, 50–62% thu lại, 62–100% ẩn: hiện 38% = ẩn 38%.
+    expect(kf).toMatch(/0%,\s*62%,\s*100%\s*\{[^}]*opacity:\s*0[^}]*scale\(0\)/);
+    expect(kf).toMatch(/12%,\s*50%\s*\{[^}]*opacity:\s*1[^}]*scale\(1\)/);
+  });
 });

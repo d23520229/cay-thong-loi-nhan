@@ -20,6 +20,16 @@ function Harness({ onClose = () => {} }: { onClose?: () => void }) {
 }
 
 describe('Sheet', () => {
+  it('lấy tiêu điểm không cuộn phòng phía sau (preventScroll) — bảng mở không làm phòng nảy lên', async () => {
+    const focus = vi.spyOn(HTMLElement.prototype, 'focus');
+    render(<Harness />);
+    await userEvent.click(screen.getByRole('button', { name: 'Mở' }));
+    const dialog = screen.getByRole('dialog');
+    const call = focus.mock.calls.find((_, i) => focus.mock.contexts[i] === dialog);
+    expect(call?.[0]).toEqual({ preventScroll: true });
+    focus.mockRestore();
+  });
+
   it('là hộp thoại modal có tên', async () => {
     render(<Harness />);
     await userEvent.click(screen.getByRole('button', { name: 'Mở' }));
