@@ -1,5 +1,5 @@
 import { createHmac, randomBytes, randomInt, scrypt, timingSafeEqual } from 'node:crypto';
-import { sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { rateCounters } from './db/schema.js';
 import type { Db } from './db/client.js';
 import type { Env } from './env.js';
@@ -59,12 +59,14 @@ export function ipBlockHash(env: Env, ip: string): string {
   return createHmac('sha256', env.blockIpKey).update(ip).digest('hex');
 }
 
-/** true = còn được phép. Khung = đầu giờ UTC của `at`. */
-export async function rateLimit(db: Db, bucket: string, limit: number, at: Date): Promise<boolean> {
-  const windowStart = new Date(Math.floor(at.getTime() / 3600_000) * 3600_000);
+/** Đầu khung chứa `at` (bội của `windowMs`, tính theo UTC). */
+export const windowStart = (at: Date, windowMs: number) => new Date(Math.floor(at.getTime() / windowMs) * windowMs);
+
+/** true = còn được phép. Khung = bội của `windowMs` (mặc định 1 giờ, tính theo UTC) chứa `at`. */
+export async function rateLimit(db: Db, bucket: string, limit: number, at: Date, windowMs = 3_600_000): Promise<boolean> {
   const rows = await db
     .insert(rateCounters)
-    .values({ bucket, windowStart, hits: 1 })
+    .values({ bucket, windowStart: windowStart(at, windowMs), hits: 1 })
     .onConflictDoUpdate({
       target: [rateCounters.bucket, rateCounters.windowStart],
       set: { hits: sql`${rateCounters.hits} + 1` },
@@ -72,3 +74,14 @@ export async function rateLimit(db: Db, bucket: string, limit: number, at: Date)
     .returning({ hits: rateCounters.hits });
   return rows[0]!.hits <= limit;
 }
+
+/** Trả lại một lượt đã giữ bằng `rateLimit` (cùng `at`, `windowMs`); không xuống dưới 0. */
+export async function refundRate(db: Db, bucket: string, at: Date, windowMs = 3_600_000): Promise<void> {
+  await db
+    .update(rateCounters)
+    .set({ hits: sql`greatest(${rateCounters.hits} - 1, 0)` })
+    .where(and(eq(rateCounters.bucket, bucket), eq(rateCounters.windowStart, windowStart(at, windowMs))));
+}
+
+/** Đầu khung kế tiếp (lúc lượt bị chặn được thử lại). */
+export const windowEnd = (at: Date, windowMs: number) => new Date(windowStart(at, windowMs).getTime() + windowMs);

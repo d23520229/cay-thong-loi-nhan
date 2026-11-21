@@ -55,6 +55,25 @@ describe('global block', () => {
   });
 });
 
+describe('updated_at của lời nhắn', () => {
+  it('updated_at của lời nhắn chỉ đổi khi người viết sửa: chủ cây mở lời nhắn không đổi; sửa đặt = giờ giả', async () => {
+    const { id, cookies } = await setup();
+    const p = (await post(id, 1)).json();
+    const get = async () => (await t.h.db.select().from(messages))[0]!.updatedAt;
+    const before = await get();
+    t.clock.set('2026-12-24T01:00:00+07:00');
+    expect((await open(id, p.messageId, cookies)).statusCode).toBe(200);
+    expect(await get()).toEqual(before);
+    await t.h.db.update(messages).set({ readAt: null, editUntil: new Date('2026-12-25T00:00:00Z') }).where(eq(messages.id, Number(p.messageId)));
+    const r = await t.app.inject({
+      method: 'PUT', url: `/api/messages/${p.messageId}`, headers: { ...JSON_CT, 'x-edit-token': p.editToken },
+      payload: { ornament: ORN, anonymous: false, authorName: 'Minh', content: 'sửa' },
+    });
+    expect(r.statusCode).toBe(200);
+    expect((await get()).toISOString()).toBe('2026-12-23T18:00:00.000Z');
+  });
+});
+
 describe('open', () => {
   it('trước 0h 24/12: 423 locked kèm unlockAt; đúng 0h: 200 có content, unread:false, tác giả không sửa được', async () => {
     const { id, cookies } = await setup();

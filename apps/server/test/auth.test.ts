@@ -1,12 +1,15 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { eq } from 'drizzle-orm';
+import { eq, like } from 'drizzle-orm';
 import { catalog } from '@ctln/shared';
 import { makeTestApp } from './helpers.js';
-import { authAttempts, ownerSessions, trees } from '../src/db/schema.js';
+import { authAttempts, ownerSessions, rateCounters } from '../src/db/schema.js';
+import { loadEnv } from '../src/env.js';
+import { ipHash } from '../src/security.js';
 import { getOwnerSession } from '../src/guards.js';
 
 type T = Awaited<ReturnType<typeof makeTestApp>>;
 let t: T;
+const env = loadEnv({});
 afterEach(async () => { await t.app.close(); await t.h.close(); });
 
 const JSON_CT = { 'content-type': 'application/json' };
@@ -76,7 +79,7 @@ describe('auth pin', () => {
     expect(r.json().error.code).toBe('pin_not_set');
   });
 
-  it('sai 5 lần → lần 5 vẫn 401, lần 6 (đúng PIN) 429 pin_locked + retryAt; sau 15 phút 1 giây mở lại', async () => {
+  it('sai 5 lần → lần 6 (đúng PIN) 429 pin_locked, retryAt = cuối khung 15 phút; sang khung sau đăng nhập được', async () => {
     t = await makeTestApp();
     const { id } = await create({ type: 'pin', pin: '123456' });
     for (let i = 0; i < 5; i++) {
@@ -88,46 +91,71 @@ describe('auth pin', () => {
     expect(locked.statusCode).toBe(429);
     expect(locked.json().error.code).toBe('pin_locked');
     expect(locked.json().error.retryAt).toBe(new Date('2026-12-01T10:15:00+07:00').toISOString());
-    const [row] = await t.h.db.select().from(trees).where(eq(trees.id, id));
-    expect(row!.pinFailedCount).toBe(0);
-    t.clock.set('2026-12-01T10:15:01+07:00');
+    t.clock.set('2026-12-01T10:14:59+07:00');
+    expect((await pin(id, '123456')).statusCode).toBe(429);
+    t.clock.set('2026-12-01T10:15:00+07:00');
     expect((await pin(id, '123456')).statusCode).toBe(204);
   });
 
-  it('PIN đúng đặt lại bộ đếm', async () => {
+  it('IP khác không bị khoá: IP A sai 5 lần, IP B nhập đúng → 204', async () => {
     t = await makeTestApp();
     const { id } = await create({ type: 'pin', pin: '123456' });
-    for (let i = 0; i < 4; i++) await pin(id, '000000');
-    expect((await pin(id, '123456')).statusCode).toBe(204);
-    const [row] = await t.h.db.select().from(trees).where(eq(trees.id, id));
-    expect(row!.pinFailedCount).toBe(0);
-    for (let i = 0; i < 4; i++) expect((await pin(id, '000000')).statusCode).toBe(401);
+    for (let i = 0; i < 5; i++) expect((await pin(id, '000000')).statusCode).toBe(401);
+    expect((await pin(id, '123456')).statusCode).toBe(429);
+    const b = await t.app.inject({
+      method: 'POST', url: `/api/trees/${id}/auth/pin`, headers: JSON_CT, payload: { pin: '123456' }, remoteAddress: '10.0.0.2',
+    });
+    expect(b.statusCode).toBe(204);
+    // clientIp thấy đúng địa chỉ đã gửi: lần đúng PIN được ghi với băm của 10.0.0.2.
+    const ok = await t.h.db.select().from(authAttempts).where(eq(authAttempts.success, true));
+    expect(ok.map((r) => r.ipHash)).toEqual([ipHash(env, '10.0.0.2', new Date('2026-12-01T10:00:00+07:00'))]);
   });
 
-  it('10 lần sai song song trên một phòng → tối đa 5 lần 401, còn lại 429 pin_locked; PIN đúng sau đó cũng 429', async () => {
+  it('đúng PIN xoá các lần sai trước của IP đó: sai 4, đúng, rồi sai 4 nữa vẫn 401 (không khoá)', async () => {
+    t = await makeTestApp();
+    const { id } = await create({ type: 'pin', pin: '123456' });
+    for (let i = 0; i < 4; i++) expect((await pin(id, '000000')).statusCode).toBe(401);
+    expect((await pin(id, '123456')).statusCode).toBe(204);
+    for (let i = 0; i < 4; i++) {
+      const r = await pin(id, '000000');
+      expect(r.statusCode).toBe(401);
+      expect(r.json().error.code).toBe('bad_pin');
+    }
+    expect((await pin(id, '123456')).statusCode).toBe(204);
+  });
+
+  it('10 lần sai song song cùng IP → tối đa 5 lần 401, còn lại 429 pin_locked', async () => {
     t = await makeTestApp();
     const { id } = await create({ type: 'pin', pin: '123456' });
     const rs = await Promise.all(Array.from({ length: 10 }, () => pin(id, '000000')));
     const bad = rs.filter((r) => r.statusCode === 401 && r.json().error.code === 'bad_pin');
     const lockedRs = rs.filter((r) => r.statusCode === 429 && r.json().error.code === 'pin_locked');
-    expect(bad.length).toBeLessThanOrEqual(5);
+    expect(bad.length).toBe(5);
     expect(bad.length + lockedRs.length).toBe(10);
+    // Lượt bị từ chối đã được trả lại: bộ đếm phòng + IP dừng ở 5, bộ đếm ngày bằng số lần 401.
+    const rows = await t.h.db.select().from(rateCounters).where(like(rateCounters.bucket, `pin:tree:${id}%`));
+    expect(rows.find((r) => r.bucket.startsWith(`pin:tree:${id}:ip:`))!.hits).toBe(5);
+    expect(rows.find((r) => r.bucket === `pin:tree:${id}`)!.hits).toBe(bad.length);
     const after = await pin(id, '123456');
     expect(after.statusCode).toBe(429);
     expect(after.json().error.code).toBe('pin_locked');
   });
 
-  it('đếm kẹt ≥ 5 mà chưa có khoá → lần sai kế tiếp tự khoá thật, hết 15 phút thì mở lại', async () => {
+  it('trần 50 lần sai / phòng / ngày trên mọi IP → 429 pin_locked cho cả IP mới, retryAt = đầu ngày UTC kế tiếp', async () => {
     t = await makeTestApp();
     const { id } = await create({ type: 'pin', pin: '123456' });
-    await t.h.db.update(trees).set({ pinFailedCount: 7, pinLockedUntil: null }).where(eq(trees.id, id));
-    const r = await pin(id, '000000');
+    await t.h.db.insert(rateCounters).values({ bucket: 'pin:tree:' + id, windowStart: new Date('2026-12-01T00:00:00Z'), hits: 50 });
+    const r = await t.app.inject({
+      method: 'POST', url: `/api/trees/${id}/auth/pin`, headers: JSON_CT, payload: { pin: '123456' }, remoteAddress: '10.0.0.3',
+    });
     expect(r.statusCode).toBe(429);
     expect(r.json().error.code).toBe('pin_locked');
-    const [row] = await t.h.db.select().from(trees).where(eq(trees.id, id));
-    expect(row!.pinFailedCount).toBe(0);
-    expect(row!.pinLockedUntil).not.toBeNull();
-    t.clock.set('2026-12-01T10:15:01+07:00');
+    expect(r.json().error.retryAt).toBe('2026-12-02T00:00:00.000Z');
+    // Lượt bị từ chối không được tính: bộ đếm ngày vẫn 50, bộ đếm phòng + IP về 0.
+    const rows = await t.h.db.select().from(rateCounters).where(like(rateCounters.bucket, `pin:tree:${id}%`));
+    expect(rows.find((x) => x.bucket === `pin:tree:${id}`)!.hits).toBe(50);
+    expect(rows.find((x) => x.bucket.startsWith(`pin:tree:${id}:ip:`))?.hits ?? 0).toBe(0);
+    t.clock.set('2026-12-02T00:00:00Z');
     expect((await pin(id, '123456')).statusCode).toBe(204);
   });
 

@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyRequest } from 'fastify';
-import { randomInt } from 'node:crypto';
+import { randomInt, timingSafeEqual } from 'node:crypto';
 import { and, count, eq, gt, isNull } from 'drizzle-orm';
 import { MessageBodySchema, MessageEditSchema, catalog } from '@ctln/shared';
 import { blockedDevices, messages, trees } from '../db/schema.js';
@@ -39,6 +39,13 @@ const editToken = (req: FastifyRequest): string => {
   return v;
 };
 
+/** So hai chuỗi băm không lộ thời gian; độ dài khác → không khớp. */
+function sameHash(a: string, b: string): boolean {
+  const x = Buffer.from(a);
+  const y = Buffer.from(b);
+  return x.length === y.length && timingSafeEqual(x, y);
+}
+
 export async function messagesRoutes(app: FastifyInstance) {
   const editUntilOf = (at: Date) => new Date(at.getTime() + catalog.limits.editMinutes * 60_000);
 
@@ -72,7 +79,7 @@ export async function messagesRoutes(app: FastifyInstance) {
     if (blocked) throw new HttpError(403, 'blocked', 'Bạn không thể gửi lời nhắn tới cây này.');
 
     const iHash = ipHash(env, clientIp(req), at);
-    if (!(await rateLimit(db.db, 'msg:ip:' + iHash, 20, at))) {
+    if (!(await rateLimit(db.db, 'msg:ip:' + iHash, 100, at))) {
       throw new HttpError(429, 'rate_limited', 'Bạn thao tác nhanh quá, đợi một lát nhé.');
     }
 
@@ -125,12 +132,9 @@ export async function messagesRoutes(app: FastifyInstance) {
     const mid = parseMid(req.params.mid);
     const token = editToken(req);
     const { db, env } = app.deps;
-    const [m] = await db.db
-      .select()
-      .from(messages)
-      .where(and(eq(messages.id, mid), eq(messages.editTokenHash, hmac(env, 'edit', token))))
-      .limit(1);
-    if (!m) throw new HttpError(403, 'bad_token', 'Bạn không có quyền với lời nhắn này.');
+    const [m] = await db.db.select().from(messages).where(eq(messages.id, mid)).limit(1);
+    if (!m) throw new HttpError(404, 'not_found', 'Không tìm thấy lời nhắn này.');
+    if (!sameHash(m.editTokenHash, hmac(env, 'edit', token))) throw new HttpError(403, 'bad_token', 'Bạn không có quyền với lời nhắn này.');
     return {
       messageId: String(m.id),
       slotIndex: m.slotIndex,
@@ -151,7 +155,7 @@ export async function messagesRoutes(app: FastifyInstance) {
       .where(eq(messages.id, mid))
       .limit(1);
     if (!m) throw new HttpError(404, 'not_found', 'Không tìm thấy lời nhắn này.');
-    if (m.hash !== hmac(env, 'edit', token)) throw new HttpError(403, 'bad_token', 'Bạn không có quyền với lời nhắn này.');
+    if (!sameHash(m.hash, hmac(env, 'edit', token))) throw new HttpError(403, 'bad_token', 'Bạn không có quyền với lời nhắn này.');
     if (m.readAt !== null) throw new HttpError(403, 'already_opened', 'Chủ cây đã mở lời nhắn này, không sửa được nữa.');
     if (m.until <= now()) throw new HttpError(403, 'edit_expired', 'Đã quá 15 phút, không sửa được nữa.');
     throw new HttpError(409, 'conflict', 'Lời nhắn vừa thay đổi, thử lại nhé.');

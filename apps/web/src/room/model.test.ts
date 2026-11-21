@@ -3,7 +3,7 @@ import { validateRoom } from '@ctln/shared';
 import type { Room } from '@ctln/shared';
 import {
   addItem, clampPosition, cycleVariant, defaultRoom, drawOrder, flipItem, layerOf, makeClientId,
-  moveItem, rank, removeItem, scaleItem, setBackground, setTreeConfig, setVariant, variantLabel,
+  moveItem, rank, removeItem, sameRoom, scaleItem, setBackground, setTreeConfig, setVariant, variantLabel,
 } from './model';
 
 const find = (room: Room, type: string) => room.items.find((i) => i.type === type)!;
@@ -104,6 +104,27 @@ describe('biến thể', () => {
     expect(setBackground(r, 'wood').background).toBe('wood');
     expect(setTreeConfig(r, { shape: 'puffy' }).tree).toEqual({ ...r.tree, shape: 'puffy' });
   });
+  it('setTreeConfig với giá trị đang có trả nguyên tham chiếu phòng', () => {
+    const r = defaultRoom();
+    expect(setTreeConfig(r, { shape: r.tree.shape })).toBe(r);
+    expect(setTreeConfig(r, { shape: r.tree.shape, slotCount: r.tree.slotCount })).toBe(r);
+  });
+  it('setTreeConfig đổi thật vẫn ra object mới', () => {
+    const r = defaultRoom();
+    const next = setTreeConfig(r, { slotCount: r.tree.slotCount + 1 });
+    expect(next).not.toBe(r);
+    expect(next.tree.slotCount).toBe(r.tree.slotCount + 1);
+  });
+  it('setBackground với phông đang có trả nguyên tham chiếu', () => {
+    const r = defaultRoom();
+    expect(setBackground(r, r.background)).toBe(r);
+  });
+  it('setBackground đổi thật vẫn ra object mới', () => {
+    const r = defaultRoom();
+    const next = setBackground(r, 'wood');
+    expect(next).not.toBe(r);
+    expect(next.background).toBe('wood');
+  });
 });
 
 describe('addItem / removeItem', () => {
@@ -152,5 +173,25 @@ describe('bất biến', () => {
     cycleVariant(r, tid, 1); setVariant(r, id, 'x'); setBackground(r, 'wood');
     setTreeConfig(r, { shape: 'puffy' }); addItem(r, 'gift', 'gold'); removeItem(r, id);
     expect(r).toEqual(before);
+  });
+});
+
+describe('sameRoom', () => {
+  it('khác thứ tự món vẫn giống; khác x / variant / slotCount / background → khác', () => {
+    const a = defaultRoom();
+    const copy = (): Room => structuredClone(a);
+    expect(sameRoom(a, copy())).toBe(true);
+    const rev = copy();
+    rev.items.reverse();
+    expect(sameRoom(a, rev)).toBe(true);
+    const x = copy();
+    x.items[0] = { ...x.items[0]!, x: x.items[0]!.x + 1 };
+    expect(sameRoom(a, x)).toBe(false);
+    const v = copy();
+    v.items[0] = { ...v.items[0]!, variant: v.items[0]!.variant + 'z' };
+    expect(sameRoom(a, v)).toBe(false);
+    expect(sameRoom(a, { ...a, tree: { ...a.tree, slotCount: 16 } })).toBe(false);
+    expect(sameRoom(a, { ...a, background: 'wood' } as Room)).toBe(false);
+    expect(sameRoom(a, { ...a, items: a.items.slice(1) })).toBe(false);
   });
 });

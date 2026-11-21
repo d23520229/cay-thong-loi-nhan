@@ -8,8 +8,9 @@ async function load() {
   return (await import('./storage')).storage;
 }
 
-beforeEach(() => { localStorage.clear(); sessionStorage.clear(); });
-afterEach(() => vi.unstubAllGlobals());
+const clearCookie = () => { document.cookie = 'ctln_did=; max-age=0; path=/'; };
+beforeEach(() => { localStorage.clear(); sessionStorage.clear(); clearCookie(); });
+afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
 describe('storage', () => {
   it('addMyTree cùng id hai lần → 1 phần tử, mới nhất đứng đầu', async () => {
@@ -71,5 +72,27 @@ describe('storage', () => {
     const id = s.deviceId();
     expect(id).toMatch(/^[0-9a-f-]{36}$/);
     expect(s.deviceId()).toBe(id);
+  });
+
+  it('localStorage ném lỗi → deviceId lấy/ghi cookie ctln_did, giữ nguyên sau khi nạp lại module', async () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
+    const a = (await load()).deviceId();
+    expect(document.cookie).toContain(`ctln_did=${a}`);
+    expect((await load()).deviceId()).toBe(a);
+  });
+
+  it('localStorage chạy bình thường → không ghi cookie', async () => {
+    const id = (await load()).deviceId();
+    expect(localStorage.getItem('deviceId')).toBe(id);
+    expect(document.cookie).not.toContain('ctln_did=');
+  });
+
+  it('cookie ctln_did không đúng dạng UUID thì bỏ qua', async () => {
+    document.cookie = 'ctln_did=abc; path=/';
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
+    const id = (await load()).deviceId();
+    expect(id).not.toBe('abc');
+    expect(id).toMatch(/^[0-9a-f-]{36}$/);
   });
 });

@@ -3,8 +3,8 @@ import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { catalog } from '@ctln/shared';
 import { makeTestApp, deviceHeaders } from './helpers.js';
-import { blockedDevices, messages } from '../src/db/schema.js';
-import { deviceHash } from '../src/security.js';
+import { blockedDevices, messages, rateCounters } from '../src/db/schema.js';
+import { deviceHash, ipHash } from '../src/security.js';
 
 type T = Awaited<ReturnType<typeof makeTestApp>>;
 let t: T;
@@ -141,6 +141,21 @@ describe('POST /api/trees/:id/messages', () => {
     expect(r.json().error.code).toBe('blocked');
   });
 
+  it('lời nhắn thứ 101 trong giờ từ cùng IP → 429 rate_limited', async () => {
+    const { id } = await setup();
+    const { loadEnv } = await import('../src/env.js');
+    const at = new Date('2026-12-01T10:00:00+07:00');
+    await t.h.db.insert(rateCounters).values({
+      bucket: 'msg:ip:' + ipHash(loadEnv({}), '127.0.0.1', at),
+      windowStart: new Date(Math.floor(at.getTime() / 3600_000) * 3600_000),
+      hits: 99,
+    });
+    expect((await post(id, body(0))).statusCode).toBe(201);
+    const r = await post(id, body(1));
+    expect(r.statusCode).toBe(429);
+    expect(r.json().error.code).toBe('rate_limited');
+  });
+
   it('khoá ghi từ 26/12: 403 write_closed', async () => {
     const { id } = await setup();
     t.clock.set('2026-12-26T01:00:00+07:00');
@@ -171,6 +186,17 @@ describe('GET /api/messages/:mid/mine', () => {
     });
     expect((await mine(messageId, 'sai')).json().error.code).toBe('bad_token');
     expect((await mine(messageId)).statusCode).toBe(403);
+  });
+
+  it('GET /mine: lời nhắn không tồn tại → 404 not_found; sai token → 403 bad_token', async () => {
+    const { id } = await setup();
+    const { messageId, editToken } = (await post(id, body(5))).json();
+    const nf = await mine('999999', editToken);
+    expect(nf.statusCode).toBe(404);
+    expect(nf.json().error.code).toBe('not_found');
+    const bad = await mine(messageId, 'sai');
+    expect(bad.statusCode).toBe(403);
+    expect(bad.json().error.code).toBe('bad_token');
   });
 
   it('hết hạn sửa vẫn xem được của mình', async () => {

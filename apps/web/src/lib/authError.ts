@@ -10,7 +10,10 @@ function lockMinutes(retryAt: unknown, now: number): number {
 export function authErrorMessage(e: unknown, now = Date.now()): string {
   if (e instanceof ApiError) {
     if (e.code === 'bad_pin') return 'Mã PIN chưa đúng';
-    if (e.code === 'pin_locked') return `Nhập sai quá nhiều lần, thử lại sau ${lockMinutes(e.extra.retryAt, now)} phút`;
+    if (e.code === 'pin_locked') {
+      const m = lockMinutes(e.extra.retryAt, now);
+      return `Nhập sai quá nhiều lần, thử lại sau ${m > 60 ? `${Math.ceil(m / 60)} giờ` : `${m} phút`}`;
+    }
     if (e.status === 404) return 'Không tìm thấy cây này';
     if (e.code === 'bad_key') return 'Link riêng chưa đúng';
     return e.message;

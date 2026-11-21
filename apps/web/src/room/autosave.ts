@@ -1,5 +1,6 @@
 import { validateRoom, type Room } from '@ctln/shared';
 import { ApiError, type api as apiModule, type PublicRoom } from '../lib/api';
+import { sameRoom } from './model';
 import type { EditorStore } from './store';
 
 export type SaveState = 'saved' | 'saving' | 'unsaved';
@@ -83,7 +84,7 @@ export function createAutosave(o: Opts) {
       } catch (e) {
         if (!stopped) {
           o.onState('unsaved');
-          handleError(e);
+          handleError(e, room);
         }
       } finally {
         inFlight = null;
@@ -93,11 +94,28 @@ export function createAutosave(o: Opts) {
     return inFlight;
   };
 
-  const handleError = (e: unknown) => {
+  const handleError = (e: unknown, sent: Room) => {
     const err = e instanceof ApiError ? e : new ApiError(0, 'network', String(e));
     if (err.status === 409 && err.code === 'version_conflict') {
-      conflict = true;
-      o.onConflict(err.extra.room as PublicRoom);
+      const server = err.extra.room as PublicRoom;
+      const current = store.getState().room;
+      const shaped = !!server && typeof server === 'object' && Array.isArray(server.items) && !!server.tree && typeof server.tree === 'object' && Number.isInteger(server.roomVersion);
+      if (shaped && sameRoom(server, current)) {
+        // Xung đột giả: server đã có đúng bản trên máy — chỉ nhận version mới.
+        version = server.roomVersion;
+        lastSaved = current;
+        offline = false;
+        rateLimited = false;
+        o.onState('saved');
+      } else if (shaped && sameRoom(server, sent)) {
+        // Server có đúng bản vừa gửi; máy đã sửa tiếp — nhận version rồi lưu phần mới.
+        version = server.roomVersion;
+        lastSaved = sent;
+        schedule();
+      } else {
+        conflict = true;
+        o.onConflict(server);
+      }
     } else if (err.status === 409 && err.code === 'slots_in_use') {
       store.getState().setTree({ slotCount: lastSaved.tree.slotCount });
       schedule(); // trả về có thể không đổi gì (không tăng revision) — vẫn lưu các thay đổi mới hơn
@@ -169,6 +187,24 @@ export function createAutosave(o: Opts) {
       return inFlight ?? Promise.resolve();
     },
     stop,
+    hasConflict: () => conflict,
+    /** pagehide: gửi một lần bằng fetch keepalive, không await; thành công thì nhận version mới (tránh xung đột giả khi quay lại bằng Back); huỷ hẹn giờ đang chờ. */
+    flushOnUnload(): void {
+      const room = store.getState().room;
+      if (stopped || conflict || room === lastSaved || !validateRoom(room).ok) return;
+      const used = version;
+      clearTimers();
+      // Trang có thể quay lại từ bfcache sau pagehide: nhận version mới để lần lưu sau không bị 409 giả.
+      void o.api
+        .saveRoom(treeId, used, room, { keepalive: true })
+        .then((r) => {
+          if (stopped || conflict || version !== used) return;
+          lastSaved = room;
+          version = r.roomVersion;
+          if (store.getState().room === room) o.onState('saved');
+        })
+        .catch(() => {});
+    },
     version: () => version,
     /** Phòng server đã xác nhận gần nhất. */
     lastSaved: () => lastSaved,

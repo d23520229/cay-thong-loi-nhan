@@ -47,12 +47,14 @@ const step = (keys: string[], cur: string, dir: 1 | -1): string => {
 export const setVariant = (room: Room, clientId: string, variant: string): Room =>
   updateItem(room, clientId, (it) => ({ ...it, variant }));
 
-export const setBackground = (room: Room, background: string): Room => ({ ...room, background } as Room);
+// Giá trị không đổi trả nguyên tham chiếu để store không tăng revision (không lưu thừa).
+export const setBackground = (room: Room, background: string): Room =>
+  room.background === background ? room : ({ ...room, background } as Room);
 
-export const setTreeConfig = (room: Room, patch: Partial<TreeConfig>): Room => ({
-  ...room,
-  tree: { ...room.tree, ...patch },
-});
+export const setTreeConfig = (room: Room, patch: Partial<TreeConfig>): Room =>
+  Object.entries(patch).every(([k, v]) => room.tree[k as keyof TreeConfig] === v)
+    ? room
+    : { ...room, tree: { ...room.tree, ...patch } };
 
 export function cycleVariant(room: Room, clientId: string, dir: 1 | -1): Room {
   const it = room.items.find((i) => i.clientId === clientId);
@@ -117,3 +119,19 @@ export const defaultRoom = (): Room => {
     items: d.items.map((i) => ({ ...i, clientId: makeClientId() })),
   } as Room;
 };
+
+/** Hai phòng giống nhau về nội dung (món so theo clientId, bỏ qua thứ tự). */
+export function sameRoom(a: Room, b: Room): boolean {
+  const shaped = (r: unknown) => !!r && typeof r === 'object' && Array.isArray((r as Room).items) && !!(r as Room).tree && typeof (r as Room).tree === 'object';
+  if (!shaped(a) || !shaped(b)) return false;
+  if (a.background !== b.background || a.items.length !== b.items.length) return false;
+  const ta = a.tree as Record<string, unknown>;
+  const tb = b.tree as Record<string, unknown>;
+  const keys = new Set([...Object.keys(ta), ...Object.keys(tb)]);
+  for (const k of keys) if (ta[k] !== tb[k]) return false;
+  const byId = new Map(b.items.map((i) => [i.clientId, i]));
+  return a.items.every((i) => {
+    const j = byId.get(i.clientId);
+    return !!j && i.type === j.type && i.variant === j.variant && i.x === j.x && i.y === j.y && i.scale === j.scale && i.flip === j.flip;
+  });
+}

@@ -47,7 +47,7 @@ export type AppConfig = {
   googleClientId: string | null;
 };
 
-async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
+async function request<T>(method: string, path: string, body?: unknown, opts?: { keepalive?: boolean }): Promise<T> {
   const headers: Record<string, string> = { 'x-device-id': storage.deviceId() };
   if (body !== undefined) headers['content-type'] = 'application/json';
   let res: Response;
@@ -57,6 +57,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
       credentials: 'same-origin',
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
+      ...(opts?.keepalive ? { keepalive: true } : {}),
     });
   } catch {
     throw new ApiError(0, 'network', 'Không kết nối được, kiểm tra mạng rồi thử lại nhé.');
@@ -83,9 +84,10 @@ export const api = {
   getOwnerTree: (id: string) => request<OwnerRoom>('GET', `${tree(id)}/owner`),
   createTree: (body: CreateTreeBody) =>
     request<{ id: string; publicUrl: string; privateUrl: string; roomVersion: number }>('POST', '/api/trees', body),
-  saveRoom: (id: string, roomVersion: number, room: Room) =>
-    request<{ roomVersion: number }>('PUT', `${tree(id)}/room`, { roomVersion, room }),
+  saveRoom: (id: string, roomVersion: number, room: Room, opts?: { keepalive?: boolean }) =>
+    request<{ roomVersion: number }>('PUT', `${tree(id)}/room`, { roomVersion, room }, opts),
   authPin: (id: string, pin: string) => request<void>('POST', `${tree(id)}/auth/pin`, { pin }),
+  ownerVisit: (id: string) => request<void>('POST', `${tree(id)}/owner/visit`),
   authLink: (id: string, key: string) => request<void>('POST', `${tree(id)}/auth/link`, { key }),
   authGoogle: (idToken: string, treeId?: string) =>
     request<void | { trees: { id: string; title: string | null }[] }>('POST', '/api/auth/google', { idToken, treeId }),

@@ -32,9 +32,10 @@ export function ReopenDialog({ onClose }: { onClose: () => void }) {
     }
   };
 
-  const first = useRef(trees[0]?.id);
+  // Chỉ tự thử khi máy nhớ đúng 1 cây; nhiều cây thì chờ người dùng bấm chọn.
+  const only = useRef(trees.length === 1 ? trees[0]?.id : undefined);
   useEffect(() => {
-    if (first.current) void tryOwner(first.current);
+    if (only.current) void tryOwner(only.current);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

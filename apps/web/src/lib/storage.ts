@@ -46,16 +46,33 @@ function uuid(): string {
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`;
 }
 
+// Cookie dự phòng khi localStorage hỏng/không lưu được (đặc tả 7.6).
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const readDidCookie = (): string | null => {
+  try {
+    const m = document.cookie.match(/(?:^|;\s*)ctln_did=([^;]*)/);
+    return m && UUID_RE.test(m[1]!) ? m[1]! : null;
+  } catch {
+    return null;
+  }
+};
+const writeDidCookie = (id: string) => {
+  try {
+    document.cookie = `ctln_did=${id}; max-age=31536000; path=/; samesite=lax`;
+  } catch {
+    /* bỏ qua */
+  }
+};
+
 let memoryDeviceId: string | null = null;
 
 export const storage = {
   deviceId(): string {
     if (memoryDeviceId) return memoryDeviceId;
-    let id = read('localStorage', 'deviceId');
-    if (!id) {
-      id = uuid();
-      write('localStorage', 'deviceId', id);
-    }
+    let id = read('localStorage', 'deviceId') ?? readDidCookie();
+    if (!id) id = uuid();
+    write('localStorage', 'deviceId', id);
+    if (read('localStorage', 'deviceId') !== id) writeDidCookie(id);
     memoryDeviceId = id;
     return id;
   },

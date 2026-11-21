@@ -4,9 +4,10 @@
 
 ## Hiện tại
 
-- **Ngày cập nhật:** 19/11/2026
-- **Mốc đang ở:** M2 xong trên nhánh `m2-frontend` (tách từ `m1-backend`; cả hai chưa gộp vào `main`). M1 backend: 6 nhóm route, 118 test server + 40 test shared (M2 thêm 2 test `googleClientId`, nay 120 test server); đã chạy thử với PostgreSQL 16 thật trong Docker ngày 17/11 (mục 1–9 bên dưới đều đạt); mục 10 làm khi lên Azure.
-- **M2 xong** trên nhánh `m2-frontend` (chưa gộp vào `main`): giao diện phòng tự do, 167 test web + 122 test server + 40 test shared (sau khi sửa việc nhỏ 19/11), typecheck sạch. Bản build JS + CSS ≈ 150 KB gzip (giới hạn 250 KB). Đã chạy thật qua proxy Vite với PostgreSQL trong Docker (18/11): `/` trả HTML, `/api/config` qua proxy, tạo cây 201 với `publicUrl` bắt đầu `http://localhost:5173/c/`, `GET /api/trees/{id}` 200.
+- **Ngày cập nhật:** 22/11/2026
+- **Mốc đang ở:** M1 và M2 đã gộp vào `main` (PR #1, #2; commit 51e00e0). M1 backend: 6 nhóm route, 118 test server + 40 test shared (M2 thêm 2 test `googleClientId`, nay 120 test server); đã chạy thử với PostgreSQL 16 thật trong Docker ngày 17/11 (mục 1–9 bên dưới đều đạt); mục 10 làm khi lên Azure.
+- **M2 xong** (đã gộp vào `main`): giao diện phòng tự do, 167 test web + 122 test server + 40 test shared (sau khi sửa việc nhỏ 19/11), typecheck sạch. Bản build JS + CSS ≈ 150 KB gzip (giới hạn 250 KB). Đã chạy thật qua proxy Vite với PostgreSQL trong Docker (18/11): `/` trả HTML, `/api/config` qua proxy, tạo cây 201 với `publicUrl` bắt đầu `http://localhost:5173/c/`, `GET /api/trees/{id}` 200.
+- **Rà soát luồng 22/11** (nhánh `fix-luong-sau-m2`, chưa commit): viết `docs/luong-hoat-dong.md` và sửa các lỗi tìm được (xem Nhật ký 22/11). Lượt 2 sửa nốt lỗi 6, 7, 10, 11, 12 và xung đột giả khi lưu. Nay **198 test web + 131 test server + 40 test shared**, typecheck sạch.
 - **Việc tiếp theo:** **M3 — bạn bè treo lời nhắn, chủ cây đọc/khoá/đếm ngược, chia sẻ, OG** — chờ chủ dự án duyệt.
 
 ### M2 — danh sách thử tay trên trình duyệt (chủ dự án)
@@ -37,7 +38,7 @@ Xem đặc tả mục 7, 8.1–8.5, 9.1–9.6 và `apps/server/src/routes/README
 
 1. `pnpm db:up`
 2. Tạo `.env` từ `.env.example`; `PEPPER` và `BLOCK_IP_KEY` là chuỗi ngẫu nhiên ≥ 32 ký tự (ví dụ `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`).
-3. `pnpm db:migrate` hai lần: lần 1 liệt kê `0000_init.sql`, `0001_show_message_count.sql`, `0002_pin_failed_at.sql`; lần 2 in "Không có migration mới".
+3. `pnpm db:migrate` hai lần: lần 1 liệt kê `0000_init.sql`, `0001_show_message_count.sql`, `0002_pin_failed_at.sql`, `0003_pin_rate_counters.sql`; lần 2 in "Không có migration mới".
 4. `pnpm --filter @ctln/server dev` (server tự chạy migration khi khởi động; khởi động lại không chạy lại).
 5. `curl localhost:3000/api/config` → JSON có `"phase":"BUILD"`.
 6. Tạo phòng, mong đợi 201 (phòng phải có đúng một cây thông, thiếu cây sẽ trả 400 `tree_count`):
@@ -53,11 +54,26 @@ Chưa làm ở M1: giao diện web (M2–M3), trang quản trị (M3b), OG ảnh
 
 **Việc nhỏ còn lại từ các lượt duyệt M1** (không ảnh hưởng đúng/sai hay riêng tư):
 - ~~`clientIp` chưa bỏ cổng của IPv6 dạng `[2001:db8::1]:port`~~ — đã sửa 19/11 (vẫn xem định dạng thật ở mục 10).
-- M3b: nút "mở khoá PIN" của quản trị phải xoá cả `pin_last_failed_at`.
+- M3b: nút "mở khoá PIN" của quản trị = xoá các bucket `pin:tree:{id}…` trong `rate_counters` (cột PIN cũ đã bỏ ở 0003, sửa 22/11).
 - ~~Lưu phòng: dùng lại `clientId` cho món khác loại (cây ↔ món khác) lỗi 500~~ — đã sửa 19/11: xoá dòng cây cũ mang mã khác trước khi upsert.
-- Cửa sổ PIN tính từ lần sai **cuối** (chặt hơn "5 lần / 15 phút" của đặc tả một chút) — chấp nhận.
+- ~~Cửa sổ PIN tính từ lần sai cuối~~ — thay bằng khung 15 phút cố định trong `rate_counters` (22/11).
 - ~~Đặc tả mục 10 ghi khoá link riêng "base32"~~ — đã sửa 17/11.
 - ~~Thứ tự kiểm tra honeypot~~ — chốt 19/11: honeypot trước chặn theo cây / tần suất / ≤3 thiết bị; đã sửa sơ đồ đặc tả 9.4 + test. Kiểm duyệt ở BUILD đã có test (xoá/chặn chạy ở giờ mặc định BUILD).
+
+**Việc nhỏ còn lại sau rà soát 22/11** (xem `docs/luong-hoat-dong.md` mục 9):
+- ~~Người lạ khoá được PIN của chủ cây~~ — đã sửa 22/11: khoá theo phòng + IP (5 / 15 phút) + trần 50 lần sai / phòng / ngày, đếm trong `rate_counters`; migration 0003 bỏ 3 cột PIN cũ.
+- ~~CSP mặc định chặn Google~~ — đã sửa 22/11: helmet cho `https://accounts.google.com` ở script/frame/connect/style.
+- ~~Trigger `touch_updated_at`~~ — đã bỏ ở migration 0003; `updated_at` chỉ đổi khi lưu phòng / sửa lời nhắn.
+- ~~`deviceId` đổi khi trình duyệt chặn storage~~ — đã sửa 22/11: dự phòng cookie `ctln_did`. Còn: `editToken` (M3) cũng sẽ cần chỗ dự phòng tương tự.
+- ~~`/mine` trả 403 khi không có lời nhắn~~ — đã sửa 22/11 (404 / 403, so token timing-safe).
+- Tạo cây mà mất phản hồi giữa chừng → bấm lại tạo cây thứ hai, cây đầu mồ côi — **chấp nhận** (chủ dự án chốt 22/11).
+- ~~`pagehide` lúc đang lưu ra 409 giả~~ — đã sửa 22/11: 409 mà phòng server giống hệt phòng trên máy thì nhận version, không hỏi; 409 thiếu phòng → "Không mở được cây này." thay vì treo.
+- Dọn `rate_counters` (M4/M10): chỉ xoá khung đã kết thúc — bucket `pin:tree:` giữ đến khi `window_start` quá 1 ngày, bucket khác quá 1 giờ; dọn thô hằng giờ sẽ xoá khung ngày và đặt lại trần 50 lần sai / phòng / ngày. (Hoặc lưu độ dài khung khi ghi.)
+- M4/M5: khi Fastify phục vụ HTML của web, thử header CSP trên `/` và `/c/:id`, gồm cả mặc định của helmet như `frame-ancestors`.
+- Trước Azure: chạy `pnpm db:migrate` trên Postgres Docker đã có 0000–0002 để kiểm tra 0003 áp dụng sạch.
+- Rủi ro chấp nhận: một IP có thể dùng hết trần 50 lần sai / ngày của một cây trong khoảng 3 giờ. Chủ cây vẫn còn cookie, link riêng và Google; cách gỡ là nút mở khoá M3b.
+- Khi bật IPv6: cân nhắc gom IPv6 theo /64; trần ngày theo cây vẫn chặn lạm dụng.
+- Cân nhắc thêm `Secure` cho cookie `ctln_did` khi chạy production.
 
 **Việc nhỏ còn lại từ các lượt duyệt M2** (không ảnh hưởng đúng/sai hay riêng tư):
 - ~~Giới hạn lưu phòng~~ — chốt 19/11: nâng **600 lần/giờ/phòng** (đặc tả 6.5, 10); trình duyệt giãn nhịp 60 giây từ lần thứ 540.
@@ -77,7 +93,7 @@ Chưa làm ở M1: giao diện web (M2–M3), trang quản trị (M3b), OG ảnh
 | M2 | 25/11–02/12 | Frontend phòng tự do: kéo thả, xếp lớp, mũi tên ‹ ›, dải chọn, tự lưu | **Xong** (18/11, nhánh `m2-frontend`) |
 | M3 | 02–07/12 | Bạn bè treo lời nhắn; chủ cây đọc, khoá, đếm ngược; chia sẻ, OG | |
 | M3b | 05–08/12 | Trang quản trị P0 | |
-| M4 | 07–10/12 | Hoàn thiện, triển khai Azure (kèm Blob cho ảnh, câu trung thực về riêng tư trong chính sách) | |
+| M4 | 07–10/12 | Hoàn thiện, triển khai Azure (kèm Blob cho ảnh, câu trung thực về riêng tư trong chính sách; bật IPv6 inbound cho App Service nếu gói B1 cho phép — kiểm chi phí) | |
 | M5 | 10–12/12 | Chạy thử kín | |
 | M6 | 15/12 | Ra mắt công khai | |
 | M7–M10 | 16/12–07/01/2027 | Theo dõi, mở quà 24/12, thông báo tải ảnh, kết thúc, xoá dữ liệu | |
@@ -121,6 +137,10 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 
 ## Bài học kỹ thuật (đừng lặp lại)
 
+- **Trigger `BEFORE UPDATE` đặt `updated_at := now()`** ghi đè giá trị code đặt, không theo `FAKE_NOW` và chạm cả những UPDATE không phải "sửa" (đếm PIN, giờ ghé thăm) — đã bỏ ở migration 0003; code tự đặt `updated_at`.
+- **Khoá theo đối tượng công khai (mã cây) cho phép người lạ khoá chủ:** khoá dò PIN phải theo phòng + IP, trần theo phòng đặt đủ cao (50/ngày).
+- **Dữ liệu trong `error.extra` của 409 có thể thiếu** (cây bị xoá giữa chừng) — kiểm hình dạng trước khi dùng.
+
 - **resvg** bị panic với `feDisplacementMap` khi xuất lớp phòng toàn khung ở tỉ lệ 1 hoặc 0.5 → xuất ở **1.5×** (fitTo 1080).
 - **sharp:** phải `composite` ra buffer trước rồi mới `extract`, làm ngược sẽ lỗi.
 - Lớp vân giấy (`paper`) trên lớp phòng gây **vết trắng loang** → đặt `lite = 0` cho lớp phòng.
@@ -150,6 +170,8 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 
 ## Nhật ký
 
+- **22/11/2026** — Rà soát toàn bộ luồng (`docs/luong-hoat-dong.md`) và sửa (nhánh `fix-luong-sau-m2`): `GET /owner` chỉ đọc + `POST /owner/visit` (số lời nhắn mới không còn về 0); giới hạn tạo phòng 20/giờ/IP, lời nhắn 100/giờ/IP, chỉ đếm khi dữ liệu hợp lệ (chủ dự án chấp nhận rủi ro bot, đặc tả 10); "Xong" gặp 409 ở lại chế độ Sửa và hỏi; `pagehide` gửi lưu bằng `keepalive` (nhận version mới nếu thành công, tránh xung đột giả khi quay lại bằng Back); "Bạn đã có cây?" chỉ tự thử khi nhớ đúng 1 cây; bấm lại lựa chọn đang có không lưu; `fitRoom` không ra tỉ lệ âm; `pnpm install` cho typecheck web. 187 test web, 125 test server, 40 test shared.
+- **22/11/2026 (lượt 2)** — Sửa nốt: khoá PIN theo phòng + IP trong `rate_counters` (5 / 15 phút, trần 50 lần sai / phòng / ngày) + migration 0003 (bỏ 3 cột PIN và trigger `touch_updated_at`); CSP helmet cho Google Identity; `/mine` 404/403 + so token timing-safe; `deviceId` dự phòng cookie `ctln_did`; thông báo khoá theo giờ khi > 60 phút; 409 mà phòng giống hệt thì không hỏi, 409 thiếu phòng thì báo lỗi rõ. Cây mồ côi khi mất phản hồi: chấp nhận. 198 test web, 131 test server, 40 test shared.
 - **19/11/2026** — Sửa việc nhỏ M1/M2: lưu phòng không còn 500 khi đổi loại món cùng `clientId`; `clientIp` bỏ cổng `[IPv6]:port`; honeypot giữ trước các kiểm tra khác (sửa đặc tả 9.4); giới hạn lưu 600/giờ; Sheet modal có Escape + giữ tiêu điểm; camera không dời khi đang giữ món; bỏ trùng lớp CSS (`.ed-strip`, `.ed-field`); test trang phòng dùng đồng hồ giả. 167 test web, 122 test server, 40 test shared; build ≈ 150 KB gzip.
 - **19/11/2026** — Mất mạng không cần lưu (chủ dự án chốt, đặc tả 6.5): bỏ nháp `draft:{treeId}`, bỏ hỏi xung đột khi mở lại, bỏ tự thử lại khi lỗi mạng/5xx (5 giây và sự kiện `online`); thao tác tiếp theo lưu lại cả phòng; "Xong" chưa lưu được vẫn về Xem với bản server; mở phòng thì xoá nháp cũ còn sót. Giữ nguyên bảng hỏi 409 khi đang sửa, 429 thử lại sau 60 giây, nháp `/tao`. 159 test web; build ≈ 149 KB gzip.
 - **18/11/2026** — Xong M2 frontend (nhánh `m2-frontend`): trang chủ + "Bạn đã có cây?", tạo cây (`/tao`), trang phòng (`/c/:id`) cho chủ cây và khách, trình sửa phòng (kéo/zoom/lật, dải chọn, mũi tên ‹ ›, bảng bên), tự lưu + nháp cục bộ, bảng xung đột phiên bản. 141 test web, 120 test server, 40 test shared, typecheck sạch; build ≈ 145 KB gzip. Quyết định: dựng theo phương án A (module phòng thuần có test); phòng hiện trọn theo chiều rộng; "Bạn đã có cây?" mở lại bằng mã/link + PIN; lệch phiên bản thì hỏi chủ cây giữ bản nào; "Xong" chỉ rời chế độ Sửa khi đã lưu.

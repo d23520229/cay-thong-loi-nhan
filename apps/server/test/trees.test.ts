@@ -73,12 +73,18 @@ describe('POST /api/trees', () => {
     expect(makeGoogleVerifier('abc.apps.googleusercontent.com')).toBeTypeOf('function');
   });
 
-  it('lần thứ 6 cùng IP → 429', async () => {
+  it('lần thứ 21 cùng IP → 429', async () => {
     t = await makeTestApp();
-    for (let i = 0; i < 5; i++) expect((await create(pinBody())).statusCode).toBe(201);
+    for (let i = 0; i < 20; i++) expect((await create(pinBody())).statusCode).toBe(201);
     const r = await create(pinBody());
     expect(r.statusCode).toBe(429);
     expect(r.json().error.code).toBe('rate_limited');
+  });
+
+  it('body sai không tốn lượt: 25 lần 400 rồi vẫn tạo được', async () => {
+    t = await makeTestApp();
+    for (let i = 0; i < 25; i++) expect((await create({ ...pinBody(), room: undefined })).statusCode).toBe(400);
+    expect((await create(pinBody())).statusCode).toBe(201);
   });
 
   it('XFF giả ở đầu danh sách không đổi nhóm giới hạn (chỉ tin 1 bước proxy)', async () => {
@@ -88,7 +94,7 @@ describe('POST /api/trees', () => {
         method: 'POST', url: '/api/trees', headers: { ...JSON_CT, 'x-forwarded-for': `6.6.6.${i}, 9.9.9.9` },
         remoteAddress: '10.0.0.1', payload: pinBody() as object,
       });
-    for (let i = 0; i < 5; i++) expect((await post(i)).statusCode).toBe(201);
+    for (let i = 0; i < 20; i++) expect((await post(i)).statusCode).toBe(201);
     expect((await post(99)).statusCode).toBe(429);
   });
 

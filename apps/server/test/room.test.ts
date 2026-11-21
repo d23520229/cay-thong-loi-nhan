@@ -38,6 +38,8 @@ const put = (id: string, cookies: Record<string, string> | undefined, roomVersio
   t.app.inject({ method: 'PUT', url: `/api/trees/${id}/room`, headers: JSON_CT, cookies, payload: { roomVersion, room: rm } as object });
 const getOwner = (id: string, cookies?: Record<string, string>) =>
   t.app.inject({ method: 'GET', url: `/api/trees/${id}/owner`, cookies });
+const visit = (id: string, cookies?: Record<string, string>) =>
+  t.app.inject({ method: 'POST', url: `/api/trees/${id}/owner/visit`, cookies });
 const putSettings = (id: string, cookies: Record<string, string> | undefined, v: unknown) =>
   t.app.inject({ method: 'PUT', url: `/api/trees/${id}/settings`, headers: JSON_CT, cookies, payload: { showMessageCount: v } });
 
@@ -48,6 +50,22 @@ async function addMsg(id: string, slot: number, createdAt?: Date, anon = false) 
     ...(createdAt ? { createdAt } : {}),
   });
 }
+
+describe('updated_at của cây', () => {
+  it('updated_at của cây chỉ đổi khi lưu phòng: PIN sai, ghé thăm (owner/visit) không đổi; lưu phòng đặt = giờ giả', async () => {
+    const { id, cookies } = await setup();
+    const get = async () => (await t.h.db.select().from(trees).where(eq(trees.id, id)))[0]!.updatedAt;
+    const before = await get();
+    t.clock.set('2026-12-01T10:05:00+07:00');
+    const bad = await t.app.inject({ method: 'POST', url: `/api/trees/${id}/auth/pin`, headers: JSON_CT, payload: { pin: '000000' } });
+    expect(bad.statusCode).toBe(401);
+    expect((await visit(id, cookies)).statusCode).toBe(204);
+    expect((await putSettings(id, cookies, false)).statusCode).toBe(200);
+    expect(await get()).toEqual(before);
+    expect((await put(id, cookies, 1, room())).statusCode).toBe(200);
+    expect((await get()).toISOString()).toBe('2026-12-01T03:05:00.000Z');
+  });
+});
 
 describe('PUT /api/trees/:id/room', () => {
   it('401 không cookie; lưu được, tăng version, bỏ/thêm món', async () => {
@@ -188,11 +206,24 @@ describe('GET /api/trees/:id/owner', () => {
     await addMsg(id, 0, new Date('2026-12-01T02:30:00Z'));
     await addMsg(id, 1, new Date('2026-12-01T02:31:00Z'), true);
     expect((await getOwner(id, cookies)).json()).toMatchObject({ messageCount: 2, newSinceLastVisit: 2 });
+    expect((await getOwner(id, cookies)).json()).toMatchObject({ messageCount: 2, newSinceLastVisit: 2 });
+    expect((await visit(id, cookies)).statusCode).toBe(204);
     expect((await getOwner(id, cookies)).json()).toMatchObject({ messageCount: 2, newSinceLastVisit: 0 });
     t.clock.set('2026-12-01T11:00:00+07:00');
     await addMsg(id, 2, new Date('2026-12-01T11:00:00+07:00'));
     t.clock.set('2026-12-01T11:05:00+07:00');
     expect((await getOwner(id, cookies)).json()).toMatchObject({ messageCount: 3, newSinceLastVisit: 1 });
+  });
+
+  it('POST /owner/visit: 401 không cookie; 204 và ghi last_owner_visit_at = now', async () => {
+    const { id, cookies } = await setup();
+    expect((await visit(id)).statusCode).toBe(401);
+    t.clock.set('2026-12-01T11:00:00+07:00');
+    const r = await visit(id, cookies);
+    expect(r.statusCode).toBe(204);
+    expect(r.body).toBe('');
+    const [row] = await t.h.db.select().from(trees).where(eq(trees.id, id));
+    expect(row!.lastOwnerVisitAt).toEqual(new Date('2026-12-01T11:00:00+07:00'));
   });
 
   it('401: cookie của cây khác, không cookie, hết hạn, bị thu hồi', async () => {
@@ -237,7 +268,7 @@ describe('migration 0001', () => {
     copyFileSync(fileURLToPath(new URL('../src/db/migrations/0000_init.sql', import.meta.url)), join(dir, '0000_init.sql'));
     const h = await connectPglite();
     expect(await runMigrations(h, dir)).toEqual(['0000_init.sql']);
-    expect(await runMigrations(h)).toEqual(['0001_show_message_count.sql', '0002_pin_failed_at.sql']);
+    expect(await runMigrations(h)).toEqual(['0001_show_message_count.sql', '0002_pin_failed_at.sql', '0003_pin_rate_counters.sql']);
     await h.close();
   });
 });

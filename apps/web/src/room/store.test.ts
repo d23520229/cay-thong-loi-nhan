@@ -63,11 +63,19 @@ describe('editor store', () => {
     s.getState().scale(1);
     s.getState().flip();
     s.getState().setTree({ shape: 'slim' } as never);
-    s.getState().setBackground(s.getState().room.background);
+    s.getState().setBackground('wood');
     expect(s.getState().revision).toBe(5);
     const p = s.getState().room.items.find((i) => i.clientId === pet.clientId)!;
     expect(p.x).toBe(200);
     expect(p.flip).toBe(!pet.flip);
+  });
+  it('setTree / setBackground không đổi gì → revision không tăng', () => {
+    const s = make();
+    const before = s.getState().room;
+    s.getState().setTree({ shape: before.tree.shape });
+    s.getState().setBackground(before.background);
+    expect(s.getState().room).toBe(before);
+    expect(s.getState().revision).toBe(0);
   });
   it('openPanel và setTreeTab', () => {
     const s = make();

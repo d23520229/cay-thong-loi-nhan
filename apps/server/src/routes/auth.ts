@@ -1,19 +1,22 @@
 import { timingSafeEqual } from 'node:crypto';
 import type { FastifyInstance } from 'fastify';
-import { and, eq, isNull, lte, or, sql } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { authAttempts, ownerAccounts, ownerSessions, rateCounters, trees } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import { clientIp, getOwnerSession, setOwnerCookie } from '../guards.js';
-import { hmac, ipHash, rateLimit, verifyPin } from '../security.js';
+import { hmac, ipHash, rateLimit, refundRate, verifyPin, windowEnd, windowStart } from '../security.js';
 
 const LinkBody = z.object({ key: z.string().min(1).max(200) });
 const PinBody = z.object({ pin: z.string().regex(/^\d{6}$/) });
 const GoogleBody = z.object({ idToken: z.string().min(1).max(4096), treeId: z.string().min(1).max(32).optional() });
 
-const PIN_MAX_FAILS = 5;
-const PIN_LOCK_MS = 15 * 60_000;
-const IP_FAIL_LIMIT = 20;
+// Chống dò PIN (đặc tả 10): đếm trong rate_counters, chỉ giữ lại lần sai.
+const PIN_FAILS_PER_TREE_IP = 5;
+const PIN_TREE_IP_WINDOW_MS = 15 * 60_000;
+const PIN_FAILS_PER_TREE_DAY = 50;
+const DAY_MS = 86_400_000;
+const PIN_FAILS_PER_IP_HOUR = 20;
 
 const notFound = () => new HttpError(404, 'not_found', 'Không tìm thấy cây này.');
 
@@ -54,62 +57,41 @@ export async function authRoutes(app: FastifyInstance) {
     const at = now();
     if (!t.pinHash) throw new HttpError(400, 'pin_not_set', 'Cây này chưa đặt mã PIN.');
     const ipH = ipHash(env, clientIp(req), at);
-    const locked = async () => {
-      const [cur] = await db.db.select({ until: trees.pinLockedUntil }).from(trees).where(eq(trees.id, t.id)).limit(1);
-      const until = cur?.until && cur.until > at ? cur.until : new Date(at.getTime() + PIN_LOCK_MS);
-      return new HttpError(429, 'pin_locked', 'Nhập sai quá nhiều lần, thử lại sau 15 phút.', {
-        retryAt: until.toISOString(),
+    const treeIpBucket = `pin:tree:${t.id}:ip:${ipH}`;
+    const treeBucket = `pin:tree:${t.id}`;
+    const ipBucket = 'pinfail:ip:' + ipH;
+    const locked = (windowMs: number) =>
+      new HttpError(429, 'pin_locked', 'Nhập sai quá nhiều lần, thử lại sau.', {
+        retryAt: windowEnd(at, windowMs).toISOString(),
       });
-    };
 
-    // Giữ chỗ lượt thử nguyên tử TRƯỚC khi chạy scrypt, để các yêu cầu song song không vượt giới hạn.
-    const [reserved] = await db.db
-      .update(trees)
-      .set({
-        // Cửa sổ 15 phút: lần sai cuối đã quá 15 phút thì đếm lại từ 1.
-        pinFailedCount: sql`CASE WHEN ${trees.pinLastFailedAt} IS NOT NULL AND ${trees.pinLastFailedAt} <= ${new Date(at.getTime() - PIN_LOCK_MS).toISOString()}::timestamptz THEN 1 ELSE ${trees.pinFailedCount} + 1 END`,
-        pinLastFailedAt: at,
-      })
-      .where(and(eq(trees.id, t.id), or(isNull(trees.pinLockedUntil), lte(trees.pinLockedUntil, at))))
-      .returning({ n: trees.pinFailedCount });
-    if (!reserved) throw await locked();
-    if (reserved.n > PIN_MAX_FAILS) {
-      // Tràn: đã có ≥5 lượt đang chạy → khoá thật (tự hết sau 15 phút), tránh kẹt đếm mà không có mốc khoá.
-      await db.db
-        .update(trees)
-        .set({ pinFailedCount: 0, pinLockedUntil: new Date(at.getTime() + PIN_LOCK_MS) })
-        .where(and(eq(trees.id, t.id), or(isNull(trees.pinLockedUntil), lte(trees.pinLockedUntil, at))));
-      throw await locked();
+    // Giữ lượt nguyên tử TRƯỚC khi chạy scrypt, để các yêu cầu song song không vượt giới hạn.
+    // Lượt bị từ chối được trả lại ngay, để nó không kéo dài khoá.
+    if (!(await rateLimit(db.db, treeIpBucket, PIN_FAILS_PER_TREE_IP, at, PIN_TREE_IP_WINDOW_MS))) {
+      await refundRate(db.db, treeIpBucket, at, PIN_TREE_IP_WINDOW_MS);
+      throw locked(PIN_TREE_IP_WINDOW_MS);
     }
-
-    const refundTree = () =>
-      db.db
-        .update(trees)
-        .set({ pinFailedCount: sql`greatest(${trees.pinFailedCount} - 1, 0)` })
-        .where(eq(trees.id, t.id));
-    const bucket = 'pinfail:ip:' + ipH;
-    if (!(await rateLimit(db.db, bucket, IP_FAIL_LIMIT, at))) {
-      await refundTree();
+    if (!(await rateLimit(db.db, treeBucket, PIN_FAILS_PER_TREE_DAY, at, DAY_MS))) {
+      await refundRate(db.db, treeBucket, at, DAY_MS);
+      await refundRate(db.db, treeIpBucket, at, PIN_TREE_IP_WINDOW_MS);
+      throw locked(DAY_MS);
+    }
+    if (!(await rateLimit(db.db, ipBucket, PIN_FAILS_PER_IP_HOUR, at))) {
+      await refundRate(db.db, ipBucket, at);
+      await refundRate(db.db, treeBucket, at, DAY_MS);
+      await refundRate(db.db, treeIpBucket, at, PIN_TREE_IP_WINDOW_MS);
       throw new HttpError(429, 'rate_limited', 'Bạn thao tác nhanh quá, đợi một lát nhé.');
     }
 
     const ok = await verifyPin(pin, t.pinHash);
     await db.db.insert(authAttempts).values({ treeId: t.id, ipHash: ipH, method: 'pin', success: ok, createdAt: at });
-    if (!ok) {
-      if (reserved.n === PIN_MAX_FAILS) {
-        await db.db
-          .update(trees)
-          .set({ pinFailedCount: 0, pinLockedUntil: new Date(at.getTime() + PIN_LOCK_MS) })
-          .where(eq(trees.id, t.id));
-      }
-      throw new HttpError(401, 'bad_pin', 'Mã PIN không đúng.');
-    }
-    // Đúng PIN: không tính vào giới hạn IP (chỉ đếm lần sai) nên trả lại lượt đã giữ.
+    if (!ok) throw new HttpError(401, 'bad_pin', 'Mã PIN không đúng.');
+    // Đúng PIN: chỉ đếm lần sai → xoá các lần sai của IP này ở phòng này, trả lại lượt ở bộ đếm ngày và bộ đếm IP.
     await db.db
-      .update(rateCounters)
-      .set({ hits: sql`greatest(${rateCounters.hits} - 1, 0)` })
-      .where(and(eq(rateCounters.bucket, bucket), eq(rateCounters.windowStart, new Date(Math.floor(at.getTime() / 3600_000) * 3600_000))));
-    await db.db.update(trees).set({ pinFailedCount: 0, pinLockedUntil: null, pinLastFailedAt: null }).where(eq(trees.id, t.id));
+      .delete(rateCounters)
+      .where(and(eq(rateCounters.bucket, treeIpBucket), eq(rateCounters.windowStart, windowStart(at, PIN_TREE_IP_WINDOW_MS))));
+    await refundRate(db.db, treeBucket, at, DAY_MS);
+    await refundRate(db.db, ipBucket, at);
     await setOwnerCookie(app, reply, t.id, 'pin');
     return reply.code(204).send();
   });

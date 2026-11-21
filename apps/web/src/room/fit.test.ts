@@ -42,6 +42,16 @@ describe('fitRoom', () => {
     expect(f.left).toBeCloseTo((360 - f.width) / 2, 6);
   });
 
+  it('vùng thấp hơn reserveTop + reserveBottom → scale 0, width/height 0, không âm', () => {
+    const f = fitRoom(360, 100, 56, 116);
+    expect(f.scale).toBe(0);
+    expect(f.width).toBe(0);
+    expect(f.height).toBe(0);
+  });
+  it('fitRoom(0, 0) → scale 0', () => {
+    expect(fitRoom(0, 0).scale).toBe(0);
+  });
+
   it('đã đủ chỗ phía dưới thì giữ nguyên cách co', () => {
     expect(fitRoom(390, 844, 56, 116)).toEqual(fitRoom(390, 844, 56));
   });

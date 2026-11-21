@@ -37,7 +37,18 @@ export async function buildApp(deps: AppDeps, opts: { logStream?: { write(msg: s
   const app = Fastify({ logger: opts.logStream ? { ...loggerOptions, stream: opts.logStream } : process.env.VITEST ? false : loggerOptions, bodyLimit: 65536, trustProxy: (_addr: string, hop: number) => hop < deps.env.trustProxyHops });
   app.decorate('deps', deps);
   await app.register(cookie);
-  await app.register(helmet);
+  const GOOGLE = 'https://accounts.google.com';
+  // Giữ mặc định helmet cho các chỉ thị khác; chỉ mở đúng accounts.google.com cho Google Identity.
+  await app.register(helmet, {
+    contentSecurityPolicy: {
+      directives: {
+        'script-src': ["'self'", GOOGLE],
+        'frame-src': ["'self'", GOOGLE],
+        'connect-src': ["'self'", GOOGLE],
+        'style-src': ["'self'", "'unsafe-inline'", GOOGLE],
+      },
+    },
+  });
 
   app.addHook('onRequest', async (req, reply) => {
     const path = req.url.split('?')[0]!;

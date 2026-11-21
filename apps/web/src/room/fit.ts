@@ -14,7 +14,7 @@ export type Fit = {
 
 /** Co phòng vừa vùng `areaW × areaH`, chừa `reserveTop` phía trên và `reserveBottom` phía dưới (phòng luôn hiện trọn, đặc tả 11). */
 export function fitRoom(areaW: number, areaH: number, reserveTop = 0, reserveBottom = 0): Fit {
-  const scale = Math.min(areaW / ROOM_W, (areaH - reserveTop - reserveBottom) / ROOM_H);
+  const scale = Math.max(0, Math.min(areaW / ROOM_W, (areaH - reserveTop - reserveBottom) / ROOM_H));
   const width = ROOM_W * scale;
   const height = ROOM_H * scale;
   const spare = areaH - height;

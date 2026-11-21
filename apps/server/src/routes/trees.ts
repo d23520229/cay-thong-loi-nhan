@@ -83,14 +83,13 @@ export async function treesRoutes(app: FastifyInstance) {
     const { db, env, now, google } = app.deps;
     const at = now();
     const ipH = ipHash(env, clientIp(req), at);
-    if (!(await rateLimit(db.db, 'create:ip:' + ipH, 5, at))) {
-      throw new HttpError(429, 'rate_limited', 'Bạn thao tác nhanh quá, đợi một lát nhé.');
-    }
-
     const body = CreateTreeBodySchema.parse(req.body);
     const { room } = body;
     const v = validateRoom(room);
     if (!v.ok) throw new HttpError(400, v.code, v.message);
+    if (!(await rateLimit(db.db, 'create:ip:' + ipH, 20, at))) {
+      throw new HttpError(429, 'rate_limited', 'Bạn thao tác nhanh quá, đợi một lát nhé.');
+    }
 
     let pinHash: string | null = null;
     let ownerAccountId: number | null = null;

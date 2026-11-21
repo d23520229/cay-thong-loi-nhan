@@ -16,6 +16,12 @@ describe('authErrorMessage', () => {
     expect(authErrorMessage(locked('2026-12-01T09:00:00Z'), NOW)).toBe('Nhập sai quá nhiều lần, thử lại sau 1 phút');
   });
 
+  it('pin_locked: ≤ 60 phút → phút; > 60 phút → giờ làm tròn lên', () => {
+    expect(authErrorMessage(locked('2026-12-01T11:00:00Z'), NOW)).toBe('Nhập sai quá nhiều lần, thử lại sau 60 phút');
+    expect(authErrorMessage(locked('2026-12-01T11:00:01Z'), NOW)).toBe('Nhập sai quá nhiều lần, thử lại sau 2 giờ');
+    expect(authErrorMessage(locked('2026-12-02T09:59:00Z'), NOW)).toBe('Nhập sai quá nhiều lần, thử lại sau 24 giờ');
+  });
+
   it('pin_locked: thiếu hoặc sai retryAt → 15 phút', () => {
     for (const r of [undefined, 'z', 42, null]) {
       expect(authErrorMessage(locked(r), NOW)).toBe('Nhập sai quá nhiều lần, thử lại sau 15 phút');

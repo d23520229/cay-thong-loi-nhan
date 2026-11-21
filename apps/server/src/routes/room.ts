@@ -112,8 +112,7 @@ export async function roomRoutes(app: FastifyInstance) {
   app.get<{ Params: { id: string } }>('/api/trees/:id/owner', async (req) => {
     const treeId = req.params.id;
     await requireOwner(app, req, treeId);
-    const { db, now } = app.deps;
-    const at = now();
+    const { db } = app.deps;
     const room = await buildPublicRoom(db.db, treeId);
     if (!room) throw new HttpError(404, 'not_found', 'Không tìm thấy cây này.');
     const [t] = await db.db
@@ -124,7 +123,6 @@ export async function roomRoutes(app: FastifyInstance) {
       .select({ id: messages.id, slotIndex: messages.slotIndex, createdAt: messages.createdAt, readAt: messages.readAt })
       .from(messages)
       .where(eq(messages.treeId, treeId));
-    await db.db.update(trees).set({ lastOwnerVisitAt: at }).where(eq(trees.id, treeId));
 
     const { canRead, phase } = phaseOf(app);
     const bySlot = new Map(msgs.map((m) => [m.slotIndex, m]));
@@ -143,6 +141,14 @@ export async function roomRoutes(app: FastifyInstance) {
       newSinceLastVisit: since ? msgs.filter((m) => m.createdAt > since).length : msgs.length,
       showMessageCount: t!.show,
     };
+  });
+
+  app.post<{ Params: { id: string } }>('/api/trees/:id/owner/visit', async (req, reply) => {
+    const treeId = req.params.id;
+    await requireOwner(app, req, treeId);
+    const { db, now } = app.deps;
+    await db.db.update(trees).set({ lastOwnerVisitAt: now() }).where(eq(trees.id, treeId));
+    return reply.code(204).send();
   });
 
   app.put<{ Params: { id: string } }>('/api/trees/:id/settings', async (req) => {
