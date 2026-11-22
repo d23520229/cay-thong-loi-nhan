@@ -202,6 +202,8 @@ describe('reports', () => {
   it('chủ cây kèm messageId: snapshot đúng, reporter owner, hash NULL', async () => {
     const { id, cookies } = await setup();
     const p = (await post(id, 1)).json();
+    t.clock.set('2026-12-24T08:00:00+07:00');
+    expect((await open(id, p.messageId, cookies)).statusCode).toBe(200);
     const r = await report(id, { messageId: p.messageId, reason: '  spam  ' }, {}, cookies);
     expect(r.statusCode).toBe(201);
     expect(typeof r.json().reportId).toBe('string');
@@ -210,6 +212,20 @@ describe('reports', () => {
       reporter: 'owner', reporterHash: null, messageSnapshot: 'Chúc mừng Giáng sinh', reason: 'spam', status: 'open',
     });
     expect(String(row!.messageId)).toBe(p.messageId);
+  });
+
+  it('chủ cây báo cáo lời nhắn chưa mở (trước và sau 24/12): 403 not_opened, không tạo báo cáo', async () => {
+    const { id, cookies } = await setup();
+    const p = (await post(id, 1)).json();
+    for (const at of ['2026-12-01T10:05:00+07:00', '2026-12-24T08:00:00+07:00']) {
+      t.clock.set(at);
+      const r = await report(id, { messageId: p.messageId }, {}, cookies);
+      expect(r.statusCode).toBe(403);
+      expect(r.json().error.code).toBe('not_opened');
+    }
+    expect(await t.h.db.select().from(reports)).toHaveLength(0);
+    // Báo cáo cả phòng (không kèm messageId) vẫn được.
+    expect((await report(id, { reason: 'x' }, {}, cookies)).statusCode).toBe(201);
   });
 
   it('chủ cây báo cáo mid phòng khác: 404', async () => {

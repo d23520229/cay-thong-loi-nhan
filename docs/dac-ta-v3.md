@@ -755,7 +755,7 @@ JSON, UTF-8. Header `X-Device-Id` cho người viết. Quyền chủ cây qua co
 | GET | `/api/trees/:id/messages` | Danh sách lời nhắn đã mở được (P1) |
 | DELETE | `/api/trees/:id/messages/:mid` | Chủ cây xoá |
 | POST | `/api/trees/:id/block` | `{ messageId }` → chặn thiết bị người gửi, xoá lời nhắn |
-| POST | `/api/trees/:id/reports` | Báo cáo (chủ cây hoặc khách) |
+| POST | `/api/trees/:id/reports` | Báo cáo (chủ cây hoặc khách). Chủ cây kèm `messageId` chỉ được với lời nhắn đã mở (`read_at` khác NULL), ngược lại 403 `not_opened` — không để báo cáo làm lộ nội dung còn khoá |
 
 ### 8.6 Trang & ảnh
 | Phương thức | Đường dẫn | Mô tả |

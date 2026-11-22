@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { eq } from 'drizzle-orm';
 import { catalog } from '@ctln/shared';
-import { makeTestApp } from './helpers.js';
+import { deviceHeaders, makeTestApp } from './helpers.js';
 import { messages, ownerSessions, rateCounters, roomItems, trees } from '../src/db/schema.js';
 import { runMigrations } from '../src/db/migrate.js';
 import { connectPglite } from '../src/db/client.js';
@@ -213,6 +213,21 @@ describe('GET /api/trees/:id/owner', () => {
     await addMsg(id, 2, new Date('2026-12-01T11:00:00+07:00'));
     t.clock.set('2026-12-01T11:05:00+07:00');
     expect((await getOwner(id, cookies)).json()).toMatchObject({ messageCount: 3, newSinceLastVisit: 1 });
+  });
+
+  it('O10: lời nhắn treo qua API được tính "mới" theo đồng hồ app (FAKE_NOW), không theo giờ CSDL', async () => {
+    t = await makeTestApp({ at: '2026-12-10T10:00:00+07:00' });
+    const { id, cookies } = await create();
+    expect((await visit(id, cookies)).statusCode).toBe(204);
+    t.clock.set('2026-12-10T11:00:00+07:00');
+    const m = await t.app.inject({
+      method: 'POST', url: `/api/trees/${id}/messages`, headers: { ...JSON_CT, ...deviceHeaders() },
+      payload: { slotIndex: 0, ornament: Object.keys(catalog.ornaments)[0], anonymous: true, content: 'chào' },
+    });
+    expect(m.statusCode).toBe(201);
+    expect((await getOwner(id, cookies)).json()).toMatchObject({ messageCount: 1, newSinceLastVisit: 1 });
+    const [row] = await t.h.db.select().from(messages).where(eq(messages.treeId, id));
+    expect(row!.createdAt.toISOString()).toBe('2026-12-10T04:00:00.000Z');
   });
 
   it('POST /owner/visit: 401 không cookie; 204 và ghi last_owner_visit_at = now', async () => {

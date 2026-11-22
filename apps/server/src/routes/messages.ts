@@ -114,6 +114,9 @@ export async function messagesRoutes(app: FastifyInstance) {
             editUntil,
             deviceHash: dHash,
             ipHash: iHash,
+            // Giờ theo app (FAKE_NOW), không theo now() của CSDL: newSinceLastVisit so với last_owner_visit_at.
+            createdAt: at,
+            updatedAt: at,
           })
           .returning({ id: messages.id });
         return row!.id;

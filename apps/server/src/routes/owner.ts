@@ -102,6 +102,10 @@ export async function ownerRoutes(app: FastifyInstance) {
       let messageId: number | null = null;
       if (body.messageId !== undefined) {
         const m = await findMessage(treeId, parseMid(body.messageId));
+        // Chỉ chụp lời nhắn chủ cây đã mở: không để báo cáo làm lộ nội dung còn khoá cho quản trị viên.
+        if (m.readAt === null) {
+          throw new HttpError(403, 'not_opened', 'Chỉ báo cáo được lời nhắn bạn đã mở.');
+        }
         snapshot = m.content;
         messageId = m.id;
       }

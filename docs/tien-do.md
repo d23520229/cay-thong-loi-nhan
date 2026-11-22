@@ -7,7 +7,7 @@
 - **Ngày cập nhật:** 22/11/2026
 - **Mốc đang ở:** M1 và M2 đã gộp vào `main` (PR #1, #2; commit 51e00e0). M1 backend: 6 nhóm route, 118 test server + 40 test shared (M2 thêm 2 test `googleClientId`, nay 120 test server); đã chạy thử với PostgreSQL 16 thật trong Docker ngày 17/11 (mục 1–9 bên dưới đều đạt); mục 10 làm khi lên Azure.
 - **M2 xong** (đã gộp vào `main`): giao diện phòng tự do, 167 test web + 122 test server + 40 test shared (sau khi sửa việc nhỏ 19/11), typecheck sạch. Bản build JS + CSS ≈ 150 KB gzip (giới hạn 250 KB). Đã chạy thật qua proxy Vite với PostgreSQL trong Docker (18/11): `/` trả HTML, `/api/config` qua proxy, tạo cây 201 với `publicUrl` bắt đầu `http://localhost:5173/c/`, `GET /api/trees/{id}` 200.
-- **Rà soát luồng 22/11** (nhánh `fix-luong-sau-m2`, chưa commit): viết `docs/luong-hoat-dong.md` và sửa các lỗi tìm được (xem Nhật ký 22/11). Lượt 2 sửa nốt lỗi 6, 7, 10, 11, 12 và xung đột giả khi lưu. Nay **198 test web + 131 test server + 40 test shared**, typecheck sạch.
+- **Rà soát luồng 22/11** (nhánh `fix-luong-sau-m2`, chưa commit): viết `docs/luong-hoat-dong.md` và sửa các lỗi tìm được (xem Nhật ký 22/11). Lượt 2 sửa nốt lỗi 6, 7, 10, 11, 12 và xung đột giả khi lưu. Nay **198 test web + 133 test server + 40 test shared**, typecheck sạch (lượt 3: lời nhắn ghi `created_at` theo đồng hồ app — trước đó lấy `now()` của CSDL nên `newSinceLastVisit` sai khi dùng `FAKE_NOW`; chủ cây chỉ báo cáo kèm `messageId` được với lời nhắn đã mở, ngược lại 403 `not_opened`, để bản chụp không lộ nội dung còn khoá cho quản trị viên).
 - **Việc tiếp theo:** **M3 — bạn bè treo lời nhắn, chủ cây đọc/khoá/đếm ngược, chia sẻ, OG** — chờ chủ dự án duyệt.
 
 ### M2 — danh sách thử tay trên trình duyệt (chủ dự án)
