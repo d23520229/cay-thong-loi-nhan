@@ -1,0 +1,13 @@
+/* Xem thiệp toàn màn hình (tiền tố cd-). */
+.cd-canvas { display: block; width: 100%; height: auto; aspect-ratio: 2100 / 1500; }
+.cd-viewer {
+  position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.88); touch-action: pinch-zoom; outline: none;
+}
+.cd-close {
+  position: absolute; top: 12px; right: 12px; z-index: 1; width: 44px; height: 44px; border: 0; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15); color: #fff; font-size: 20px; cursor: pointer;
+}
+.cd-stage { width: 96vw; max-height: 96vh; }
+/* Màn dọc: xoay 90° rồi lấy bề rộng theo chiều cao màn hình. */
+.cd-stage.cd-rotated { width: 96vh; max-height: none; transform: rotate(90deg); flex: none; }
