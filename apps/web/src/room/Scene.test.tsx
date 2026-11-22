@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { fireEvent, render } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { Scene } from './Scene';
 import { defaultRoom, drawOrder } from './model';
@@ -51,12 +51,41 @@ describe('Scene', () => {
     expect(rule).toMatch(/outline:\s*4px dashed #FFD86B/i);
     expect(rule).toMatch(/outline-offset:\s*8px/);
     expect(rule).toMatch(/border-radius:\s*14px/);
-    expect(animCss).not.toMatch(/\.selected|\.item/);
+    expect(animCss).not.toMatch(/\.selected\b|\.item\b/);
   });
 
   it('món lật có scaleX(-1)', () => {
     const flipped = { ...room, items: room.items.map((i, k) => (k === 0 ? { ...i, flip: true } : i)) };
     const { container } = render(<Scene room={flipped} />);
     expect(find(container, flipped.items[0]!.clientId).style.transform).toContain('scaleX(-1)');
+  });
+});
+
+describe('Scene hiệu ứng chạm', () => {
+  const room = defaultRoom();
+  const gift = room.items.find((i) => i.type === 'gift')!;
+  const pet = room.items.find((i) => i.type === 'pet')!;
+  const el = (c: HTMLElement, id: string) => c.querySelector<HTMLElement>(`[data-client-id="${id}"]`)!;
+
+  it('fx gắn class lên món và vẽ .burst với đúng số .pt', () => {
+    const { container } = render(<Scene room={room} fx={{ clientId: gift.clientId, fx: { cls: 'g-hop', burst: 'confetti' }, seed: 1 }} />);
+    const g = el(container, gift.clientId);
+    expect(g.classList.contains('g-hop')).toBe(true);
+    expect(g.querySelector('.hop img')).not.toBeNull();
+    expect(g.querySelectorAll('.burst .pt')).toHaveLength(16);
+  });
+
+  it('say hiện chữ', () => {
+    const { container } = render(<Scene room={room} fx={{ clientId: pet.clientId, fx: { cls: 'p-talk', say: 'Meo~' }, seed: 1 }} />);
+    expect(el(container, pet.clientId).querySelector('.say')?.textContent).toBe('Meo~');
+  });
+
+  it('onItemTap nhận clientId khi nhấn-thả (click), không phải khi vừa chạm xuống', () => {
+    const taps: string[] = [];
+    const { container } = render(<Scene room={room} onItemTap={(id) => taps.push(id)} />);
+    fireEvent.pointerDown(el(container, gift.clientId));
+    expect(taps).toEqual([]);
+    fireEvent.click(el(container, gift.clientId));
+    expect(taps).toEqual([gift.clientId]);
   });
 });

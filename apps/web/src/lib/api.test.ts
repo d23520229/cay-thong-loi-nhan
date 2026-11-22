@@ -88,3 +88,66 @@ describe('OwnerRoom', () => {
     expect(got.slots[1]!.locked).toBe(true);
   });
 });
+
+describe('api lời nhắn', () => {
+  it('getMine gửi x-edit-token và x-device-id', async () => {
+    fetchMock().mockResolvedValue(json(200, { messageId: '12' }));
+    await api.getMine('12', 'tok');
+    const [url, init] = fetchMock().mock.calls[0]!;
+    expect(url).toBe('/api/messages/12/mine');
+    expect(init?.method).toBe('GET');
+    const h = new Headers(init?.headers);
+    expect(h.get('x-edit-token')).toBe('tok');
+    expect(h.get('x-device-id')).toMatch(/^[0-9a-f-]{36}$/);
+  });
+
+  it('postMessage gửi đúng body', async () => {
+    fetchMock().mockResolvedValue(json(201, { messageId: '1', editToken: 't', editUntil: 'u' }));
+    const body = { slotIndex: 3, ornament: 'ball', anonymous: true, content: 'Chúc', website: '' };
+    await expect(api.postMessage('abcdefgh', body)).resolves.toEqual({ messageId: '1', editToken: 't', editUntil: 'u' });
+    const [url, init] = fetchMock().mock.calls[0]!;
+    expect(url).toBe('/api/trees/abcdefgh/messages');
+    expect(init?.method).toBe('POST');
+    expect(JSON.parse(init?.body as string)).toEqual(body);
+  });
+
+  it('editMessage PUT và deleteMessage DELETE kèm token', async () => {
+    fetchMock().mockResolvedValueOnce(json(200, { ok: true })).mockResolvedValueOnce(new Response(null, { status: 204 }));
+    await api.editMessage('7', 'tk', { ornament: 'bell', anonymous: false, authorName: 'An', content: 'Hi' });
+    await expect(api.deleteMessage('7', 'tk')).resolves.toBeUndefined();
+    const [u1, i1] = fetchMock().mock.calls[0]!;
+    const [u2, i2] = fetchMock().mock.calls[1]!;
+    expect([u1, i1?.method, u2, i2?.method]).toEqual(['/api/messages/7', 'PUT', '/api/messages/7', 'DELETE']);
+    expect(new Headers(i2?.headers).get('x-edit-token')).toBe('tk');
+  });
+});
+
+describe('api chủ cây', () => {
+  const call = (i = 0) => fetchMock().mock.calls[i]!;
+  it('openMessage POST đúng đường dẫn', async () => {
+    fetchMock().mockResolvedValue(json(200, { messageId: '5', content: 'x' }));
+    await api.openMessage('abcdefgh', '5');
+    expect([call()[0], call()[1]?.method]).toEqual(['/api/trees/abcdefgh/messages/5/open', 'POST']);
+  });
+  it('ownerDeleteMessage, blockSender, report, setShowCount, deleteTree', async () => {
+    fetchMock()
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(json(201, { reportId: '1' }))
+      .mockResolvedValueOnce(json(200, { showMessageCount: false }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }));
+    await api.ownerDeleteMessage('abcdefgh', '5');
+    await api.blockSender('abcdefgh', '5');
+    await expect(api.report('abcdefgh', { messageId: '5', reason: 'r' })).resolves.toEqual({ reportId: '1' });
+    await expect(api.setShowCount('abcdefgh', false)).resolves.toEqual({ showMessageCount: false });
+    await api.deleteTree('abcdefgh');
+    const got = fetchMock().mock.calls.map(([u, i]) => [u, i?.method, i?.body ? JSON.parse(i.body as string) : null]);
+    expect(got).toEqual([
+      ['/api/trees/abcdefgh/messages/5', 'DELETE', null],
+      ['/api/trees/abcdefgh/block', 'POST', { messageId: '5' }],
+      ['/api/trees/abcdefgh/reports', 'POST', { messageId: '5', reason: 'r' }],
+      ['/api/trees/abcdefgh/settings', 'PUT', { showMessageCount: false }],
+      ['/api/trees/abcdefgh', 'DELETE', null],
+    ]);
+  });
+});

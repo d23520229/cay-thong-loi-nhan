@@ -1,6 +1,7 @@
 import type { Room } from '@ctln/shared';
 
 export type MyTree = { id: string; title: string | null; createdAt: string };
+export type MineEntry = { messageId: string; editToken: string; editUntil: string };
 export type Draft = { room: Room; baseVersion: number | null; savedAt: string };
 
 type Area = 'localStorage' | 'sessionStorage';
@@ -64,6 +65,19 @@ const writeDidCookie = (id: string) => {
   }
 };
 
+const mineKey = (treeId: string, slot: number) => `msg:${treeId}:${slot}`;
+const isMine = (v: unknown): v is MineEntry => {
+  const e = v as MineEntry | null;
+  return !!e && typeof e.messageId === 'string' && typeof e.editToken === 'string' && typeof e.editUntil === 'string';
+};
+const keys = (): string[] => {
+  try {
+    return Object.keys(window.localStorage);
+  } catch {
+    return [];
+  }
+};
+
 let memoryDeviceId: string | null = null;
 
 export const storage = {
@@ -89,6 +103,26 @@ export const storage = {
   getDraft: (key: string): Draft | null => parse<Draft>(read('localStorage', 'draft:' + key)),
   setDraft: (key: string, d: Draft) => write('localStorage', 'draft:' + key, JSON.stringify(d)),
   clearDraft: (key: string) => remove('localStorage', 'draft:' + key),
+  getMine(treeId: string, slot: number): MineEntry | null {
+    const v = parse<unknown>(read('localStorage', mineKey(treeId, slot)));
+    return isMine(v) ? v : null;
+  },
+  setMine: (treeId: string, slot: number, e: MineEntry) => write('localStorage', mineKey(treeId, slot), JSON.stringify(e)),
+  clearMine: (treeId: string, slot: number) => remove('localStorage', mineKey(treeId, slot)),
+  /** Mọi khoá `msg:{treeId}:{slot}` hợp lệ của cây này. */
+  listMine(treeId: string): Record<number, MineEntry> {
+    const prefix = `msg:${treeId}:`;
+    const out: Record<number, MineEntry> = {};
+    for (const k of keys()) {
+      if (!k.startsWith(prefix)) continue;
+      const slot = Number(k.slice(prefix.length));
+      const e = Number.isInteger(slot) && slot >= 0 ? this.getMine(treeId, slot) : null;
+      if (e) out[slot] = e;
+    }
+    return out;
+  },
+  getLastName: (): string => read('localStorage', 'lastName') ?? '',
+  setLastName: (n: string) => write('localStorage', 'lastName', n),
   getRef: (): string | null => read('sessionStorage', 'ref'),
   setRef: (id: string) => write('sessionStorage', 'ref', id),
 };

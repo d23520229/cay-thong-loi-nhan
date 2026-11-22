@@ -12,6 +12,7 @@
     "db:migrate": "tsx --env-file-if-exists=../../.env src/db/migrate.ts"
   },
   "dependencies": {
+    "@ctln/art": "workspace:*",
     "@ctln/shared": "workspace:*",
     "@fastify/cookie": "^11.0.0",
     "@fastify/helmet": "^13.0.0",

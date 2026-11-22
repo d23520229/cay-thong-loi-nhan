@@ -3,14 +3,15 @@ import { useEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /** Bảng trượt modal: mở thì tiêu điểm vào bảng, Tab xoay vòng bên trong, Escape đóng, đóng thì trả tiêu điểm. */
-export function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+export function Sheet({ title, onClose, children, className }: { title: string; onClose: () => void; children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
-    ref.current?.focus();
+    // preventScroll: bảng đang trượt lên, lấy tiêu điểm thường sẽ cuộn cả phòng phía sau (phòng "nảy").
+    ref.current?.focus({ preventScroll: true });
     return () => {
-      if (opener?.isConnected) opener.focus();
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
     };
   }, []);
 
@@ -36,7 +37,7 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
   };
 
   return (
-    <div ref={ref} className="sheet" role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} onKeyDown={onKeyDown}>
+    <div ref={ref} className={className ? `sheet ${className}` : 'sheet'} role="dialog" aria-modal="true" aria-label={title} tabIndex={-1} onKeyDown={onKeyDown}>
       <div className="sheet-head">
         <div className="sheet-title">{title}</div>
         <button type="button" className="tb" aria-label="Đóng" onClick={onClose}>✕</button>

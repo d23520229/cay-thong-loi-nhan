@@ -96,3 +96,35 @@ describe('storage', () => {
     expect(id).toMatch(/^[0-9a-f-]{36}$/);
   });
 });
+
+describe('storage lời nhắn', () => {
+  const e = { messageId: '5', editToken: 't', editUntil: '2026-12-01T00:15:00Z' };
+  it('msg: lưu/đọc/xoá theo cây và điểm', async () => {
+    const s = await load();
+    s.setMine('aaaaaaaa', 2, e);
+    expect(localStorage.getItem('msg:aaaaaaaa:2')).not.toBeNull();
+    expect(s.getMine('aaaaaaaa', 2)).toEqual(e);
+    s.clearMine('aaaaaaaa', 2);
+    expect(s.getMine('aaaaaaaa', 2)).toBeNull();
+  });
+  it('listMine chỉ trả khoá của đúng cây', async () => {
+    const s = await load();
+    s.setMine('aaaaaaaa', 1, e);
+    s.setMine('bbbbbbbb', 2, e);
+    expect(s.listMine('aaaaaaaa')).toEqual({ 1: e });
+  });
+  it('getMine trả null khi JSON hỏng hoặc thiếu trường', async () => {
+    const s = await load();
+    localStorage.setItem('msg:aaaaaaaa:0', '{x');
+    localStorage.setItem('msg:aaaaaaaa:1', '{"messageId":"1"}');
+    expect(s.getMine('aaaaaaaa', 0)).toBeNull();
+    expect(s.getMine('aaaaaaaa', 1)).toBeNull();
+    expect(s.listMine('aaaaaaaa')).toEqual({});
+  });
+  it('lastName mặc định chuỗi rỗng', async () => {
+    const s = await load();
+    expect(s.getLastName()).toBe('');
+    s.setLastName('Lan');
+    expect(s.getLastName()).toBe('Lan');
+  });
+});

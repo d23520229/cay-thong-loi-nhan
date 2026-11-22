@@ -47,8 +47,32 @@ export type AppConfig = {
   googleClientId: string | null;
 };
 
-async function request<T>(method: string, path: string, body?: unknown, opts?: { keepalive?: boolean }): Promise<T> {
-  const headers: Record<string, string> = { 'x-device-id': storage.deviceId() };
+export type MessageInput = { ornament: string; anonymous: boolean; authorName?: string; content: string };
+
+export type MyMessage = {
+  messageId: string;
+  slotIndex: number;
+  ornament: string;
+  anonymous: boolean;
+  authorName: string | null;
+  content: string;
+  editUntil: string;
+};
+
+export type OpenedMessage = {
+  messageId: string;
+  slotIndex: number;
+  ornament: string;
+  anonymous: boolean;
+  authorName: string | null;
+  content: string;
+  createdAt: string;
+};
+
+type RequestOpts = { keepalive?: boolean; headers?: Record<string, string> };
+
+async function request<T>(method: string, path: string, body?: unknown, opts?: RequestOpts): Promise<T> {
+  const headers: Record<string, string> = { 'x-device-id': storage.deviceId(), ...opts?.headers };
   if (body !== undefined) headers['content-type'] = 'application/json';
   let res: Response;
   try {
@@ -77,6 +101,8 @@ async function request<T>(method: string, path: string, body?: unknown, opts?: {
 }
 
 const tree = (id: string) => `/api/trees/${encodeURIComponent(id)}`;
+const message = (mid: string) => `/api/messages/${encodeURIComponent(mid)}`;
+const token = (t: string): RequestOpts => ({ headers: { 'x-edit-token': t } });
 
 export const api = {
   getConfig: () => request<AppConfig>('GET', '/api/config'),
@@ -92,4 +118,18 @@ export const api = {
   authGoogle: (idToken: string, treeId?: string) =>
     request<void | { trees: { id: string; title: string | null }[] }>('POST', '/api/auth/google', { idToken, treeId }),
   logout: (id: string) => request<void>('POST', `${tree(id)}/auth/logout`),
+  postMessage: (id: string, body: MessageInput & { slotIndex: number; website: string }) =>
+    request<{ messageId: string; editToken: string; editUntil: string }>('POST', `${tree(id)}/messages`, body),
+  getMine: (mid: string, t: string) => request<MyMessage>('GET', `${message(mid)}/mine`, undefined, token(t)),
+  editMessage: (mid: string, t: string, body: MessageInput) => request<{ ok: true }>('PUT', message(mid), body, token(t)),
+  deleteMessage: (mid: string, t: string) => request<void>('DELETE', message(mid), undefined, token(t)),
+  // Chủ cây (đặc tả 8.5)
+  openMessage: (id: string, mid: string) => request<OpenedMessage>('POST', `${tree(id)}/messages/${encodeURIComponent(mid)}/open`),
+  ownerDeleteMessage: (id: string, mid: string) => request<void>('DELETE', `${tree(id)}/messages/${encodeURIComponent(mid)}`),
+  blockSender: (id: string, mid: string) => request<void>('POST', `${tree(id)}/block`, { messageId: mid }),
+  report: (id: string, body: { messageId?: string; reason?: string }) =>
+    request<{ reportId: string }>('POST', `${tree(id)}/reports`, body),
+  setShowCount: (id: string, show: boolean) =>
+    request<{ showMessageCount: boolean }>('PUT', `${tree(id)}/settings`, { showMessageCount: show }),
+  deleteTree: (id: string) => request<void>('DELETE', tree(id)),
 };
