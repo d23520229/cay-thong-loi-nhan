@@ -14,7 +14,7 @@ vi.mock('../lib/api', async (orig) => {
     ...actual,
     api: {
       getConfig: vi.fn(), getOwnerTree: vi.fn(), openMessage: vi.fn(), ownerDeleteMessage: vi.fn(), blockSender: vi.fn(),
-      report: vi.fn(), setShowCount: vi.fn(), deleteTree: vi.fn(),
+      report: vi.fn(), setShowCount: vi.fn(), deleteTree: vi.fn(), roomImageUrl: actual.api.roomImageUrl,
     },
   };
 });

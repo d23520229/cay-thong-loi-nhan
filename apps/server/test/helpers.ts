@@ -11,13 +11,13 @@ export const FakeGoogle: GoogleVerifier = async (token) => {
 
 export const deviceHeaders = (id: string = randomUUID()) => ({ 'x-device-id': id });
 
-export async function makeTestApp(opts: { at?: string; google?: GoogleVerifier | null; renderOg?: AppDeps['renderOg']; env?: Record<string, string> } = {}) {
+export async function makeTestApp(opts: { at?: string; google?: GoogleVerifier | null; renderOg?: AppDeps['renderOg']; renderRoomImage?: AppDeps['renderRoomImage']; env?: Record<string, string> } = {}) {
   let t = new Date(opts.at ?? '2026-12-01T10:00:00+07:00');
   const clock = { set(iso: string) { t = new Date(iso); } };
   const h = await connectPglite();
   await runMigrations(h);
   const google = opts.google === undefined ? FakeGoogle : opts.google;
-  const app = await buildApp({ db: h, env: loadEnv(opts.env ?? {}), now: () => t, google, renderOg: opts.renderOg });
+  const app = await buildApp({ db: h, env: loadEnv(opts.env ?? {}), now: () => t, google, renderOg: opts.renderOg, renderRoomImage: opts.renderRoomImage });
   return { app, h, clock, google };
 }
 

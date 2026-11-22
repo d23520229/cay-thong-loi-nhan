@@ -18,7 +18,7 @@ afterEach(() => {
 });
 
 const show = (mobile = false) =>
-  render(<ShareSheet url={URL_} title="Cây của Lan" toast={toast} onClose={() => {}} openUrl={openUrl} mobile={mobile} />);
+  render(<ShareSheet treeId="abcdefgh" url={URL_} title="Cây của Lan" toast={toast} onClose={() => {}} openUrl={openUrl} mobile={mobile} />);
 
 describe('ShareSheet', () => {
   it('hiện link, Sao chép ghi vào clipboard', async () => {
@@ -66,6 +66,13 @@ describe('ShareSheet', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Zalo' }));
     expect(writeText).toHaveBeenCalledWith(URL_);
     expect(toast).toHaveBeenCalledWith('Đã sao chép — mở Zalo và dán vào nhé');
+  });
+
+  it('có link ⬇ Tải ảnh phòng với href /api/trees/{id}/image.png và thuộc tính download', () => {
+    show();
+    const a = screen.getByRole('link', { name: '⬇ Tải ảnh phòng' });
+    expect(a).toHaveAttribute('href', '/api/trees/abcdefgh/image.png');
+    expect(a).toHaveAttribute('download');
   });
 
   it('isMobile nhận Android / iPhone / iPad', () => {

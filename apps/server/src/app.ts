@@ -23,6 +23,8 @@ export type AppDeps = {
   google: GoogleVerifier | null;
   /** Thay hàm vẽ ảnh OG (chỉ dùng trong test). */
   renderOg?: (room: OgRoom, assetDir: string) => Promise<Buffer>;
+  /** Thay hàm vẽ ảnh phòng tải về (chỉ dùng trong test). */
+  renderRoomImage?: (room: OgRoom, assetDir: string) => Promise<Buffer>;
 };
 
 declare module 'fastify' {

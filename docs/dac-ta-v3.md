@@ -972,6 +972,7 @@ JSON, UTF-8. Header `X-Device-Id` cho người viết. Quyền chủ cây qua co
 |---|---|---|
 | GET | `/c/:id` | HTML có sẵn thẻ OG |
 | GET | `/og/:id.png` | Ảnh xem trước 1200×630, lưu đệm theo `room_version` |
+| GET | `/api/trees/:id/image.png` | Ảnh phòng tải về 1080×1620 (6.7.4), công khai, `Content-Disposition: attachment`, dùng chung bộ đệm với ảnh OG, ghi event `image_downloaded` |
 | GET | `/da-ket-thuc` | Trang kết thúc |
 
 ### 8.7 Quản trị (`/api/admin/*`, cookie phiên quản trị riêng)

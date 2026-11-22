@@ -16,7 +16,7 @@ vi.mock('../lib/api', async (orig) => {
     ...actual,
     api: {
       getConfig: vi.fn(), getTree: vi.fn(), postMessage: vi.fn(), getMine: vi.fn(), editMessage: vi.fn(), deleteMessage: vi.fn(),
-      getOwnerTree: vi.fn(), saveRoom: vi.fn(), authPin: vi.fn(), authLink: vi.fn(), authGoogle: vi.fn(), createTree: vi.fn(), logout: vi.fn(),
+      getOwnerTree: vi.fn(), saveRoom: vi.fn(), authPin: vi.fn(), authLink: vi.fn(), authGoogle: vi.fn(), createTree: vi.fn(), logout: vi.fn(), roomImageUrl: actual.api.roomImageUrl,
     },
   };
 });
@@ -337,6 +337,13 @@ describe('GuestTree — việc nhỏ', () => {
     await openMine();
     await waitFor(() => expect(toast).toHaveBeenCalledWith('Chưa tải được, thử lại nhé'));
     expect(storage.getMine(ID, 2)).not.toBeNull();
+  });
+
+  it('khối dưới của khách có nút ⬇ Tải ảnh phòng', () => {
+    show();
+    const a = screen.getByRole('link', { name: '⬇ Tải ảnh phòng' });
+    expect(a).toHaveAttribute('href', `/api/trees/${ID}/image.png`);
+    expect(a).toHaveAttribute('download');
   });
 
   it('chạm cây là nhấn-thả (click), không zoom khi chỉ vừa chạm xuống', () => {

@@ -105,6 +105,8 @@ const message = (mid: string) => `/api/messages/${encodeURIComponent(mid)}`;
 const token = (t: string): RequestOpts => ({ headers: { 'x-edit-token': t } });
 
 export const api = {
+  /** Đường dẫn tải ảnh phòng (PNG; server gửi kèm content-disposition attachment). */
+  roomImageUrl: (id: string) => `${tree(id)}/image.png`,
   getConfig: () => request<AppConfig>('GET', '/api/config'),
   getTree: (id: string) => request<PublicRoom>('GET', tree(id)),
   getOwnerTree: (id: string) => request<OwnerRoom>('GET', `${tree(id)}/owner`),

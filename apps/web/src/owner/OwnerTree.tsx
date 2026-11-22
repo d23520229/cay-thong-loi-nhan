@@ -300,6 +300,7 @@ export function OwnerTree({ treeId, meta, room, toast, onUnauthorized, onChange 
       {sheet === 'report' ? <ReportSheet busy={busy} onSubmit={(r) => void sendReport(r)} onClose={() => setSheet(null)} /> : null}
       {sheet === 'share' ? (
         <ShareSheet
+          treeId={treeId}
           url={`${window.location.origin}/c/${treeId}`}
           title={meta.title || `Cây thông của ${meta.ownerName}`}
           toast={toast}

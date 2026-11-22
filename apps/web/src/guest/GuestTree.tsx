@@ -26,8 +26,8 @@ type Open =
   | { mode: 'edit'; slot: number; messageId: string; token: string; editUntil: string };
 
 const TOP_RESERVE = 56;
-// Khối nút của khách: 8 + 44 ("Tạo cây của bạn") + 4 + 44 ("Tôi là chủ cây") + 16 — đo bằng Chrome.
-const GUEST_BOTTOM_RESERVE = 116;
+// Khối nút của khách: 8 + 44 ("Tạo cây của bạn") + 4 + 44 ("Tôi là chủ cây") + 28 ("Tải ảnh phòng") + 16 — ước tính, cần đo lại bằng Chrome.
+const GUEST_BOTTOM_RESERVE = 144;
 const SLOT_FX_MS = 950;
 const NOT_EDITABLE = 'Lời nhắn này không sửa được nữa';
 const SEND_FAILED = 'Chưa gửi được, thử lại nhé';
@@ -276,6 +276,7 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
         <div className="room-bottom">
           <Link to={`/?ref=${treeId}`} className="btn btn-primary">Tạo cây của bạn</Link>
           <button type="button" className="linkbtn" onClick={onOwnerLogin}>Tôi là chủ cây</button>
+          <a className="linkbtn" href={api.roomImageUrl(treeId)} download>⬇ Tải ảnh phòng</a>
         </div>
       )}
       {open ? (

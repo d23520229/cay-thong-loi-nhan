@@ -3,7 +3,8 @@ import { join } from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import fastifyStatic from '@fastify/static';
 import { HttpError } from '../errors.js';
-import { renderOg as defaultRender } from '../og/render.js';
+import { renderOg as defaultRender, renderRoomImage as defaultRoomImage } from '../og/render.js';
+import { logEvent } from '../events.js';
 import { buildPublicRoom } from './trees.js';
 
 const TREE_ID = /^[a-z2-9]{8}$/;
@@ -42,25 +43,45 @@ const indexCache = new Map<string, string>();
 export async function ogRoutes(app: FastifyInstance) {
   const { db, env } = app.deps;
   const render = app.deps.renderOg ?? defaultRender;
+  const renderImage = app.deps.renderRoomImage ?? defaultRoomImage;
   const cache = new Map<string, Promise<Buffer>>(); // giữ thứ tự chèn: phần tử đầu là lâu chưa dùng nhất
+
+  /** Vẽ (hoặc lấy từ bộ đệm) ảnh của một phòng; `prefix` tách khoá ảnh tải về khỏi ảnh OG. */
+  const cached = (prefix: string, id: string, room: NonNullable<Awaited<ReturnType<typeof buildPublicRoom>>>, draw: typeof render) => {
+    const key = `${prefix}${id}:${room.roomVersion}:${room.slots.filter((s) => s.occupied).map((s) => `${s.index}=${s.ornament}`).join(',')}`;
+    // Đệm cả lời hứa đang vẽ: nhiều trình đọc link cùng lúc chỉ vẽ một lần. Dùng lại thì dời xuống cuối (LRU).
+    let job = cache.get(key);
+    if (job) cache.delete(key);
+    else {
+      job = draw(room, env.assetDir);
+      job.catch(() => cache.delete(key));
+    }
+    cache.set(key, job);
+    if (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value!);
+    return job;
+  };
 
   app.get<{ Params: { file: string } }>('/og/:file', async (req, reply) => {
     const m = /^([a-z2-9]{8})\.png$/.exec(req.params.file);
     const id = m?.[1];
     const room = id && TREE_ID.test(id) ? await buildPublicRoom(db.db, id) : null;
     if (!id || !room) throw new HttpError(404, 'not_found', 'Không tìm thấy cây này.');
-    const key = `${id}:${room.roomVersion}:${room.slots.filter((s) => s.occupied).map((s) => `${s.index}=${s.ornament}`).join(',')}`;
-    // Đệm cả lời hứa đang vẽ: nhiều trình đọc link cùng lúc chỉ vẽ một lần. Dùng lại thì dời xuống cuối (LRU).
-    let job = cache.get(key);
-    if (job) cache.delete(key);
-    else {
-      job = render(room, env.assetDir);
-      job.catch(() => cache.delete(key));
-    }
-    cache.set(key, job);
-    if (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value!);
-    const png = await job;
+    const png = await cached('', id, room, render);
     return reply.header('content-type', 'image/png').header('cache-control', 'public, max-age=300').send(png);
+  });
+
+  // Ảnh phòng tải về (đặc tả 6.7.4): công khai như GET /api/trees/:id, không có nội dung lời nhắn.
+  app.get<{ Params: { id: string } }>('/api/trees/:id/image.png', async (req, reply) => {
+    const id = req.params.id;
+    const room = TREE_ID.test(id) ? await buildPublicRoom(db.db, id) : null;
+    if (!room) throw new HttpError(404, 'not_found', 'Không tìm thấy cây này.');
+    const png = await cached('img:', id, room, renderImage);
+    await logEvent(db.db, 'image_downloaded', id);
+    return reply
+      .header('content-type', 'image/png')
+      .header('content-disposition', `attachment; filename="cay-thong-${id}.png"`)
+      .header('cache-control', 'public, max-age=300')
+      .send(png);
   });
 
   // Bản build web: file tĩnh + trang (các đường dẫn khác rơi vào setNotFoundHandler ở app.ts → index.html).

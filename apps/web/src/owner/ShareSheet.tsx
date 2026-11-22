@@ -1,9 +1,11 @@
 import { useRef } from 'react';
+import { api } from '../lib/api';
 import { Sheet } from '../ui/Sheet';
 
 export const isMobile = (ua: string = navigator.userAgent): boolean => /Android|iPhone|iPad/i.test(ua);
 
 type Props = {
+  treeId: string;
   url: string;
   title: string;
   toast: (m: string) => void;
@@ -16,7 +18,7 @@ type Props = {
 const TEXT = 'Treo một lời nhắn Giáng sinh lên cây của mình nhé — mở vào đêm 24/12!';
 
 /** Gửi cây cho bạn bè (S2, đặc tả 6.6.3). Zalo chưa có nút chia sẻ chính thức (cần Zalo OA) nên sao chép link. */
-export function ShareSheet({ url, title, toast, onClose, openUrl = (h) => window.location.assign(h), mobile = isMobile() }: Props) {
+export function ShareSheet({ treeId, url, title, toast, onClose, openUrl = (h) => window.location.assign(h), mobile = isMobile() }: Props) {
   const box = useRef<HTMLInputElement>(null);
   const canShare = typeof navigator.share === 'function';
 
@@ -58,6 +60,7 @@ export function ShareSheet({ url, title, toast, onClose, openUrl = (h) => window
         </button>
         <button type="button" className="chip" onClick={() => void copy('Đã sao chép — mở Zalo và dán vào nhé')}>Zalo</button>
       </div>
+      <a className="linkbtn" href={api.roomImageUrl(treeId)} download>⬇ Tải ảnh phòng</a>
       <p className="hint">Bạn bè mở link là treo được lời nhắn, không cần đăng nhập.</p>
     </Sheet>
   );

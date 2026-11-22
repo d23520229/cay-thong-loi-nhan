@@ -84,6 +84,8 @@
 .intro .wish { margin: 0; font-family: var(--font-label); color: #f3d9a4; font-size: 18px; }
 .intro .btn { display: inline-flex; align-items: center; text-decoration: none; }
 .linkbtn { min-height: 44px; background: none; border: 0; color: var(--muted); font-size: 17px; text-decoration: underline; cursor: pointer; }
+a.linkbtn { display: inline-flex; align-items: center; justify-content: center; }
+.room-bottom a.linkbtn { min-height: 28px; }
 .ed-field { display: flex; flex-direction: column; gap: 4px; }
 .input { min-height: 44px; padding: 6px 12px; border-radius: 14px; border: 2px solid var(--line); background: var(--chip);
   color: var(--text); font-size: 18px; width: 100%; box-sizing: border-box; }

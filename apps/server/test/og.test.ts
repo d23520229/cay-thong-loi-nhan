@@ -5,8 +5,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { catalog } from '@ctln/shared';
 import { makeTestApp } from './helpers.js';
-import { renderOg } from '../src/og/render.js';
+import { renderOg, renderRoomImage } from '../src/og/render.js';
 import { loadEnv } from '../src/env.js';
+import { eq } from 'drizzle-orm';
+import { events } from '../src/db/schema.js';
 
 type T = Awaited<ReturnType<typeof makeTestApp>>;
 let t: T | undefined;
@@ -74,6 +76,13 @@ describe('GET /og/:id.png', () => {
 });
 
 describe('renderOg', () => {
+  it('OG vẫn 1200×630 sau khi tách renderRoomLayer', async () => {
+    const buf = await renderOg({ ...room(), slots: [] }, loadEnv({}).assetDir);
+    const meta = await sharp(buf).metadata();
+    expect([meta.width, meta.height]).toEqual([1200, 630]);
+    expect(renderRoomImage).toBeTypeOf('function');
+  }, 60_000);
+
   it('vẽ được phòng có cây lật, thu nhỏ và phụ kiện đã treo', async () => {
     const rm = room();
     rm.items = rm.items.map((i: { type: string }) => (i.type === 'tree' ? { ...i, flip: true, scale: 0.5 } : i));
@@ -82,6 +91,38 @@ describe('renderOg', () => {
     const meta = await sharp(buf).metadata();
     expect([meta.width, meta.height]).toEqual([1200, 630]);
   }, 60_000);
+});
+
+describe('GET /api/trees/:id/image.png', () => {
+  it('PNG 1080×1620, có content-disposition, ghi event image_downloaded', async () => {
+    t = await makeTestApp();
+    const { id } = await create();
+    const r = await t!.app.inject({ method: 'GET', url: `/api/trees/${id}/image.png` });
+    expect(r.statusCode).toBe(200);
+    expect(r.headers['content-type']).toBe('image/png');
+    expect(r.headers['content-disposition']).toBe(`attachment; filename="cay-thong-${id}.png"`);
+    expect(String(r.headers['cache-control'])).toContain('max-age=300');
+    const meta = await sharp(r.rawPayload).metadata();
+    expect([meta.format, meta.width, meta.height]).toEqual(['png', 1080, 1620]);
+    const ev = await t!.h.db.select().from(events).where(eq(events.type, 'image_downloaded'));
+    expect(ev.map((e) => e.treeId)).toEqual([id]);
+  }, 60_000);
+
+  it('404 khi không có cây', async () => {
+    t = await makeTestApp();
+    expect((await t!.app.inject({ method: 'GET', url: '/api/trees/zzzzzzzz/image.png' })).statusCode).toBe(404);
+  });
+
+  it('dùng bản đệm, tách khỏi khoá ảnh OG', async () => {
+    const img = vi.fn(async () => Buffer.from('png'));
+    const og = vi.fn(async () => Buffer.from('og'));
+    t = await makeTestApp({ renderOg: og, renderRoomImage: img });
+    const { id } = await create();
+    await t!.app.inject({ method: 'GET', url: `/api/trees/${id}/image.png` });
+    await t!.app.inject({ method: 'GET', url: `/api/trees/${id}/image.png` });
+    await t!.app.inject({ method: 'GET', url: `/og/${id}.png` });
+    expect([img.mock.calls.length, og.mock.calls.length]).toEqual([1, 1]);
+  });
 });
 
 describe('trang web + thẻ OG', () => {
