@@ -1,6 +1,6 @@
 // Xuất toàn bộ đồ hoạ màu nước thành WebP + sinh danh mục dùng chung.
 // Chạy từ thư mục gốc repo:  pnpm --filter @ctln/art export   (hoặc: node packages/art/scripts/export.mjs)
-//   --only=tree|room|catalog   chỉ xuất một phần
+//   --only=tree|room|card|catalog   chỉ xuất một phần
 import { Resvg } from '@resvg/resvg-js';
 import sharp from 'sharp';
 import fs from 'node:fs';
@@ -13,6 +13,7 @@ import { fireplace2Source, FIREPLACES2 } from '../src/fireplaces.mjs';
 import { PETS } from '../src/animated/pets.mjs';
 import { ORNAMENTS } from '../src/animated/ornaments.mjs';
 import { SLOT_COUNTS } from '../../shared/src/slots.mjs';
+import { splitPhotoCard, measureCard } from '../src/card.mjs';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(here, '../../..');
@@ -20,6 +21,9 @@ const OUT_TREE = path.join(ROOT, 'apps/web/public/assets/tree');
 const OUT_ROOM = path.join(ROOT, 'apps/web/public/assets/room');
 const CATALOG = path.join(ROOT, 'packages/shared/src/catalog.json');
 const META = path.join(here, '../room-meta.json');
+const OUT_CARD = path.join(ROOT, 'apps/web/public/assets/card');
+const CARD_SRC = path.join(here, '../src/card');
+const CARD_META = path.join(here, '../card-meta.json');
 const only = (process.argv.find((a) => a.startsWith('--only=')) || '').slice(7);
 fs.mkdirSync(OUT_TREE, { recursive: true });
 fs.mkdirSync(OUT_ROOM, { recursive: true });
@@ -64,10 +68,31 @@ async function exportRoom() {
   console.log('room:', jobs.length, 'ảnh');
 }
 
+// Thiệp lời nhắn (6.7.3): mẫu 1 → card-plain; mẫu 2 tách thành nền + khung (trong suốt). Đo số liệu → card-meta.json
+async function exportCard() {
+  fs.mkdirSync(OUT_CARD, { recursive: true });
+  const svg1 = fs.readFileSync(path.join(CARD_SRC, 'christmas_card.svg'), 'utf8');
+  const svg2 = fs.readFileSync(path.join(CARD_SRC, 'christmas_card_2.svg'), 'utf8');
+  const { base, frame } = splitPhotoCard(svg2, svg1);
+  const render = (svg) => sharp(Buffer.from(svg), { limitInputPixels: false });
+  const out = (name) => path.join(OUT_CARD, name + '.webp');
+  await render(svg1).resize(2100, 1500).webp({ quality: 85 }).toFile(out('card-plain'));
+  await render(base).resize(2100, 1500).webp({ quality: 85 }).toFile(out('card-photo-bg'));
+  await render(frame).resize(2100, 1500).webp({ alphaQuality: 90 }).toFile(out('card-photo-frame'));
+  // đo dòng kẻ trên chính file card-plain.webp (thu về 1600 rộng); render SVG trực tiếp dính một vệt màu
+  // nước ở ~62,6 %H thành cụm thừa, nên kiểm khoảng cách giữa các dòng để không ghi số đo sai
+  const plainRaw = await sharp(out('card-plain')).resize(1600).removeAlpha().raw().toBuffer({ resolveWithObject: true });
+  const meta = await measureCard(plainRaw, frame);
+  if (meta.lines.length !== 11 || meta.lines.some((y, i) => i && y - meta.lines[i - 1] < 3)) throw new Error('đo dòng kẻ sai: ' + meta.lines.join(' '));
+  fs.writeFileSync(CARD_META, JSON.stringify(meta, null, 1));
+  console.log('card: 3 ảnh,', meta.lines.length, 'dòng kẻ');
+}
+
 function buildCatalog() {
   const meta = JSON.parse(fs.readFileSync(META, 'utf8'));
   const v = (prefix, k, name) => { const m = meta[`${prefix}-${k}`]; return { name, asset: `room/${prefix}-${k}.webp`, w: m.w, h: m.h, ax: m.ax, ay: m.ay, crop: { left: m.left, top: m.top } }; };
   const PK = 1.4;
+  const cardMeta = JSON.parse(fs.readFileSync(CARD_META, 'utf8'));
   const catalog = {
     version: 1,
     room: { w: 720, h: 1080, floorY: R.FLOOR },
@@ -91,6 +116,15 @@ function buildCatalog() {
       gift: { name: 'Hộp quà', layer: 'floor', render: 'image', tapEffects: 'gift', variants: Object.fromEntries(Object.entries(R.GIFT_SINGLES).map(([k, o]) => [k, v('gift', k, o.name)])) },
       pet: { name: 'Thú cưng', layer: 'floor', render: 'svg-pet', tapEffects: 'pet', variants: Object.fromEntries(Object.entries(PETS).map(([k, o]) => [k, { name: o.name, asset: `room/pet-${k}.webp`, w: 140 * PK, h: 195 * PK, ax: 70 * PK, ay: 180 * PK }])) },
     },
+    card: {
+      w: 2100, h: 1500,
+      assets: { plain: 'card/card-plain.webp', photoBg: 'card/card-photo-bg.webp', photoFrame: 'card/card-photo-frame.webp' },
+      lines: cardMeta.lines,
+      text: { left: 29.8, width: 52, fontSize: 2.3, color: '#7a1f2a', firstLine: 1, maxLines: 9 },
+      date: { left: 79.3, top: 20.1, width: 8.8, height: 5, fontSize: 1.45, color: '#fff6e5' },
+      photo: cardMeta.photo,
+      frameEdge: cardMeta.frameEdge,
+    },
     ornaments: Object.fromEntries(Object.entries(ORNAMENTS).map(([k, o]) => [k, { name: o.name }])),
     defaultRoom: {
       background: 'night',
@@ -112,4 +146,5 @@ function buildCatalog() {
 
 if (!only || only === 'tree') await exportTree();
 if (!only || only === 'room') await exportRoom();
-if (!only || only === 'room' || only === 'catalog') buildCatalog();
+if (!only || only === 'card') await exportCard();
+if (!only || only === 'room' || only === 'card' || only === 'catalog') buildCatalog();
