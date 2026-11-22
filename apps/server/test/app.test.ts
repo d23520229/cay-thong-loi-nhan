@@ -10,6 +10,7 @@ import { buildApp } from '../src/app.js';
 import { connectPglite } from '../src/db/client.js';
 import { runMigrations } from '../src/db/migrate.js';
 import { loadEnv } from '../src/env.js';
+import { memoryStore } from '../src/storage/memory.js';
 
 type T = Awaited<ReturnType<typeof makeTestApp>>;
 let t: T;
@@ -194,7 +195,7 @@ describe('log request', () => {
     const h = await connectPglite();
     await runMigrations(h);
     const app = await buildApp(
-      { db: h, env: loadEnv({}), now: () => new Date('2026-12-01T10:00:00+07:00'), google: null },
+      { db: h, env: loadEnv({}), now: () => new Date('2026-12-01T10:00:00+07:00'), google: null, photos: memoryStore() },
       { logStream: { write: (m) => void lines.push(m) } },
     );
     t = { app, h } as T;
@@ -218,7 +219,7 @@ describe('log request', () => {
     const h = await connectPglite();
     await runMigrations(h);
     const app = await buildApp(
-      { db: h, env: loadEnv({}), now: () => new Date('2026-12-01T10:00:00+07:00'), google: null },
+      { db: h, env: loadEnv({}), now: () => new Date('2026-12-01T10:00:00+07:00'), google: null, photos: memoryStore() },
       { logStream: { write: (m) => void lines.push(m) } },
     );
     t = { app, h } as T; // afterEach đóng app + db
@@ -234,7 +235,7 @@ describe('/api/config googleClientId', () => {
   const cfg = async (envSrc: Record<string, string>) => {
     const h = await connectPglite();
     await runMigrations(h);
-    const app = await buildApp({ db: h, env: loadEnv(envSrc), now: () => new Date('2026-12-01T10:00:00+07:00'), google: null });
+    const app = await buildApp({ db: h, env: loadEnv(envSrc), now: () => new Date('2026-12-01T10:00:00+07:00'), google: null, photos: memoryStore() });
     t = { app, h } as T; // afterEach đóng app + db
     return (await app.inject('/api/config')).json();
   };

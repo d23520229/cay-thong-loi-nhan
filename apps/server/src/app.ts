@@ -4,6 +4,7 @@ import helmet from '@fastify/helmet';
 import { ZodError } from 'zod';
 import type { DbHandle } from './db/client.js';
 import type { Env } from './env.js';
+import type { PhotoStore } from './storage/index.js';
 import { HttpError } from './errors.js';
 import { phaseOf } from './guards.js';
 import { authRoutes } from './routes/auth.js';
@@ -21,6 +22,8 @@ export type AppDeps = {
   env: Env;
   now: () => Date;
   google: GoogleVerifier | null;
+  /** Nơi lưu ảnh đính kèm. */
+  photos: PhotoStore;
   /** Thay hàm vẽ ảnh OG (chỉ dùng trong test). */
   renderOg?: (room: OgRoom, assetDir: string) => Promise<Buffer>;
   /** Thay hàm vẽ ảnh phòng tải về (chỉ dùng trong test). */

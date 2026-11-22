@@ -16,10 +16,17 @@ export type Env = {
   production: boolean;
   /** Số bước proxy tin cậy khi đọc X-Forwarded-For (Azure App Service = 1). Không bao giờ là `true`. */
   trustProxyHops: number;
+  /** Thư mục lưu ảnh đính kèm khi không dùng Azure Blob. */
+  photoDir: string;
+  /** Có thì ảnh lưu ở Azure Blob Storage (container riêng tư). */
+  azureStorageConnectionString?: string;
 };
 
 // apps/server/{src,dist}/env.* → apps/web/public
 const DEV_ASSETS = fileURLToPath(new URL('../../web/public', import.meta.url));
+
+// apps/server/{src,dist}/env.* → <repo>/.data/photos
+const DEV_PHOTOS = fileURLToPath(new URL('../../../.data/photos', import.meta.url));
 
 const DEV_PEPPER = 'dev-pepper-dev-pepper-dev-pepper!';
 
@@ -42,8 +49,10 @@ export function loadEnv(src: Record<string, string | undefined> = process.env): 
     baseUrl: src.BASE_URL || 'http://localhost:3000',
     production,
     trustProxyHops: hops,
+    photoDir: src.PHOTO_DIR ? resolve(src.PHOTO_DIR) : DEV_PHOTOS,
     assetDir: src.WEB_DIST && existsSync(join(src.WEB_DIST, 'index.html')) ? resolve(src.WEB_DIST) : DEV_ASSETS,
   };
+  if (src.AZURE_STORAGE_CONNECTION_STRING) env.azureStorageConnectionString = src.AZURE_STORAGE_CONNECTION_STRING;
   if (src.GOOGLE_CLIENT_ID) env.googleClientId = src.GOOGLE_CLIENT_ID;
   if (src.WEB_DIST && existsSync(join(src.WEB_DIST, 'index.html'))) env.webDist = resolve(src.WEB_DIST);
   else if (src.WEB_DIST) env.webDistProblem = `WEB_DIST=${src.WEB_DIST}: không thấy index.html — server không phục vụ trang web`;

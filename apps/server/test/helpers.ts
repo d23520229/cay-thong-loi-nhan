@@ -3,6 +3,7 @@ import { buildApp, type AppDeps, type GoogleVerifier } from '../src/app.js';
 import { connectPglite } from '../src/db/client.js';
 import { runMigrations } from '../src/db/migrate.js';
 import { loadEnv } from '../src/env.js';
+import { memoryStore } from '../src/storage/memory.js';
 
 export const FakeGoogle: GoogleVerifier = async (token) => {
   if (token.startsWith('ok:')) return { sub: token.slice(3) };
@@ -17,8 +18,9 @@ export async function makeTestApp(opts: { at?: string; google?: GoogleVerifier |
   const h = await connectPglite();
   await runMigrations(h);
   const google = opts.google === undefined ? FakeGoogle : opts.google;
-  const app = await buildApp({ db: h, env: loadEnv(opts.env ?? {}), now: () => t, google, renderOg: opts.renderOg, renderRoomImage: opts.renderRoomImage });
-  return { app, h, clock, google };
+  const photos = memoryStore();
+  const app = await buildApp({ db: h, photos, env: loadEnv(opts.env ?? {}), now: () => t, google, renderOg: opts.renderOg, renderRoomImage: opts.renderRoomImage });
+  return { app, h, clock, google, photos };
 }
 
 export async function seedTree(h: { db: import('../src/db/client.js').Db }, id: string) {

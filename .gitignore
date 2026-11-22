@@ -16,3 +16,6 @@ graphify-out/
 
 # Mẫu thiết kế tạm (superpowers brainstorm)
 .superpowers/
+
+# Ảnh đính kèm lời nhắn (.data/ là dữ liệu chạy máy dev, không commit)
+.data/
