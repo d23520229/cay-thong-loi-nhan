@@ -170,6 +170,18 @@ describe('OwnerTree', () => {
     expect(toast).toHaveBeenCalledWith('Đã gửi báo cáo, cảm ơn bạn');
   });
 
+  it('báo cáo bị 403 not_opened → báo rõ lý do, đóng bảng báo cáo', async () => {
+    mocked.openMessage.mockResolvedValue(opened(1));
+    mocked.report.mockRejectedValue(new ApiError(403, 'not_opened', 'Chỉ báo cáo được lời nhắn bạn đã mở.'));
+    const { container } = show(openedRoom());
+    await zoom(container);
+    await userEvent.click(screen.getAllByRole('button', { name: /Lời nhắn chưa đọc/ })[0]!);
+    await userEvent.click(await screen.findByRole('button', { name: 'Báo cáo' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Gửi báo cáo' }));
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('Chỉ báo cáo được lời nhắn bạn đã mở.'));
+    expect(screen.queryByRole('button', { name: 'Gửi báo cáo' })).toBeNull();
+  });
+
   it('423 khi mở → thông báo của server', async () => {
     mocked.openMessage.mockRejectedValue(new ApiError(423, 'locked', 'Chưa đến 0h 24/12, quà vẫn còn gói.'));
     const { container } = show(openedRoom());

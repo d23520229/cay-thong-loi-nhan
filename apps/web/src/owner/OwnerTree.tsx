@@ -192,7 +192,11 @@ export function OwnerTree({ treeId, meta, room, toast, onUnauthorized, onChange 
       setSheet(null);
       toast('Đã gửi báo cáo, cảm ơn bạn');
     } catch (e) {
-      fail(e);
+      // Server chỉ nhận báo cáo lời nhắn đã mở (đặc tả 8.5).
+      if (e instanceof ApiError && e.code === 'not_opened') {
+        setSheet(null);
+        toast('Chỉ báo cáo được lời nhắn bạn đã mở.');
+      } else fail(e);
     } finally {
       setBusy(false);
     }
