@@ -91,7 +91,6 @@
 
 .ornament{transform-box:fill-box;transform-origin:50% 0%;animation:orn-swing 3.4s ease-in-out infinite;animation-delay:var(--d,0s)}
 @keyframes orn-swing{0%,100%{transform:rotate(-6deg)}50%{transform:rotate(6deg)}}
-.ornament.st-locked .orn-body{filter:saturate(.25) brightness(1.08);opacity:.75}
 .ornament.st-unread .orn-body{animation:orn-shine 1.6s ease-in-out infinite}
 @keyframes orn-shine{0%,100%{filter:brightness(1)}50%{filter:brightness(1.35) drop-shadow(0 0 4px #FFE27A)}}
 .glint path{transform-box:fill-box;transform-origin:center;animation:glint 1.4s ease-in-out infinite}

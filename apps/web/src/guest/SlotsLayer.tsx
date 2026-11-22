@@ -38,7 +38,9 @@ export function SlotsLayer({ rects, views, fx, onTap, hideEmpty, states }: Props
         const v = views[r.index];
         if (!v || (hideEmpty && v.kind === 'empty')) return null;
         const st = v.kind === 'empty' ? undefined : states?.[r.index];
-        const svg = v.kind === 'empty' ? slotBubbleSVG() : ornamentSVGSoft(v.ornament ?? 'ball', st ?? 'filled', null);
+        // Quà còn gói vẽ như phụ kiện bình thường (không nhạt, không nơ); nhãn và lời nhắc khi chạm vẫn báo còn gói.
+        const look = !st || st === 'locked' ? 'filled' : st;
+        const svg = v.kind === 'empty' ? slotBubbleSVG() : ornamentSVGSoft(v.ornament ?? 'ball', look, null);
         const cls = ['gs-slot', v.kind === 'mine' || v.kind === 'mineExpired' ? 'is-mine' : '', fx[r.index] ? FX_CLASS[fx[r.index]!] : ''].filter(Boolean).join(' ');
         return (
           <button

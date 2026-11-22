@@ -27,7 +27,7 @@ Chuẩn bị: thư mục gốc `D:\cay-thong-loi-nhan`, Docker Desktop đang ch�
 
 **Chủ cây (phần 2)** — ở tab chủ cây, chế độ Xem
 10. Vào phòng: phòng hiện thẳng (không phóng to từ góc). Góc trên bên phải có "Còn … ngày … giờ"; khối dưới có "N lời nhắn · K mới", nút "🔗 Chia sẻ" và "⋯ Tuỳ chọn" — mở hai bảng này phòng không nảy. Tải lại trang: số "mới" về 0 (đã xem).
-11. Cây nói "Chạm vào cây để xem lời nhắn". Chạm cây → phụ kiện nhạt có nơ ("Quà còn gói"); chạm → "Quà còn gói — mở được từ 0h 24/12".
+11. Cây nói "Chạm vào cây để xem lời nhắn". Chạm cây → phụ kiện hiện bình thường như khách thấy (không nhạt, không nơ); chạm → "Quà còn gói — mở được từ 0h 24/12".
 12. "⋯ Tuỳ chọn" → tắt "Hiện số lời nhắn" → số biến mất (tải lại vẫn tắt); bật lại.
 13. Đặt `FAKE_NOW=2026-12-24T08:00:00+07:00` trong `.env`, khởi động lại `pnpm dev`: góc trên bên phải "Đã mở quà"; chạm cây → phụ kiện chưa đọc lấp lánh; chạm → thẻ "Lời nhắn từ …" (hoặc "Lời nhắn ẩn danh") có nội dung, giờ treo; "Sau ›" / "‹ Trước" chuyển thẻ; phụ kiện đã đọc hết lấp lánh.
 14. Trong thẻ: "Báo cáo" (lý do tuỳ ý) → "Đã gửi báo cáo, cảm ơn bạn"; "Chặn người gửi" → hỏi lại → điểm trống, và cửa sổ khách đó gửi lại bị từ chối; "Xoá" → hỏi lại → điểm trống.
@@ -101,7 +101,7 @@ Chưa làm ở M1: giao diện web (M2–M3), trang quản trị (M3b), OG ảnh
 - ~~`pagehide` lúc đang lưu ra 409 giả~~ — đã sửa 22/11: 409 mà phòng server giống hệt phòng trên máy thì nhận version, không hỏi; 409 thiếu phòng → "Không mở được cây này." thay vì treo.
 - Dọn `rate_counters` (M4/M10): chỉ xoá khung đã kết thúc — bucket `pin:tree:` giữ đến khi `window_start` quá 1 ngày, bucket khác quá 1 giờ; dọn thô hằng giờ sẽ xoá khung ngày và đặt lại trần 50 lần sai / phòng / ngày. (Hoặc lưu độ dài khung khi ghi.)
 - M4/M5: khi Fastify phục vụ HTML của web, thử header CSP trên `/` và `/c/:id`, gồm cả mặc định của helmet như `frame-ancestors`.
-- Trước Azure: chạy `pnpm db:migrate` trên Postgres Docker đã có 0000–0002 để kiểm tra 0003 áp dụng sạch.
+- ~~Trước Azure: chạy `pnpm db:migrate` trên Postgres Docker đã có 0000–0002 để kiểm tra 0003 áp dụng sạch~~ — đã chạy 23/11 trên CSDL Docker có dữ liệu thật (5 cây, 7 lời nhắn): lần 1 chỉ chạy `0003_pin_rate_counters.sql`, lần 2 "Không có migration mới"; còn mỗi cột `pin_hash`, hết trigger và hàm `touch_updated_at`, dữ liệu giữ nguyên; server đọc được cây cũ, PIN sai ghi vào `rate_counters`.
 - Rủi ro chấp nhận: một IP có thể dùng hết trần 50 lần sai / ngày của một cây trong khoảng 3 giờ. Chủ cây vẫn còn cookie, link riêng và Google; cách gỡ là nút mở khoá M3b.
 - Khi bật IPv6: cân nhắc gom IPv6 theo /64; trần ngày theo cây vẫn chặn lạm dụng.
 - Cân nhắc thêm `Secure` cho cookie `ctln_did` khi chạy production.

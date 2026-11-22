@@ -455,7 +455,7 @@ M3 chia **3 phần làm nối tiếp**, mỗi phần một kế hoạch, xong ph
 **Chế độ Xem của chủ cây** (thay khung trống "Chỗ cho M3"):
 - Khối dưới (chừa 116px như khách): dòng trạng thái + hàng nút **"Chia sẻ"** (phần 3) và **"⋯ Tuỳ chọn"**. Lời nhắc nổi phía trên: BUILD → "Chạm vào cây để xem các món quà đang chờ"; OPEN/NOTICE → "Chạm vào cây để mở quà".
 - **Đếm ngược** (sửa 21/11 theo chủ dự án): nhãn ngắn ở **góc trên bên phải**, ngay dưới thanh tiêu đề, đè lên phòng được — "Còn {d} ngày {h} giờ" (dưới 1 ngày: "Còn {h} giờ {m} phút", dưới 1 giờ: "Còn {m} phút"), tính từ `unlockAt` của `/api/config` theo giờ server, cập nhật mỗi 30 giây; từ 0h 24/12 → "Đã mở quà" (trang đang mở qua mốc cũng tự đổi và tải lại trạng thái quà). Dòng trạng thái ở khối dưới chỉ còn số lời nhắn (nếu `showMessageCount`): "{n} lời nhắn" và "· {k} mới" khi k > 0 (O10).
-- Chạm cây → zoom như khách (dùng chung camera). Phụ kiện vẽ theo trạng thái: chưa mở được → `locked` (nhạt, có nơ); chưa đọc → `unread` (lấp lánh); đã đọc → `read`. Không có bong bóng "+" (chủ cây không treo).
+- Chạm cây → zoom như khách (dùng chung camera). Phụ kiện vẽ theo trạng thái: chưa mở được → `locked` (vẽ như phụ kiện bình thường — không nhạt, không nơ, chủ dự án chốt 23/11; nhãn "Quà còn gói"); chưa đọc → `unread` (lấp lánh); đã đọc → `read`. Không có bong bóng "+" (chủ cây không treo).
 - Chạm phụ kiện khi `locked` → "Quà còn gói — mở được từ 0h 24/12" + rung, không gọi API. Khi mở được → `POST …/messages/:mid/open` → **thẻ lời nhắn** (Sheet): tiêu đề "Lời nhắn từ {tên}" hoặc "Lời nhắn ẩn danh", nội dung (Mynerve ≥ 18px, hiển thị dạng chữ), thời gian treo ("21/11 lúc 20:05", giờ Việt Nam), nút "‹ Trước" / "Sau ›" đi qua các điểm có lời nhắn theo thứ tự điểm, và **Xoá** / **Chặn người gửi** / **Báo cáo**. Mở xong phụ kiện chuyển sang `read`.
 - Xoá → hộp xác nhận "Xoá lời nhắn này?" → `DELETE …/messages/:mid` → điểm trống. Chặn → "Chặn người gửi?" ("Lời nhắn này sẽ bị xoá và người đó không gửi được tới cây của bạn nữa.") → `POST …/block` → điểm trống. Báo cáo → bảng nhỏ: lý do (không bắt buộc, ≤ 200 ký tự) → `POST …/reports` kèm `messageId` → "Đã gửi báo cáo, cảm ơn bạn".
 - Lỗi: 423 → thông báo của server; 404 → "Lời nhắn này không còn nữa", tải lại; 401 → bảng "Tôi là chủ cây" (như M2); mạng/5xx → "Chưa tải được, thử lại nhé".
@@ -980,7 +980,7 @@ sequenceDiagram
 
 ### 9.6 Chủ cây đọc lời nhắn
 
-- Trước 0h 24/12: phụ kiện nhạt màu có nơ ("quà còn gói"), thanh đếm ngược; API mở trả 423.
+- Trước 0h 24/12: phụ kiện hiện bình thường (chạm → "quà còn gói"), thanh đếm ngược; API mở trả 423.
 - Từ 0h 24/12: phụ kiện chưa đọc lấp lánh; chạm → thẻ lời nhắn (tên hoặc "Ẩn danh", nội dung, thời gian), nút Xoá / Chặn / Báo cáo, nút chuyển thẻ trước/sau.
 
 ### 9.7 Kiểm duyệt, chia sẻ, vòng đời

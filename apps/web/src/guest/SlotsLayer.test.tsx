@@ -39,7 +39,10 @@ describe('SlotsLayer', () => {
   it('states: vẽ trạng thái quà của chủ cây với nhãn riêng', () => {
     const owned: SlotView[] = rects.map((r) => ({ index: r.index, kind: r.index < 3 ? 'taken' : 'empty', ornament: 'bell' }));
     const { container } = render(<SlotsLayer rects={rects} views={owned} fx={{}} onTap={() => {}} hideEmpty states={{ 0: 'locked', 1: 'unread', 2: 'read' }} />);
-    expect(screen.getByRole('button', { name: 'Quà còn gói' }).querySelector('.st-locked')).not.toBeNull();
+    // Quà còn gói vẽ như phụ kiện bình thường: không nhạt màu, không nơ (chủ dự án chốt 23/11).
+    const locked = screen.getByRole('button', { name: 'Quà còn gói' });
+    expect(locked.querySelector('.st-filled')).not.toBeNull();
+    expect(locked.querySelector('.st-locked, .lock-bow')).toBeNull();
     expect(screen.getByRole('button', { name: 'Lời nhắn chưa đọc: Chuông' }).querySelector('.st-unread')).not.toBeNull();
     expect(screen.getByRole('button', { name: 'Lời nhắn đã đọc: Chuông' }).querySelector('.st-read')).not.toBeNull();
     expect(container.querySelectorAll('button')).toHaveLength(3);
