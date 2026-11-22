@@ -90,6 +90,12 @@ describe('GuestTree', () => {
     expect(screen.getByText('Chạm vào cây thông để treo lời nhắn')).not.toBeVisible();
   });
 
+  it('toàn phòng: phụ kiện đã treo hiện trên cây trước khi zoom', () => {
+    const { container } = show(meta({ slots: slotsWith(0) }));
+    expect(container.querySelectorAll('.gs-slot')).toHaveLength(1);
+    expect(bubbles()).toHaveLength(0);
+  });
+
   it('lời nhắc chạm cây; chạm cây → 12 điểm, nút Về căn phòng, gọi lại getTree', async () => {
     const { container } = show();
     expect(screen.getByText('Chạm vào cây thông để treo lời nhắn')).toBeInTheDocument();

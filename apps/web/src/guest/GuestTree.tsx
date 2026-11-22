@@ -255,9 +255,7 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
                 hidden={zoomed}
                 text={writable ? 'Chạm vào cây thông để treo lời nhắn' : 'Chạm vào cây thông để xem các lời nhắn đã treo'}
               />
-              {zoomed ? (
-                <SlotsLayer rects={slotRects(room)} views={views} fx={slotFx} onTap={(i) => void onSlotTap(i)} hideEmpty={!writable} />
-              ) : null}
+              <SlotsLayer rects={slotRects(room)} views={views} fx={slotFx} onTap={(i) => void onSlotTap(i)} hideEmpty={!writable} interactive={zoomed} />
             </>
           }
         />

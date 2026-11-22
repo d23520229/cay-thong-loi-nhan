@@ -256,9 +256,7 @@ export function OwnerTree({ treeId, meta, room, toast, onUnauthorized, onChange 
           overlay={
             <>
               <TreeBubble room={room} hidden={zoomed} text={canRead ? 'Chạm vào cây để mở quà' : 'Chạm vào cây để xem lời nhắn'} />
-              {zoomed ? (
-                <SlotsLayer rects={slotRects(room)} views={views} fx={ring} onTap={(i) => void openAt(i)} hideEmpty states={states} />
-              ) : null}
+              <SlotsLayer rects={slotRects(room)} views={views} fx={ring} onTap={(i) => void openAt(i)} hideEmpty states={states} interactive={zoomed} />
             </>
           }
         />

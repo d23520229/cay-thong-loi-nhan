@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { defaultRoom } from '../room/model';
@@ -46,6 +46,21 @@ describe('SlotsLayer', () => {
     expect(screen.getByRole('button', { name: 'Lời nhắn chưa đọc: Chuông' }).querySelector('.st-unread')).not.toBeNull();
     expect(screen.getByRole('button', { name: 'Lời nhắn đã đọc: Chuông' }).querySelector('.st-read')).not.toBeNull();
     expect(container.querySelectorAll('button')).toHaveLength(3);
+  });
+
+  it('interactive=false: chỉ vẽ phụ kiện, không có nút, không bắt chạm', () => {
+    const onTap = vi.fn();
+    const { container } = render(<SlotsLayer rects={rects} views={views} fx={{}} onTap={onTap} interactive={false} />);
+    expect(screen.queryAllByRole('button')).toHaveLength(0);
+    const slots = container.querySelectorAll('.gs-slot');
+    expect(slots).toHaveLength(2);
+    slots.forEach((s) => {
+      expect(s.tagName).toBe('SPAN');
+      expect(s).toHaveAttribute('aria-hidden', 'true');
+    });
+    expect(container.firstElementChild).toHaveStyle({ pointerEvents: 'none' });
+    fireEvent.click(slots[0]!);
+    expect(onTap).not.toHaveBeenCalled();
   });
 
   it('hideEmpty ẩn bong bóng trống', () => {

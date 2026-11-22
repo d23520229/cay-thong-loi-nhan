@@ -102,6 +102,14 @@ describe('OwnerTree', () => {
     expect(mocked.openMessage).not.toHaveBeenCalled();
   });
 
+  it('toàn phòng: quà hiện trước khi zoom, không mở được', async () => {
+    const { container } = show(meta({ phase: 'OPEN', slots: slots(false) }));
+    const gifts = container.querySelectorAll('.gs-slot');
+    expect(gifts).toHaveLength(3);
+    fireEvent.click(gifts[0]!);
+    expect(mocked.openMessage).not.toHaveBeenCalled();
+  });
+
   const openedRoom = () => meta({ phase: 'OPEN', slots: slots(false) });
 
   it('OPEN: "Quà đã mở!", chạm phụ kiện → thẻ lời nhắn, chuyển sang đã đọc', async () => {
