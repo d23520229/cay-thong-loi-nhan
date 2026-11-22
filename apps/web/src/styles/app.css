@@ -127,7 +127,6 @@
 
 /* M3 phần 2 — thẻ lời nhắn của chủ cây */
 .ow-card-head { display: flex; align-items: center; gap: 10px; }
-.ow-content { margin: 0; padding: 12px 14px; border-radius: 14px; background: #FFF6E5; color: #3A2E2A; font-family: 'Mynerve', cursive; font-size: 20px; line-height: 1.45; overflow-wrap: anywhere; }
 .ow-status { margin: 0; text-align: center; font-size: 17px; color: var(--cream); }
 .ow-switch { display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 18px; }
 .ow-switch input { width: 22px; height: 22px; }

@@ -1,12 +1,18 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ornamentSVGSoft } from '@ctln/art/ornaments';
 import type { OpenedMessage } from '../lib/api';
+import { CardCanvas } from '../card/CardCanvas';
+import { CardViewer } from '../card/CardViewer';
+import { downloadCard } from '../card/download';
+import { renderCardBlob } from '../card/draw';
+import { signText } from '../card/layout';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Sheet } from '../ui/Sheet';
 import { formatSentAt } from './countdown';
 
 type Props = {
   message: OpenedMessage;
+  slotIndex: number;
   hasPrev: boolean;
   hasNext: boolean;
   busy: boolean;
@@ -18,9 +24,25 @@ type Props = {
   onClose: () => void;
 };
 
-/** Thẻ lời nhắn của chủ cây (đặc tả 9.6, 6.6.2). Nội dung là chữ thuần (React text). */
-export function MessageCard({ message: m, hasPrev, hasNext, busy, onPrev, onNext, onDelete, onBlock, onReport, onClose }: Props) {
+/** Thẻ lời nhắn của chủ cây (đặc tả 9.6, 6.6.2). Nội dung vẽ lên canvas thiệp (chữ thuần, không HTML). */
+export function MessageCard({ message: m, slotIndex, hasPrev, hasNext, busy, onPrev, onNext, onDelete, onBlock, onReport, onClose }: Props) {
   const [ask, setAsk] = useState<null | 'delete' | 'block'>(null);
+  const [viewing, setViewing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const data = useMemo(
+    () => ({ content: m.content, sign: signText(m.anonymous, m.authorName), sentAt: m.createdAt }),
+    [m.content, m.anonymous, m.authorName, m.createdAt],
+  );
+  const save = async () => {
+    setSaving(true);
+    try {
+      await downloadCard(await renderCardBlob(data), `loi-nhan-${slotIndex + 1}.png`);
+    } catch {
+      // người dùng huỷ chia sẻ hoặc trình duyệt từ chối: không cần báo
+    } finally {
+      setSaving(false);
+    }
+  };
   const title = m.anonymous || !m.authorName ? 'Lời nhắn ẩn danh' : `Lời nhắn từ ${m.authorName}`;
   return (
     <Sheet title={title} onClose={onClose} className="ow-card">
@@ -28,7 +50,8 @@ export function MessageCard({ message: m, hasPrev, hasNext, busy, onPrev, onNext
         <svg viewBox="-30 -6 60 60" width="48" height="48" aria-hidden="true" dangerouslySetInnerHTML={{ __html: ornamentSVGSoft(m.ornament, 'read', null) }} />
         <span className="hint">{formatSentAt(m.createdAt)}</span>
       </div>
-      <p className="ow-content" style={{ whiteSpace: 'pre-wrap' }}>{m.content}</p>
+      <CardCanvas data={data} onTap={() => setViewing(true)} />
+      <button type="button" className="chip cd-save" disabled={saving} onClick={() => void save()}>⬇ Tải ảnh</button>
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <button type="button" className="chip" disabled={!hasPrev || busy} onClick={onPrev}>‹ Trước</button>
         <button type="button" className="chip" disabled={!hasNext || busy} onClick={onNext}>Sau ›</button>
@@ -64,6 +87,7 @@ export function MessageCard({ message: m, hasPrev, hasNext, busy, onPrev, onNext
           onCancel={() => setAsk(null)}
         />
       ) : null}
+      {viewing ? <CardViewer data={data} onClose={() => setViewing(false)} /> : null}
     </Sheet>
   );
 }

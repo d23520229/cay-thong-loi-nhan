@@ -284,6 +284,7 @@ export function OwnerTree({ treeId, meta, room, toast, onUnauthorized, onChange 
       {card && sheet !== 'report' ? (
         <MessageCard
           message={card.message}
+          slotIndex={card.index}
           hasPrev={pos > 0}
           hasNext={pos >= 0 && pos < order.length - 1}
           busy={busy}

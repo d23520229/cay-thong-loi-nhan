@@ -120,7 +120,8 @@ describe('OwnerTree', () => {
     await zoom(container);
     await userEvent.click(screen.getAllByRole('button', { name: 'Lời nhắn chưa đọc: Chuông' })[0]!);
     expect(mocked.openMessage).toHaveBeenCalledWith(ID, '101');
-    expect(await screen.findByRole('dialog', { name: 'Lời nhắn từ Bạn 1' })).toHaveTextContent('Nội dung 1');
+    const dlg = await screen.findByRole('dialog', { name: 'Lời nhắn từ Bạn 1' });
+    expect(within(dlg).getByRole('img', { name: /Nội dung 1/ })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Lời nhắn đã đọc: Chuông' })).toHaveLength(2);
   });
 

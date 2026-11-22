@@ -3,6 +3,13 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { OpenedMessage } from '../lib/api';
 import { MessageCard } from './MessageCard';
+
+const { renderCardBlob, downloadCard } = vi.hoisted(() => ({
+  renderCardBlob: vi.fn(async () => new Blob(['x'], { type: 'image/png' })),
+  downloadCard: vi.fn(async () => 'downloaded'),
+}));
+vi.mock('../card/draw', async (orig) => ({ ...(await orig<typeof import('../card/draw')>()), renderCardBlob }));
+vi.mock('../card/download', () => ({ downloadCard }));
 import { ReportSheet } from './ReportSheet';
 
 const msg = (over: Partial<OpenedMessage> = {}): OpenedMessage => ({
@@ -12,7 +19,7 @@ const msg = (over: Partial<OpenedMessage> = {}): OpenedMessage => ({
 const noop = () => {};
 const card = (over: Partial<Parameters<typeof MessageCard>[0]> = {}) =>
   render(
-    <MessageCard message={msg()} hasPrev={false} hasNext busy={false} onPrev={noop} onNext={noop}
+    <MessageCard message={msg()} slotIndex={2} hasPrev={false} hasNext busy={false} onPrev={noop} onNext={noop}
       onDelete={noop} onBlock={noop} onReport={noop} onClose={noop} {...over} />,
   );
 
@@ -28,12 +35,27 @@ describe('MessageCard', () => {
     expect(screen.getByRole('dialog', { name: 'Lời nhắn ẩn danh' })).toBeInTheDocument();
   });
 
-  it('nội dung có HTML hiện nguyên chữ, giữ xuống dòng', () => {
-    const { container } = card({ message: msg({ content: '<b>x</b>\nhai dòng' }) });
-    const body = screen.getByText((_, el) => el?.classList.contains('ow-content') ?? false);
-    expect(body.textContent).toBe('<b>x</b>\nhai dòng');
-    expect(container.querySelector('.ow-content b')).toBeNull();
-    expect(body).toHaveStyle({ whiteSpace: 'pre-wrap' });
+  it('hiện thiệp (role img có nội dung) thay khối chữ cũ', () => {
+    const { container } = card({ message: msg({ content: '<b>x</b>' }) });
+    expect(screen.getByRole('img', { name: '<b>x</b> — An' })).toBeInTheDocument();
+    expect(container.querySelector('.ow-content')).toBeNull();
+  });
+
+  it('nút ⬇ Tải ảnh gọi renderCardBlob + downloadCard', async () => {
+    card({ slotIndex: 2 });
+    await userEvent.click(screen.getByRole('button', { name: '⬇ Tải ảnh' }));
+    await vi.waitFor(() => expect(downloadCard).toHaveBeenCalledTimes(1));
+    expect(renderCardBlob).toHaveBeenCalledWith(expect.objectContaining({ content: 'Chúc mừng', sign: '— An', sentAt: '2026-11-21T13:05:00Z' }));
+    expect(downloadCard).toHaveBeenCalledWith(expect.any(Blob), 'loi-nhan-3.png');
+  });
+
+  it('chạm thiệp mở CardViewer', async () => {
+    window.matchMedia = vi.fn().mockImplementation((q: string) => ({
+      matches: false, media: q, addEventListener: vi.fn(), removeEventListener: vi.fn(),
+    })) as never;
+    card();
+    await userEvent.click(screen.getByRole('img', { name: 'Chúc mừng — An' }));
+    expect(screen.getAllByRole('img', { name: 'Chúc mừng — An' })).toHaveLength(2);
   });
 
   it('trước/sau gọi callback, khoá đúng', async () => {
