@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { eq } from 'drizzle-orm';
 import { catalog } from '@ctln/shared';
 import { deviceHeaders, makeTestApp } from './helpers.js';
-import { messages, ownerSessions, rateCounters, roomItems, trees } from '../src/db/schema.js';
+import { messages, ownerSessions, rateCounters, reports, roomItems, trees } from '../src/db/schema.js';
 import { runMigrations } from '../src/db/migrate.js';
 import { connectPglite } from '../src/db/client.js';
 
@@ -196,9 +196,23 @@ describe('DELETE /api/trees/:id — ảnh', () => {
       await t.h.db.update(messages).set({ photoKey: k }).where(eq(messages.id, m.id));
     }
     const bKey = `m/${b.id}/${rows.find((m) => m.treeId === b.id)!.id}-x.webp`;
-    expect(t.photos.keys()).toHaveLength(3);
+    // Bản chụp báo cáo của chủ cây (r/{id}.webp) cho mỗi cây: xoá cây a phải xoá cả bản chụp của a.
+    const snaps: Record<string, string> = {};
+    for (const treeId of [a.id, b.id]) {
+      const m = rows.find((x) => x.treeId === treeId)!;
+      const [r] = await t.h.db
+        .insert(reports)
+        .values({ treeId, messageId: m.id, messageSnapshot: 'bí mật', reporter: 'owner' })
+        .returning({ id: reports.id });
+      const k = `r/${r!.id}.webp`;
+      await t.photos.put(k, Buffer.from('w'));
+      await t.h.db.update(reports).set({ photoSnapshotKey: k }).where(eq(reports.id, r!.id));
+      snaps[treeId] = k;
+    }
+    expect(t.photos.keys()).toHaveLength(5);
     expect((await t.app.inject({ method: 'DELETE', url: `/api/trees/${a.id}`, cookies: a.cookies })).statusCode).toBe(204);
-    expect(t.photos.keys()).toEqual([bKey]);
+    expect(t.photos.keys().sort()).toEqual([bKey, snaps[b.id]!].sort());
+    expect(await t.h.db.select().from(reports).where(eq(reports.treeId, a.id))).toHaveLength(0);
     t.photos.delete = async () => { throw Object.assign(new Error('blob hỏng'), { code: 'EIO' }); };
     expect((await t.app.inject({ method: 'DELETE', url: `/api/trees/${b.id}`, cookies: b.cookies })).statusCode).toBe(204);
   });

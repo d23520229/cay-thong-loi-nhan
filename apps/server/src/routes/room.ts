@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify';
-import { and, count, eq, gte, isNotNull, ne, notInArray, sql } from 'drizzle-orm';
+import { and, count, eq, gte, ne, notInArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { RoomSchema, validateRoom } from '@ctln/shared';
-import { messages, roomItems, trees } from '../db/schema.js';
+import { messages, reports, roomItems, trees } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import { logEvent } from '../events.js';
 import { assertWritable, phaseOf, requireOwner } from '../guards.js';
@@ -106,13 +106,16 @@ export async function roomRoutes(app: FastifyInstance) {
     const treeId = req.params.id;
     await requireOwner(app, req, treeId);
     const { db, photos } = app.deps;
-    // Lấy khoá ảnh trước: CASCADE xoá dòng lời nhắn rồi thì không còn biết khoá.
-    const withPhoto = await db.db
-      .select({ k: messages.photoKey })
-      .from(messages)
-      .where(and(eq(messages.treeId, treeId), isNotNull(messages.photoKey)));
-    await db.db.delete(trees).where(eq(trees.id, treeId)); // ON DELETE CASCADE
-    for (const { k } of withPhoto) await dropPhoto(photos, req, k!);
+    // Một giao dịch: xoá lời nhắn và báo cáo lấy luôn khoá ảnh (ảnh lời nhắn + bản chụp báo cáo),
+    // rồi xoá cây (CASCADE phần còn lại). Không có khe để lời nhắn mới lọt giữa đọc khoá và xoá.
+    const keys = await db.db.transaction(async (tx) => {
+      const ms = await tx.delete(messages).where(eq(messages.treeId, treeId)).returning({ k: messages.photoKey });
+      const rs = await tx.delete(reports).where(eq(reports.treeId, treeId)).returning({ k: reports.photoSnapshotKey });
+      await tx.delete(trees).where(eq(trees.id, treeId)); // ON DELETE CASCADE
+      return [...ms, ...rs].map((r) => r.k).filter((k): k is string => k !== null);
+    });
+    // Xoá ảnh sau khi giao dịch xong; lỗi chỉ ghi log.
+    for (const k of keys) await dropPhoto(photos, req, k);
     reply.clearCookie(`ctln_owner_${treeId}`, { path: '/' });
     return reply.code(204).send();
   });
