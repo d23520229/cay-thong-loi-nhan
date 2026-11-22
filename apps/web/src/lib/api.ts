@@ -69,8 +69,10 @@ export type OpenedMessage = {
   createdAt: string;
 };
 
-async function request<T>(method: string, path: string, body?: unknown, extraHeaders: Record<string, string> = {}): Promise<T> {
-  const headers: Record<string, string> = { 'x-device-id': storage.deviceId(), ...extraHeaders };
+type RequestOpts = { keepalive?: boolean; headers?: Record<string, string> };
+
+async function request<T>(method: string, path: string, body?: unknown, opts?: RequestOpts): Promise<T> {
+  const headers: Record<string, string> = { 'x-device-id': storage.deviceId(), ...opts?.headers };
   if (body !== undefined) headers['content-type'] = 'application/json';
   let res: Response;
   try {
@@ -79,6 +81,7 @@ async function request<T>(method: string, path: string, body?: unknown, extraHea
       credentials: 'same-origin',
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
+      ...(opts?.keepalive ? { keepalive: true } : {}),
     });
   } catch {
     throw new ApiError(0, 'network', 'Không kết nối được, kiểm tra mạng rồi thử lại nhé.');
@@ -99,7 +102,7 @@ async function request<T>(method: string, path: string, body?: unknown, extraHea
 
 const tree = (id: string) => `/api/trees/${encodeURIComponent(id)}`;
 const message = (mid: string) => `/api/messages/${encodeURIComponent(mid)}`;
-const token = (t: string) => ({ 'x-edit-token': t });
+const token = (t: string): RequestOpts => ({ headers: { 'x-edit-token': t } });
 
 export const api = {
   getConfig: () => request<AppConfig>('GET', '/api/config'),
@@ -107,9 +110,10 @@ export const api = {
   getOwnerTree: (id: string) => request<OwnerRoom>('GET', `${tree(id)}/owner`),
   createTree: (body: CreateTreeBody) =>
     request<{ id: string; publicUrl: string; privateUrl: string; roomVersion: number }>('POST', '/api/trees', body),
-  saveRoom: (id: string, roomVersion: number, room: Room) =>
-    request<{ roomVersion: number }>('PUT', `${tree(id)}/room`, { roomVersion, room }),
+  saveRoom: (id: string, roomVersion: number, room: Room, opts?: { keepalive?: boolean }) =>
+    request<{ roomVersion: number }>('PUT', `${tree(id)}/room`, { roomVersion, room }, opts),
   authPin: (id: string, pin: string) => request<void>('POST', `${tree(id)}/auth/pin`, { pin }),
+  ownerVisit: (id: string) => request<void>('POST', `${tree(id)}/owner/visit`),
   authLink: (id: string, key: string) => request<void>('POST', `${tree(id)}/auth/link`, { key }),
   authGoogle: (idToken: string, treeId?: string) =>
     request<void | { trees: { id: string; title: string | null }[] }>('POST', '/api/auth/google', { idToken, treeId }),

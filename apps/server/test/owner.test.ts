@@ -55,6 +55,25 @@ describe('global block', () => {
   });
 });
 
+describe('updated_at của lời nhắn', () => {
+  it('updated_at của lời nhắn chỉ đổi khi người viết sửa: chủ cây mở lời nhắn không đổi; sửa đặt = giờ giả', async () => {
+    const { id, cookies } = await setup();
+    const p = (await post(id, 1)).json();
+    const get = async () => (await t.h.db.select().from(messages))[0]!.updatedAt;
+    const before = await get();
+    t.clock.set('2026-12-24T01:00:00+07:00');
+    expect((await open(id, p.messageId, cookies)).statusCode).toBe(200);
+    expect(await get()).toEqual(before);
+    await t.h.db.update(messages).set({ readAt: null, editUntil: new Date('2026-12-25T00:00:00Z') }).where(eq(messages.id, Number(p.messageId)));
+    const r = await t.app.inject({
+      method: 'PUT', url: `/api/messages/${p.messageId}`, headers: { ...JSON_CT, 'x-edit-token': p.editToken },
+      payload: { ornament: ORN, anonymous: false, authorName: 'Minh', content: 'sửa' },
+    });
+    expect(r.statusCode).toBe(200);
+    expect((await get()).toISOString()).toBe('2026-12-23T18:00:00.000Z');
+  });
+});
+
 describe('open', () => {
   it('trước 0h 24/12: 423 locked kèm unlockAt; đúng 0h: 200 có content, unread:false, tác giả không sửa được', async () => {
     const { id, cookies } = await setup();
@@ -183,6 +202,8 @@ describe('reports', () => {
   it('chủ cây kèm messageId: snapshot đúng, reporter owner, hash NULL', async () => {
     const { id, cookies } = await setup();
     const p = (await post(id, 1)).json();
+    t.clock.set('2026-12-24T08:00:00+07:00');
+    expect((await open(id, p.messageId, cookies)).statusCode).toBe(200);
     const r = await report(id, { messageId: p.messageId, reason: '  spam  ' }, {}, cookies);
     expect(r.statusCode).toBe(201);
     expect(typeof r.json().reportId).toBe('string');
@@ -191,6 +212,20 @@ describe('reports', () => {
       reporter: 'owner', reporterHash: null, messageSnapshot: 'Chúc mừng Giáng sinh', reason: 'spam', status: 'open',
     });
     expect(String(row!.messageId)).toBe(p.messageId);
+  });
+
+  it('chủ cây báo cáo lời nhắn chưa mở (trước và sau 24/12): 403 not_opened, không tạo báo cáo', async () => {
+    const { id, cookies } = await setup();
+    const p = (await post(id, 1)).json();
+    for (const at of ['2026-12-01T10:05:00+07:00', '2026-12-24T08:00:00+07:00']) {
+      t.clock.set(at);
+      const r = await report(id, { messageId: p.messageId }, {}, cookies);
+      expect(r.statusCode).toBe(403);
+      expect(r.json().error.code).toBe('not_opened');
+    }
+    expect(await t.h.db.select().from(reports)).toHaveLength(0);
+    // Báo cáo cả phòng (không kèm messageId) vẫn được.
+    expect((await report(id, { reason: 'x' }, {}, cookies)).statusCode).toBe(201);
   });
 
   it('chủ cây báo cáo mid phòng khác: 404', async () => {

@@ -12,7 +12,7 @@ vi.mock('../lib/api', async (orig) => {
   const actual = await orig<typeof import('../lib/api')>();
   return {
     ...actual,
-    api: { getOwnerTree: vi.fn(), getTree: vi.fn(), authLink: vi.fn(), authPin: vi.fn(), saveRoom: vi.fn(), getConfig: vi.fn(), setShowCount: vi.fn() },
+    api: { getOwnerTree: vi.fn(), getTree: vi.fn(), authLink: vi.fn(), authPin: vi.fn(), saveRoom: vi.fn(), ownerVisit: vi.fn(), getConfig: vi.fn(), setShowCount: vi.fn() },
   };
 });
 
@@ -40,6 +40,7 @@ beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true, advanceTimeDelta: 2 });
   localStorage.clear();
   vi.resetAllMocks();
+  mocked.ownerVisit.mockResolvedValue(undefined);
   mocked.getConfig.mockRejectedValue(new Error('không cần trong test này'));
   window.history.replaceState(null, '', '/');
   vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
@@ -217,6 +218,15 @@ describe('RoomPage', () => {
     expect(mocked.saveRoom).toHaveBeenCalledWith(ID, 2, expect.objectContaining({ background: expect.not.stringMatching(/^night$/) }));
   });
 
+  it('lưu bị 409 version_conflict không kèm phòng → "Không mở được cây này."', async () => {
+    mocked.getOwnerTree.mockResolvedValue(ownerRoom());
+    mocked.saveRoom.mockRejectedValue(new ApiError(409, 'version_conflict', 'x', {}));
+    renderAt();
+    await editBackground();
+    await passDebounce();
+    expect(await screen.findByText('Không mở được cây này.')).toBeInTheDocument();
+  });
+
   it('lưu bị 401 → "Chào chủ cây" → đăng nhập → tải lại và gửi lại thay đổi', async () => {
     mocked.getOwnerTree.mockResolvedValue(ownerRoom());
     mocked.saveRoom.mockRejectedValueOnce(unauthorized()).mockResolvedValue({ roomVersion: 3 });
@@ -231,6 +241,32 @@ describe('RoomPage', () => {
     expect(mocked.getOwnerTree).toHaveBeenCalledTimes(2);
     expect(await screen.findByText('Đã lưu')).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Xong' }).length).toBeGreaterThan(0);
+    expect(mocked.ownerVisit).toHaveBeenCalledTimes(1);
+  });
+
+  it('chủ cây: mở phòng gọi ownerVisit đúng 1 lần (kể cả StrictMode)', async () => {
+    mocked.getOwnerTree.mockResolvedValue(ownerRoom());
+    renderAt(undefined, true);
+    expect(await screen.findByRole('button', { name: /Sửa phòng/ })).toBeInTheDocument();
+    expect(mocked.ownerVisit).toHaveBeenCalledTimes(1);
+    expect(mocked.ownerVisit).toHaveBeenCalledWith(ID);
+  });
+
+  it('khách: không gọi ownerVisit', async () => {
+    mocked.getOwnerTree.mockRejectedValue(unauthorized());
+    mocked.getTree.mockResolvedValue(publicRoom());
+    renderAt();
+    expect(await screen.findByRole('link', { name: 'Tạo cây của bạn' })).toBeInTheDocument();
+    expect(mocked.ownerVisit).not.toHaveBeenCalled();
+  });
+
+  it('ownerVisit lỗi (mạng) không làm hỏng trang', async () => {
+    mocked.getOwnerTree.mockResolvedValue(ownerRoom());
+    mocked.ownerVisit.mockRejectedValue(new ApiError(0, 'network', 'x'));
+    renderAt();
+    expect(await screen.findByRole('button', { name: /Sửa phòng/ })).toBeInTheDocument();
+    expect(mocked.ownerVisit).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 
   it('lưu bị 403 write_closed → về Xem, ẩn "Sửa phòng"', async () => {
@@ -330,6 +366,32 @@ describe('RoomPage', () => {
     await waitFor(() => expect(mocked.saveRoom).toHaveBeenCalledTimes(1));
     expect(mocked.saveRoom.mock.calls[0]![2].background).not.toBe('night');
     expect(storage.getDraft(ID)).toBeNull();
+  });
+
+  it('"Xong" gặp 409 version_conflict → ở lại chế độ Sửa, hiện bảng xung đột', async () => {
+    mocked.getOwnerTree.mockResolvedValue(ownerRoom());
+    mocked.saveRoom.mockRejectedValue(new ApiError(409, 'version_conflict', 'x', { room: publicRoom({ roomVersion: 5 }) }));
+    renderAt();
+    await editBackground();
+    await userEvent.click(screen.getAllByRole('button', { name: 'Xong' })[0]!);
+    expect(await screen.findByRole('button', { name: 'Giữ bản trên máy này' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Dùng bản mới nhất' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Xong' }).length).toBeGreaterThan(0);
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    expect(screen.queryByRole('button', { name: /Sửa phòng/ })).not.toBeInTheDocument();
+    expect(screen.queryByText('Thay đổi chưa được lưu.')).not.toBeInTheDocument();
+  });
+
+  it('đang sửa có thay đổi chưa lưu, pagehide → saveRoom với keepalive', async () => {
+    mocked.getOwnerTree.mockResolvedValue(ownerRoom());
+    mocked.saveRoom.mockResolvedValue({ roomVersion: 3 });
+    renderAt();
+    await editBackground();
+    expect(mocked.saveRoom).not.toHaveBeenCalled();
+    window.dispatchEvent(new Event('pagehide'));
+    expect(mocked.saveRoom).toHaveBeenCalledTimes(1);
+    expect(mocked.saveRoom.mock.calls[0]![1]).toBe(2);
+    expect(mocked.saveRoom.mock.calls[0]![3]).toEqual({ keepalive: true });
   });
 
   it('lưu bị 409 slots_in_use → hiện thông báo của server', async () => {

@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { connectPglite } from '../src/db/client.js';
 import { runMigrations } from '../src/db/migrate.js';
 import { loadEnv } from '../src/env.js';
+import { eq } from 'drizzle-orm';
+import { rateCounters } from '../src/db/schema.js';
 import { hashPin, verifyPin, newTreeId, ipHash, deviceHash, ipBlockHash, hmac, randomToken, rateLimit } from '../src/security.js';
 
 const env = loadEnv({});
@@ -69,6 +71,21 @@ describe('rateLimit', () => {
     for (let i = 0; i < 4; i++) r.push(await rateLimit(h.db, 't', 3, at));
     expect(r).toEqual([true, true, true, false]);
     expect(await rateLimit(h.db, 't', 3, new Date('2026-12-01T11:00:00Z'))).toBe(true);
+    await h.close();
+  });
+  it('rateLimit với windowMs 15 phút: khung tính theo bội của 15 phút', async () => {
+    const h = await connectPglite();
+    await runMigrations(h);
+    const W = 15 * 60_000;
+    expect(await rateLimit(h.db, 'q', 2, new Date('2026-12-01T10:15:00Z'), W)).toBe(true);
+    expect(await rateLimit(h.db, 'q', 2, new Date('2026-12-01T10:29:59Z'), W)).toBe(true);
+    expect(await rateLimit(h.db, 'q', 2, new Date('2026-12-01T10:20:00Z'), W)).toBe(false);
+    expect(await rateLimit(h.db, 'q', 2, new Date('2026-12-01T10:30:00Z'), W)).toBe(true);
+    const rows = await h.db.select().from(rateCounters).where(eq(rateCounters.bucket, 'q'));
+    expect(rows.map((r) => [r.windowStart.toISOString(), r.hits]).sort()).toEqual([
+      ['2026-12-01T10:15:00.000Z', 3],
+      ['2026-12-01T10:30:00.000Z', 1],
+    ]);
     await h.close();
   });
   it('song song đúng limit', async () => {

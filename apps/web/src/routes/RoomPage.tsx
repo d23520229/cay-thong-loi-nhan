@@ -26,6 +26,7 @@ type View =
 
 /** Phòng nhận từ server phải hợp lệ mới vẽ (không tin dữ liệu ngoài). */
 function toRoom(r: PublicRoom): Room | null {
+  if (!r || typeof r !== 'object') return null;
   const parsed = RoomSchema.safeParse({ background: r.background, tree: r.tree, items: r.items });
   return parsed.success && validateRoom(parsed.data).ok ? parsed.data : null;
 }
@@ -52,7 +53,8 @@ function TreeRoom({ id }: { id: string }) {
   const [login, setLogin] = useState<null | 'guest' | 'unauthorized'>(null);
   const autosave = useRef<Autosave | null>(null);
   const link = useRef<Promise<void> | null>(null);
-  // Lượt vào trang: một request /owner dùng chung cho cả hai lần effect của StrictMode (/owner ghi lần ghé, gọi hai lần mất số "mới").
+  const visited = useRef(false);
+  // Lượt vào trang: một request /owner dùng chung cho cả hai lần effect của StrictMode.
   const firstOwner = useRef<Promise<OwnerRoom> | null>(null);
   const { toast, show } = useToast();
 
@@ -86,6 +88,11 @@ function TreeRoom({ id }: { id: string }) {
       remember(id, meta.title);
       setView({ kind: 'owner', data: { meta, room } });
       setMode((m) => m ?? 'view');
+      // Một lần mỗi lần mở phòng (tải lại sau đăng nhập lại không tính); lỗi mạng bỏ qua lặng lẽ.
+      if (!visited.current) {
+        visited.current = true;
+        void api.ownerVisit(id).catch(() => {});
+      }
     },
     [id],
   );
@@ -258,10 +265,17 @@ function OwnerEditor(props: EditorProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    const h = () => mine.current?.flushOnUnload();
+    window.addEventListener('pagehide', h);
+    return () => window.removeEventListener('pagehide', h);
+  }, []);
+
   const done = async () => {
     const a = mine.current;
     if (!a || conflict) return;
     await a.flush();
+    if (a.hasConflict()) return; // bảng xung đột đã hiện (onConflict): ở lại chế độ Sửa
     // Chưa lưu được (mất mạng, 429, lỗi khác) vẫn rời chế độ Sửa: bỏ phần chưa lưu, hiện bản server đã xác nhận (chốt 19/11).
     if (!a.isSaved()) {
       a.stop();

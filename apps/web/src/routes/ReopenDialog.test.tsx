@@ -94,6 +94,19 @@ describe('ReopenDialog', () => {
     expect(mocked.authPin).not.toHaveBeenCalled();
   });
 
+  it('nhiều cây trong myTrees: không tự gọi getOwnerTree, điền sẵn cây mới nhất; bấm chip mới thử phiên rồi chuyển', async () => {
+    storage.addMyTree({ id: 'aaaaaaaa', title: null, createdAt: 'x' });
+    storage.addMyTree({ id: 'k7m2xq4a', title: null, createdAt: 'y' });
+    mocked.getOwnerTree.mockResolvedValue({} as never);
+    renderDialog();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(mocked.getOwnerTree).not.toHaveBeenCalled();
+    expect(screen.getByLabelText('Mã cây hoặc link cây')).toHaveValue('k7m2xq4a');
+    await userEvent.click(screen.getByRole('button', { name: 'aaaaaaaa' }));
+    expect(mocked.getOwnerTree).toHaveBeenCalledWith('aaaaaaaa');
+    expect(await screen.findByText('Phòng đã mở')).toBeInTheDocument();
+  });
+
   it('điền sẵn mã cây; 404 khi thử mở thì xoá khỏi myTrees', async () => {
     storage.addMyTree({ id: 'k7m2xq4a', title: null, createdAt: 'x' });
     mocked.getOwnerTree.mockRejectedValue(new ApiError(404, 'not_found', 'x'));

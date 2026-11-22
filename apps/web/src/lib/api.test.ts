@@ -40,6 +40,14 @@ describe('api', () => {
     expect(h.get('x-device-id')).toMatch(/^[0-9a-f-]{36}$/);
   });
 
+  it('saveRoom với { keepalive: true } truyền keepalive cho fetch; không truyền thì không có', async () => {
+    fetchMock().mockImplementation(async () => json(200, { roomVersion: 4 }));
+    await api.saveRoom('abcdefgh', 3, room, { keepalive: true });
+    expect(fetchMock().mock.calls[0]![1]?.keepalive).toBe(true);
+    await api.saveRoom('abcdefgh', 3, room);
+    expect(fetchMock().mock.calls[1]![1]?.keepalive).toBeUndefined();
+  });
+
   it('GET không có content-type nhưng có x-device-id; 204 trả undefined', async () => {
     fetchMock().mockResolvedValue(new Response(null, { status: 204 }));
     await expect(api.logout('abcdefgh')).resolves.toBeUndefined();
@@ -48,6 +56,15 @@ describe('api', () => {
     const h = new Headers(fetchMock().mock.calls[1]![1]?.headers);
     expect(h.get('content-type')).toBeNull();
     expect(h.get('x-device-id')).toBeTruthy();
+  });
+
+  it('ownerVisit gửi POST /api/trees/{id}/owner/visit không body', async () => {
+    fetchMock().mockResolvedValue(new Response(null, { status: 204 }));
+    await expect(api.ownerVisit('abcdefgh')).resolves.toBeUndefined();
+    const [url, init] = fetchMock().mock.calls[0]!;
+    expect(String(url)).toBe('/api/trees/abcdefgh/owner/visit');
+    expect(init?.method).toBe('POST');
+    expect(init?.body).toBeUndefined();
   });
 
   it('lỗi không phải JSON vẫn thành ApiError', async () => {

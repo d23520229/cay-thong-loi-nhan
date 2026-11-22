@@ -20,9 +20,7 @@ CREATE TABLE trees (
   -- xác thực chủ cây
   private_key_hash    text NOT NULL,                                  -- HMAC khoá trong link riêng
   pin_hash            text,                                           -- scrypt(PIN 6 số); NULL nếu chỉ dùng Google
-  pin_failed_count    smallint NOT NULL DEFAULT 0,
-  pin_locked_until    timestamptz,
-  pin_last_failed_at  timestamptz,                                    -- thêm ở migration 0002: mốc lần sai PIN cuối (cửa sổ 15 phút)
+  -- pin_failed_count, pin_locked_until, pin_last_failed_at: bỏ ở migration 0003 (khoá PIN dùng rate_counters)
 
   -- phòng và cấu hình cây
   background          text NOT NULL DEFAULT 'night',
@@ -209,8 +207,8 @@ CREATE TABLE events (
 );
 CREATE INDEX idx_events_type_time ON events(type, created_at);
 
--- Tự cập nhật updated_at
-CREATE FUNCTION touch_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN NEW.updated_at := now(); RETURN NEW; END $$;
-CREATE TRIGGER trg_trees_touch    BEFORE UPDATE ON trees    FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
-CREATE TRIGGER trg_messages_touch BEFORE UPDATE ON messages FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
+-- Tự cập nhật updated_at — BỎ ở migration 0003 (chạm updated_at ở mọi UPDATE); giữ để đối chiếu 0000
+-- CREATE FUNCTION touch_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$
+-- BEGIN NEW.updated_at := now(); RETURN NEW; END $$;
+-- CREATE TRIGGER trg_trees_touch    BEFORE UPDATE ON trees    FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
+-- CREATE TRIGGER trg_messages_touch BEFORE UPDATE ON messages FOR EACH ROW EXECUTE FUNCTION touch_updated_at();

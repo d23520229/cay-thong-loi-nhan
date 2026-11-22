@@ -50,9 +50,19 @@ export async function buildApp(deps: AppDeps, opts: { logStream?: { write(msg: s
   const app = Fastify({ logger: opts.logStream ? { ...loggerOptions, stream: opts.logStream } : process.env.VITEST ? false : loggerOptions, bodyLimit: 65536, trustProxy: (_addr: string, hop: number) => hop < deps.env.trustProxyHops });
   app.decorate('deps', deps);
   await app.register(cookie);
-  // Chưa production: bỏ upgrade-insecure-requests để mở bản build qua http trong mạng LAN (thử trên điện thoại).
+  const GOOGLE = 'https://accounts.google.com';
+  // Giữ mặc định helmet cho các chỉ thị khác; chỉ mở đúng accounts.google.com cho Google Identity.
   await app.register(helmet, {
-    contentSecurityPolicy: { directives: { upgradeInsecureRequests: deps.env.production ? [] : null } },
+    contentSecurityPolicy: {
+      directives: {
+        'script-src': ["'self'", GOOGLE],
+        'frame-src': ["'self'", GOOGLE],
+        'connect-src': ["'self'", GOOGLE],
+        'style-src': ["'self'", "'unsafe-inline'", GOOGLE],
+        // Chưa production: bỏ upgrade-insecure-requests để mở bản build qua http trong mạng LAN (thử trên điện thoại).
+        upgradeInsecureRequests: deps.env.production ? [] : null,
+      },
+    },
   });
 
   app.addHook('onRequest', async (req, reply) => {

@@ -7,7 +7,7 @@ import * as schema from '../src/db/schema.js';
 describe('runMigrations', () => {
   it('chạy mọi migration lần đầu, lần hai không chạy lại', async () => {
     const h = await connectPglite();
-    expect(await runMigrations(h)).toEqual(['0000_init.sql', '0001_show_message_count.sql', '0002_pin_failed_at.sql']);
+    expect(await runMigrations(h)).toEqual(['0000_init.sql', '0001_show_message_count.sql', '0002_pin_failed_at.sql', '0003_pin_rate_counters.sql']);
     expect(await runMigrations(h)).toEqual([]);
     await h.close();
   });

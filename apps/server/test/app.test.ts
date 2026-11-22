@@ -28,6 +28,17 @@ describe('app', () => {
     expect(j.limits.maxItems).toBe(25);
     expect(j.unlockAt).toBe('2026-12-23T17:00:00.000Z');
   });
+  it('CSP chỉ cùng nguồn + accounts.google.com', async () => {
+    t = await makeTestApp();
+    const csp = String((await t.app.inject('/api/config')).headers['content-security-policy']);
+    const dir = (n: string) => csp.split(';').find((d) => d.startsWith(`${n} `)) ?? '';
+    expect(dir('default-src')).toBe("default-src 'self'");
+    for (const n of ['script-src', 'frame-src', 'connect-src', 'style-src']) {
+      expect(dir(n)).toContain("'self'");
+      expect(dir(n)).toContain('https://accounts.google.com');
+    }
+    expect(dir('style-src')).toContain("'unsafe-inline'");
+  });
   it('/api/config ở ENDED vẫn 200, route khác 410', async () => {
     t = await makeTestApp({ at: '2027-01-01T00:00:00+07:00' });
     expect((await t.app.inject('/api/config')).json().phase).toBe('ENDED');

@@ -5,7 +5,7 @@ import { createAutosave } from './autosave';
 import { defaultRoom } from './model';
 import { createEditorStore, type EditorStore } from './store';
 
-type SaveFn = (id: string, roomVersion: number, room: Room) => Promise<{ roomVersion: number }>;
+type SaveFn = (id: string, roomVersion: number, room: Room, opts?: { keepalive?: boolean }) => Promise<{ roomVersion: number }>;
 
 function setup(opts: { version?: number; store?: EditorStore; saveRoom?: SaveFn } = {}) {
   const store = opts.store ?? createEditorStore(defaultRoom());
@@ -161,7 +161,7 @@ describe('autosave', () => {
       .mockRejectedValueOnce(new ApiError(0, 'network', 'x'));
     t.store.getState().setTree({ slotCount: 9 });
     await vi.advanceTimersByTimeAsync(1500);
-    t.store.getState().setBackground('night');
+    t.store.getState().setBackground('wood');
     await vi.advanceTimersByTimeAsync(1499);
     expect(t.saveRoom).toHaveBeenCalledTimes(1);
     await vi.advanceTimersByTimeAsync(1);
@@ -172,7 +172,7 @@ describe('autosave', () => {
     expect(t.saveRoom).toHaveBeenCalledTimes(3);
     const [, version, room] = t.saveRoom.mock.calls[2]!;
     expect(version).toBe(3);
-    expect(room.background).toBe('night');
+    expect(room.background).toBe('wood');
     expect(room.tree.slotCount).toBe(25);
     expect(t.onState).toHaveBeenLastCalledWith('saved');
     expect(t.a.version()).toBe(4);
@@ -413,5 +413,154 @@ describe('autosave', () => {
     await t.a.flush();
     expect(t.a.isSaved()).toBe(true);
     expect(t.a.lastSaved()).toBe(t.store.getState().room);
+  });
+
+  const conflictSetup = () => {
+    const other = defaultRoom();
+    other.background = 'night';
+    const server = serverRoom(other, 7);
+    const t = track(
+      setup({
+        saveRoom: async () => {
+          throw new ApiError(409, 'version_conflict', 'x', { room: server });
+        },
+      }),
+    );
+    return { t, server };
+  };
+
+  it('hasConflict: true sau 409 version_conflict, false sau keepMine / useLatest', async () => {
+    for (const how of ['keepMine', 'useLatest'] as const) {
+      const { t, server } = conflictSetup();
+      expect(t.a.hasConflict()).toBe(false);
+      t.store.getState().setTree({ slotCount: 9 });
+      await vi.advanceTimersByTimeAsync(1500);
+      expect(t.a.hasConflict()).toBe(true);
+      t.saveRoom.mockResolvedValue({ roomVersion: 8 });
+      t.a[how](server);
+      expect(t.a.hasConflict()).toBe(false);
+    }
+  });
+
+  it('flushOnUnload: có thay đổi chưa lưu → saveRoom một lần với keepalive và version hiện tại', () => {
+    const t = track(setup());
+    t.store.getState().setTree({ slotCount: 9 });
+    t.a.flushOnUnload();
+    expect(t.saveRoom).toHaveBeenCalledTimes(1);
+    expect(t.saveRoom).toHaveBeenCalledWith('t1', 3, t.store.getState().room, { keepalive: true });
+  });
+
+  it('flushOnUnload thành công thì nhận version mới: lần lưu sau dùng version đó, không xung đột', async () => {
+    const t = track(setup());
+    t.store.getState().setTree({ slotCount: 9 });
+    t.a.flushOnUnload();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(t.a.version()).toBe(4);
+    expect(t.a.isSaved()).toBe(true);
+    t.store.getState().setTree({ slotCount: 16 });
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(t.saveRoom).toHaveBeenCalledTimes(2);
+    expect(t.saveRoom.mock.calls[1]![1]).toBe(4);
+    expect(t.onConflict).not.toHaveBeenCalled();
+  });
+
+  it('flushOnUnload huỷ hẹn giờ đang chờ: quay lại trang không gửi lượt lưu cũ', async () => {
+    const t = track(setup({ saveRoom: () => new Promise(() => {}) }));
+    t.store.getState().setTree({ slotCount: 9 });
+    t.a.flushOnUnload();
+    await vi.advanceTimersByTimeAsync(3000);
+    expect(t.saveRoom).toHaveBeenCalledTimes(1);
+    expect(t.onConflict).not.toHaveBeenCalled();
+  });
+
+  it('flushOnUnload: đã lưu / đang xung đột / đã stop → không gửi', async () => {
+    const saved = track(setup());
+    saved.a.flushOnUnload();
+    expect(saved.saveRoom).not.toHaveBeenCalled();
+
+    const { t: c } = conflictSetup();
+    c.store.getState().setTree({ slotCount: 9 });
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(c.saveRoom).toHaveBeenCalledTimes(1);
+    c.a.flushOnUnload();
+    expect(c.saveRoom).toHaveBeenCalledTimes(1);
+
+    const s = track(setup());
+    s.store.getState().setTree({ slotCount: 9 });
+    s.a.stop();
+    s.a.flushOnUnload();
+    expect(s.saveRoom).not.toHaveBeenCalled();
+  });
+
+  it('409 version_conflict mà phòng server giống hệt phòng trên máy → không hỏi, nhận version mới, trạng thái saved', async () => {
+    const t = track(setup());
+    t.store.getState().setTree({ slotCount: 9 });
+    const server = serverRoom(structuredClone(t.store.getState().room), 7);
+    t.saveRoom.mockRejectedValueOnce(new ApiError(409, 'version_conflict', 'x', { room: server }));
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(t.onConflict).not.toHaveBeenCalled();
+    expect(t.a.hasConflict()).toBe(false);
+    expect(t.a.version()).toBe(7);
+    expect(t.onState).toHaveBeenLastCalledWith('saved');
+    expect(t.a.isSaved()).toBe(true);
+  });
+
+  it('409 mà phòng server giống phòng vừa gửi nhưng trên máy đã sửa tiếp → nhận version, hẹn lưu tiếp, không hỏi', async () => {
+    let fail!: (e: unknown) => void;
+    const t = track(setup());
+    t.saveRoom.mockImplementationOnce(() => new Promise((_r, j) => (fail = j)));
+    t.store.getState().setTree({ slotCount: 9 });
+    await vi.advanceTimersByTimeAsync(1500);
+    const sent = t.store.getState().room;
+    t.store.getState().setTree({ slotCount: 16 });
+    fail(new ApiError(409, 'version_conflict', 'x', { room: serverRoom(structuredClone(sent), 7) }));
+    await vi.advanceTimersByTimeAsync(0);
+    expect(t.onConflict).not.toHaveBeenCalled();
+    expect(t.a.hasConflict()).toBe(false);
+    expect(t.a.version()).toBe(7);
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(t.saveRoom).toHaveBeenCalledTimes(2);
+    expect(t.saveRoom).toHaveBeenLastCalledWith('t1', 7, t.store.getState().room);
+    expect(t.onState).toHaveBeenLastCalledWith('saved');
+  });
+
+  it('409 với room có items và tree nhưng thiếu roomVersion → vào trạng thái xung đột', async () => {
+    const t = track(setup());
+    t.store.getState().setTree({ slotCount: 9 });
+    const server: Partial<PublicRoom> = serverRoom(structuredClone(t.store.getState().room), 7);
+    delete server.roomVersion;
+    t.saveRoom.mockRejectedValueOnce(new ApiError(409, 'version_conflict', 'x', { room: server }));
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(t.onConflict).toHaveBeenCalledTimes(1);
+    expect(t.a.hasConflict()).toBe(true);
+  });
+
+  it('409 version_conflict với error.room thiếu/sai dạng → không ném lỗi, vẫn vào trạng thái xung đột', async () => {
+    for (const extra of [{}, { room: { phase: 'BUILD' } }]) {
+      const t = track(setup());
+      t.saveRoom.mockRejectedValueOnce(new ApiError(409, 'version_conflict', 'x', extra));
+      t.store.getState().setTree({ slotCount: 9 });
+      await vi.advanceTimersByTimeAsync(1500);
+      expect(t.onConflict).toHaveBeenCalledTimes(1);
+      expect(t.a.hasConflict()).toBe(true);
+      await expect(t.a.flush()).resolves.toBeUndefined();
+    }
+  });
+
+  it('409 giả (phòng server giống hệt) xoá cờ offline: lỗi mạng sau đó lại báo onOffline', async () => {
+    const t = track(setup());
+    t.saveRoom.mockRejectedValueOnce(new ApiError(0, 'network', 'x'));
+    t.store.getState().setTree({ slotCount: 9 });
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(t.onOffline).toHaveBeenCalledTimes(1);
+    t.store.getState().setTree({ slotCount: 16 });
+    t.saveRoom.mockRejectedValueOnce(new ApiError(409, 'version_conflict', 'x', { room: serverRoom(structuredClone(t.store.getState().room), 7) }));
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(t.onConflict).not.toHaveBeenCalled();
+    expect(t.a.version()).toBe(7);
+    t.saveRoom.mockRejectedValueOnce(new ApiError(0, 'network', 'x'));
+    t.store.getState().setTree({ slotCount: 9 });
+    await vi.advanceTimersByTimeAsync(1500);
+    expect(t.onOffline).toHaveBeenCalledTimes(2);
   });
 });

@@ -325,9 +325,9 @@ Khách trong phòng bạn bè bấm "Tạo cây của bạn" thấy đúng màn 
 
 **Khung "Mở lại cây của bạn"** (bấm "Bạn đã có cây?"; chủ dự án chốt 18/11). Mã PIN gắn với từng cây, nên phải biết mở cây nào:
 - Ô **"Mã cây hoặc link cây"**: nhận mã 8 ký tự (`^[a-z2-9]{8}$`) hoặc dán nguyên link (link gửi bạn bè `/c/{id}` hay link riêng `/c/{id}#k=...`; dán link riêng thì vào thẳng bằng `auth/link`, không cần PIN). Sai định dạng → "Mã cây chưa đúng".
-- Ô **PIN 6 số** + nút "Mở cây" → `POST /api/trees/{id}/auth/pin`; thành công → chuyển tới `/c/{id}` (chế độ Xem của chủ cây). Lỗi dùng chung thông báo với bảng "Chào chủ cây" (sai PIN, bị khoá 15 phút); 404 → "Không tìm thấy cây này".
+- Ô **PIN 6 số** + nút "Mở cây" → `POST /api/trees/{id}/auth/pin`; thành công → chuyển tới `/c/{id}` (chế độ Xem của chủ cây). Lỗi dùng chung thông báo với bảng "Chào chủ cây" (sai PIN, bị khoá — thông báo dùng `retryAt`: "N phút", hoặc "N giờ" khi dài hơn 60 phút); 404 → "Không tìm thấy cây này".
 - Nút **"Đăng nhập bằng Google"** → `POST /api/auth/google` không kèm `treeId`: 1 cây thì mở luôn, nhiều cây thì hiện danh sách tên cây để chọn, 0 cây → "Tài khoản này chưa có cây nào".
-- **Máy có ghi nhớ:** `localStorage` khoá `myTrees` (`[{ id, title, createdAt }]`, ghi khi tạo phòng hoặc đăng nhập thành công). Có thì điền sẵn ô mã cây (cây mới nhất; nhiều cây thì hiện danh sách tên để chọn). Chọn một cây mà phiên trên máy còn hiệu lực (`GET /owner` trả 200) → mở thẳng, không hỏi PIN. Server trả 404 → xoá cây đó khỏi `myTrees`.
+- **Máy có ghi nhớ:** `localStorage` khoá `myTrees` (`[{ id, title, createdAt }]`, ghi khi tạo phòng hoặc đăng nhập thành công). Có thì điền sẵn ô mã cây (cây mới nhất; nhiều cây thì hiện danh sách tên để chọn). Chọn một cây mà phiên trên máy còn hiệu lực (`GET /owner` trả 200) → mở thẳng, không hỏi PIN. Khi mở khung chỉ tự thử khi máy nhớ **đúng 1 cây**; nhiều cây thì chờ người dùng bấm chọn (sửa 22/11). Server trả 404 → xoá cây đó khỏi `myTrees`.
 
 **Bố cục.** Phòng hiện trọn (mục 11). Điện thoại: thanh trên (Thêm đồ, Phông nền, chấm trạng thái lưu, Xong/Hoàn tất) đặt trong phần dư phía trên nếu đủ ≥ 44px; mũi tên ‹ ›, thanh công cụ (nhỏ hơn, to hơn, lật, đổi kiểu, xoá) và dải chọn đặt trong phần dư phía dưới; không đủ chỗ thì đè lên phòng và phòng tự đẩy lên để món đang chọn nằm trên dải. Từ 900px: bảng trái (Thêm đồ, Phông nền), phòng giữa (co theo chiều cao), bảng phải (món đang chọn: các kiểu, to/nhỏ, lật, xoá; cây có tab Dáng · Màu · Thân · Gỗ · Điểm nhắn).
 
@@ -347,15 +347,17 @@ Khách trong phòng bạn bè bấm "Tạo cây của bạn" thấy đúng màn 
 **Trạng thái.** Zustand: phòng đang sửa, món đang chọn, dải/bảng đang mở, trạng thái lưu. Dữ liệu từ server gọi qua `lib/api.ts` (bỏ TanStack Query — chốt 21/11, mục 6.6).
 
 **Tự lưu (`room/autosave`).** Sau 1,5 giây không thao tác gửi `PUT /api/trees/:id/room` kèm `roomVersion`. Chấm trạng thái: Đã lưu / Đang lưu / Chưa lưu. Mỗi lần lưu gửi **cả phòng**, nên lần lưu thành công sau sẽ mang theo mọi thay đổi trước đó còn trên trang. **Không lưu nháp phòng đã tạo trên máy** (chủ dự án chốt 19/11: mất mạng thì không cần cố giữ thay đổi; chỉ `/tao` giữ nháp `draft:new`). Xử lý trả về:
-- 409 `version_conflict` → **hỏi chủ cây** (chủ dự án chọn 18/11): bảng "Có thay đổi chưa lưu trên máy này, nhưng phòng đã được sửa ở thiết bị khác" với hai nút **"Giữ bản trên máy này"** (gửi lại phòng đang sửa kèm `roomVersion` mới nhận trong `error.room`) và **"Dùng bản mới nhất"** (thay bằng `error.room`).
+- 409 `version_conflict` → **hỏi chủ cây** (chủ dự án chọn 18/11): bảng "Có thay đổi chưa lưu trên máy này, nhưng phòng đã được sửa ở thiết bị khác" với hai nút **"Giữ bản trên máy này"** (gửi lại phòng đang sửa kèm `roomVersion` mới nhận trong `error.room`) và **"Dùng bản mới nhất"** (thay bằng `error.room`). Nếu `error.room` **giống hệt** phòng đang sửa (so theo `clientId`, bỏ qua thứ tự món) thì không hỏi: nhận `roomVersion` mới và coi như đã lưu (xung đột giả, ví dụ lượt lưu lúc `pagehide` vừa được nhận) (22/11).
 - 409 `slots_in_use` → trả số điểm nhắn về giá trị cũ, hiện thông báo của server.
 - 403 `write_closed` → chuyển về chế độ Xem, ẩn "Sửa phòng".
 - 401 → mất phiên chủ cây: hiện bảng "Tôi là chủ cây".
 - Lỗi mạng / 5xx → "Chưa lưu", **không tự thử lại** (chủ dự án chốt 19/11); thông báo một lần "Mất mạng — thay đổi chưa được lưu". Thao tác tiếp theo của chủ cây sẽ lưu lại cả phòng như bình thường.
 - 429 (vượt 600 lần lưu/giờ, mục 10) → thông báo "Bạn lưu hơi nhiều, sẽ tự lưu lại sau ít phút.", thử lại sau 60 giây (trong lúc vẫn ở trang); khi đã có ≥ 540 lần lưu trong một giờ thì giãn khoảng chờ lên 60 giây.
+- **Đóng tab / rời trang** (`pagehide`) khi còn thay đổi chưa lưu → gửi `PUT /room` một lần bằng `fetch` có `keepalive`, không chờ kết quả; thành công thì nhận `roomVersion` mới, huỷ lượt hẹn giờ đang chờ (tránh xung đột giả khi quay lại bằng Back) (sửa 22/11).
+- "Xong" đúng lúc lượt lưu bị 409 `version_conflict` → ở lại chế độ Sửa và hiện bảng hỏi ở trên (sửa 22/11).
 - "Xong" → lưu ngay một lần; vẫn chưa lưu được (mất mạng, 429, lỗi khác) → vẫn rời chế độ Sửa, thông báo "Thay đổi chưa được lưu.", chế độ Xem hiện bản server đã xác nhận (phần chưa lưu bị bỏ).
 
-**Chủ cây vào từ máy khác.** Bảng "Chào chủ cây": ô PIN 6 số → `POST auth/pin`; sai → "Mã PIN chưa đúng"; 429 `pin_locked` → "Nhập sai quá nhiều lần, thử lại sau 15 phút" (dùng `retryAt`); dòng "Có link riêng? Mở link đó là vào được ngay".
+**Chủ cây vào từ máy khác.** Bảng "Chào chủ cây": ô PIN 6 số → `POST auth/pin`; sai → "Mã PIN chưa đúng"; 429 `pin_locked` → "Nhập sai quá nhiều lần, thử lại sau N phút" (dùng `retryAt`: "N phút", hoặc "N giờ" khi dài hơn 60 phút); dòng "Có link riêng? Mở link đó là vào được ngay".
 
 **Google.** `/api/config` trả thêm `googleClientId` (chuỗi công khai, `null` nếu chưa cấu hình). Chưa có → nút Google hiện mờ, ghi "sắp có", chỉ dùng PIN. Tích hợp Google Identity Services làm khi chủ dự án có Client ID (chậm nhất M4).
 
@@ -541,9 +543,7 @@ CREATE TABLE trees (
   -- xác thực chủ cây
   private_key_hash    text NOT NULL,                                  -- HMAC khoá trong link riêng
   pin_hash            text,                                           -- scrypt(PIN 6 số); NULL nếu chỉ dùng Google
-  pin_failed_count    smallint NOT NULL DEFAULT 0,
-  pin_locked_until    timestamptz,
-  pin_last_failed_at  timestamptz,                                    -- thêm ở migration 0002: mốc lần sai PIN cuối (cửa sổ 15 phút)
+  -- pin_failed_count, pin_locked_until (0000), pin_last_failed_at (0002): bỏ ở migration 0003 (22/11) — khoá PIN chuyển sang rate_counters, xem mục 10
 
   -- phòng và cấu hình cây
   background          text NOT NULL DEFAULT 'night',
@@ -731,6 +731,7 @@ CREATE TABLE events (
 CREATE INDEX idx_events_type_time ON events(type, created_at);
 
 -- Tự cập nhật updated_at
+-- Trigger touch_updated_at bên dưới bị bỏ ở migration 0003 (22/11): nó chạm updated_at ở mọi UPDATE và ghi đè giờ do code đặt.
 CREATE FUNCTION touch_updated_at() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN NEW.updated_at := now(); RETURN NEW; END $$;
 CREATE TRIGGER trg_trees_touch    BEFORE UPDATE ON trees    FOR EACH ROW EXECUTE FUNCTION touch_updated_at();
@@ -752,8 +753,8 @@ CREATE TRIGGER trg_messages_touch BEFORE UPDATE ON messages FOR EACH ROW EXECUTE
 | Không sửa sau khi chủ cây đã mở | Điều kiện `read_at IS NULL` trong câu `UPDATE ... WHERE` |
 | Hai thiết bị cùng sửa phòng | `room_version`: gửi kèm phiên bản đang có; lệch thì trả 409 và gửi bản mới |
 | Mỗi thiết bị tối đa 3 lời nhắn / phòng | Đếm theo `(tree_id, device_hash)` trong giao dịch |
-| Giới hạn tần suất dùng chung khi chạy nhiều instance | Bảng `rate_counters`: `INSERT ... ON CONFLICT DO UPDATE SET hits = hits + 1 RETURNING hits`; dọn khung cũ hằng giờ |
-| `updated_at` luôn đúng | Trigger `touch_updated_at` trên `trees`, `messages` |
+| Giới hạn tần suất dùng chung khi chạy nhiều instance | Bảng `rate_counters`: `INSERT ... ON CONFLICT DO UPDATE SET hits = hits + 1 RETURNING hits`; dọn hằng giờ **chỉ khung đã kết thúc**: dòng có bucket bắt đầu `pin:tree:` giữ đến khi `window_start` quá 1 ngày, bucket khác giữ đến khi quá 1 giờ (xoá nhầm `pin:tree:{id}` sẽ đặt lại trần 50 lần sai / ngày) |
+| `updated_at` đúng nghĩa "sửa lần cuối" | Code đặt `updated_at = now()` (theo `phase.now`, có `FAKE_NOW`) khi lưu phòng và khi người viết sửa lời nhắn; không có trigger (bỏ ở migration 0003, 22/11) |
 | Thiết bị / IP bị chặn toàn hệ thống | Kiểm tra `global_blocks` (còn hạn) trước mọi thao tác ghi; kết quả lưu đệm 60 giây |
 | Từ cấm | So khớp sau khi chuyển chữ thường và bỏ dấu; `mask` thì thay bằng `***`, `reject` thì trả 400 |
 | Tạm dừng khẩn cấp | Đọc `site_settings.pause_create`, `pause_messages` (lưu đệm 30 giây) |
@@ -778,7 +779,7 @@ Trình duyệt gộp các thay đổi trong 1,5 giây rồi mới gửi, nên k�
 | Nơi lưu | Khoá | Giá trị | Dùng để |
 |---|---|---|---|
 | Cookie HttpOnly, Secure, SameSite=Lax | `ctln_owner_{treeId}` | token phiên chủ cây | Tự nhận chủ cây trên thiết bị này |
-| localStorage | `deviceId` | UUID ngẫu nhiên | Nhận diện thiết bị khi viết lời nhắn |
+| localStorage | `deviceId` | UUID ngẫu nhiên | Nhận diện thiết bị khi viết lời nhắn. localStorage lỗi (trình duyệt trong Zalo/Messenger…) → dự phòng cookie thường `ctln_did` (1 năm, SameSite=Lax, path /) (22/11) |
 | localStorage | `msg:{treeId}:{slot}` | `{ messageId, editToken, editUntil }` | Sửa lời nhắn trong 15 phút |
 | localStorage | `lastName` | tên đã nhập | Điền sẵn lần sau |
 | localStorage | `draft:new` | phòng đang trang trí ở `/tao`, chưa tạo cây | Không mất công trang trí khi tải lại trang trước khi tạo cây (phòng đã tạo không lưu nháp — chốt 19/11) |
@@ -809,7 +810,7 @@ Ghi chú: trình duyệt trong Zalo/Messenger có bộ nhớ riêng, nên chủ 
 ### 7.9 Kết nối, migration, sao lưu
 
 - **Kết nối:** driver `postgres` (postgres.js) qua Drizzle, nhóm kết nối 10 / instance, bắt buộc TLS tới Azure.
-- **Migration:** file SQL viết tay trong `apps/server/src/db/migrations/` là gốc; `schema.ts` của Drizzle chỉ để có kiểu khi truy vấn, có test đối chiếu với CSDL. Script tự viết chạy các file theo thứ tự khi khởi động server (giữ khoá `pg_advisory_lock`), ghi file đã chạy vào bảng `meta.migrations` (schema riêng, không tính vào 16 bảng).
+- **Migration:** file SQL viết tay trong `apps/server/src/db/migrations/` là gốc; `schema.ts` của Drizzle chỉ để có kiểu khi truy vấn, có test đối chiếu với CSDL. Script tự viết chạy các file theo thứ tự khi khởi động server (giữ khoá `pg_advisory_xact_lock` trong giao dịch, tự nhả khi xong), ghi file đã chạy vào bảng `meta.migrations` (schema riêng, không tính vào 16 bảng).
 - **Sao lưu:** Azure tự sao lưu hằng ngày, giữ 7 ngày, khôi phục về một thời điểm bất kỳ. Không cần tự viết script sao lưu như SQLite.
 - **Môi trường phát triển:** PostgreSQL chạy bằng Docker trên máy; kiểm thử tự động dùng PGlite (PostgreSQL chạy trong tiến trình, không cần cài).
 - **Xoá cuối mùa:** sau 07/01/2027 xoá luôn máy chủ PostgreSQL, toàn bộ dữ liệu và bản sao lưu biến mất cùng lúc.
@@ -830,7 +831,7 @@ JSON, UTF-8. Header `X-Device-Id` cho người viết. Quyền chủ cây qua co
 |---|---|---|
 | POST | `/api/trees` | Tạo phòng. Body: `ownerName, title?, recovery: { type: 'pin', pin } \| { type: 'google', idToken }, room, ref?`. Trả `{ id, publicUrl, privateUrl, roomVersion }` và đặt cookie phiên. `privateUrl` chỉ trả một lần |
 | POST | `/api/trees/:id/auth/link` | Đăng nhập bằng khoá trong link riêng (`#k=...`) → đặt cookie |
-| POST | `/api/trees/:id/auth/pin` | Body `{ pin }` → đặt cookie; sai 5 lần thì khoá 15 phút |
+| POST | `/api/trees/:id/auth/pin` | Body `{ pin }` → đặt cookie; 5 lần sai / phòng + IP / khung 15 phút, cộng trần 50 lần sai / phòng / ngày (xem mục 10) |
 | POST | `/api/auth/google` | Body `{ idToken, treeId? }`. Có `treeId` → đặt cookie nếu tài khoản sở hữu phòng đó. Không có → trả danh sách phòng `{ id, title }` của tài khoản để chọn rồi gọi lại kèm `treeId` |
 | POST | `/api/trees/:id/auth/logout` | Thu hồi phiên trên thiết bị này |
 | PUT | `/api/trees/:id/recovery` | Đổi PIN / liên kết Google (P1) |
@@ -841,14 +842,15 @@ JSON, UTF-8. Header `X-Device-Id` cho người viết. Quyền chủ cây qua co
 | GET | `/api/trees/:id` | Công khai | Phòng: phông, cấu hình cây, món đồ, trạng thái từng điểm nhắn `{ index, occupied, ornament? }` — không có nội dung, tên |
 | PUT | `/api/trees/:id/room` | Chủ cây | Lưu toàn bộ phòng kèm `roomVersion` (xem 7.5) |
 | DELETE | `/api/trees/:id` | Chủ cây | Xoá phòng và mọi dữ liệu |
-| GET | `/api/trees/:id/owner` | Chủ cây | Như GET công khai + `{ messageId, unread, locked }` cho từng điểm + `{ messageCount, newSinceLastVisit, showMessageCount }` |
+| GET | `/api/trees/:id/owner` | Chủ cây | Như GET công khai + `{ messageId, unread, locked }` cho từng điểm + `{ messageCount, newSinceLastVisit, showMessageCount }`. **Chỉ đọc**, không ghi gì (sửa 22/11) |
+| POST | `/api/trees/:id/owner/visit` | Chủ cây | Ghi `last_owner_visit_at = now` → 204. Web gọi một lần khi hiện chế độ Xem của chủ cây; "Bạn đã có cây?" không gọi (sửa 22/11: trước đây GET tự ghi nên số mới luôn về 0) |
 | PUT | `/api/trees/:id/settings` | Chủ cây | `{ showMessageCount }` — bật/tắt hiện số lời nhắn (O10) |
 
 ### 8.4 Lời nhắn (người viết)
 | Phương thức | Đường dẫn | Mô tả |
 |---|---|---|
 | POST | `/api/trees/:id/messages` | Body `{ slotIndex, ornament, anonymous, authorName?, content, website }` → `{ messageId, editToken, editUntil }` |
-| GET | `/api/messages/:mid/mine` | Header `X-Edit-Token` → nội dung của chính người viết (để mở bảng sửa) |
+| GET | `/api/messages/:mid/mine` | Header `X-Edit-Token` → nội dung của chính người viết (để mở bảng sửa). Không có lời nhắn → 404, sai token → 403 (như `PUT`/`DELETE`) |
 | PUT | `/api/messages/:mid` | Sửa `ornament, anonymous, authorName, content`; điều kiện ở 7.4 |
 | DELETE | `/api/messages/:mid` | Người viết gỡ lời nhắn; cùng điều kiện |
 
@@ -859,7 +861,7 @@ JSON, UTF-8. Header `X-Device-Id` cho người viết. Quyền chủ cây qua co
 | GET | `/api/trees/:id/messages` | Danh sách lời nhắn đã mở được (P1) |
 | DELETE | `/api/trees/:id/messages/:mid` | Chủ cây xoá |
 | POST | `/api/trees/:id/block` | `{ messageId }` → chặn thiết bị người gửi, xoá lời nhắn |
-| POST | `/api/trees/:id/reports` | Báo cáo (chủ cây hoặc khách) |
+| POST | `/api/trees/:id/reports` | Báo cáo (chủ cây hoặc khách). Chủ cây kèm `messageId` chỉ được với lời nhắn đã mở (`read_at` khác NULL), ngược lại 403 `not_opened` — không để báo cáo làm lộ nội dung còn khoá |
 
 ### 8.6 Trang & ảnh
 | Phương thức | Đường dẫn | Mô tả |
@@ -1039,11 +1041,11 @@ Khi bị spam tạo phòng hoặc lời nhắn hàng loạt: quản trị viên 
 | Token sửa lời nhắn | 128 bit | HMAC | Header `X-Edit-Token` |
 | Google | `id_token` từ Google | Chỉ lưu `sub` | Xác minh chữ ký, `aud`, `exp` ở server |
 
-**Chống dò PIN:** 5 lần sai / phòng / 15 phút thì khoá phòng đó với cách PIN; thêm giới hạn 20 lần sai / IP / giờ trên mọi phòng. PIN 6 số có 1 triệu khả năng; với giới hạn này, dò hết mất hàng chục năm.
+**Chống dò PIN (sửa 22/11):** đếm trong `rate_counters`, giữ lượt nguyên tử **trước** khi băm scrypt. (1) 5 lần / **phòng + IP** / khung 15 phút → `429 pin_locked` cho IP đó, `retryAt` = cuối khung — người lạ chỉ khoá được chính họ, không khoá được chủ cây; (2) 50 lần sai / phòng / ngày (khung ngày UTC) trên mọi IP → khoá cách PIN của phòng đến hết khung ngày; (3) 20 lần sai / IP / giờ trên mọi phòng. PIN đúng trả lại lượt đã giữ ở (1) và (2) và xoá bộ đếm (1) của IP đó. Với trần 50/ngày, dò hết 1 triệu PIN mất hơn 50 năm. Quản trị "mở khoá PIN" (M3b) = xoá các bucket `pin:tree:{id}…`.
 
-**Giới hạn tần suất:** tạo phòng 5/giờ/IP; lời nhắn 20/giờ/IP; lưu phòng 600/giờ/phòng; mỗi thiết bị 3 lời nhắn/phòng.
+**Giới hạn tần suất:** tạo phòng 20/giờ/IP; lời nhắn 100/giờ/IP (nâng 22/11 để wifi trường học, ký túc xá, công ty dùng chung IP không chạm trần; chủ dự án chấp nhận rủi ro bot; chỉ đếm sau khi dữ liệu hợp lệ; khi triển khai bật IPv6 cho App Service nếu gói cho phép); lưu phòng 600/giờ/phòng; mỗi thiết bị 3 lời nhắn/phòng.
 
-**Ứng dụng web:** hiển thị nội dung bằng `textContent`; CSP chỉ cùng nguồn (trừ Google Identity); truy vấn có tham số; giới hạn kích thước body 64 KB; kiểm tra danh mục cho mọi mã kiểu.
+**Ứng dụng web:** hiển thị nội dung bằng `textContent`; CSP chỉ cùng nguồn (trừ Google Identity: `https://accounts.google.com` cho script, khung, kết nối, style — cấu hình helmet 22/11); truy vấn có tham số; giới hạn kích thước body 64 KB; kiểm tra danh mục cho mọi mã kiểu.
 
 **Trang quản trị:** đăng nhập Google + danh sách cho phép; cookie phiên riêng (`ctln_admin`, HttpOnly, Secure, SameSite=Strict, đường dẫn `/quan-tri` và `/api/admin`); mọi thao tác thay đổi dữ liệu yêu cầu thêm header chống giả mạo yêu cầu (CSRF token); giới hạn 10 lần đăng nhập thất bại / IP / giờ; thao tác xoá phòng và xoá dữ liệu có hộp xác nhận; trang quản trị gắn `noindex`.
 

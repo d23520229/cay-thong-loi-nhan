@@ -10,3 +10,6 @@ coverage/
 .vite/
 data/*.db
 *.tsbuildinfo
+
+# graphify (đồ thị tri thức sinh tự động)
+graphify-out/
