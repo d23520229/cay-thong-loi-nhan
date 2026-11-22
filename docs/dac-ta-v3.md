@@ -400,7 +400,7 @@ M3 chia **3 phần làm nối tiếp**, mỗi phần một kế hoạch, xong ph
 - Điểm trống → bong bóng "+" (`slotBubbleSVG`); điểm có lời nhắn → phụ kiện `ornamentSVGSoft(kind, 'filled')` đung đưa; điểm của chính máy này (có `msg:{treeId}:{slot}` còn hạn) → phụ kiện trông như mọi phụ kiện khác, chỉ có nhãn đọc màn hình "Lời nhắn của bạn: …" (chủ dự án bỏ vòng viền vàng 21/11).
 
 **Bảng viết (G3)** — Sheet trượt lên, giữ `aria-modal`, Escape, giữ tiêu điểm như M2:
-- 20 phụ kiện (`catalog.ornaments`, thứ tự catalog), mặc định chọn `ball` như canvas; "Người gửi": **Để tên** / **Ẩn danh**, mặc định Để tên (như canvas); ô tên ≤ 30 (bắt buộc khi Để tên), điền sẵn `lastName`; lời nhắn ≤ 300 ký tự có bộ đếm, bắt buộc, cắt khoảng trắng hai đầu.
+- 20 phụ kiện (`catalog.ornaments`, thứ tự catalog), mặc định chọn `ball` như canvas; "Người gửi": **Để tên** / **Ẩn danh**, mặc định Để tên (như canvas); ô tên ≤ 30 (bắt buộc khi Để tên), điền sẵn `lastName`; lời nhắn ≤ 400 ký tự (và không quá 9 dòng khi xếp lên thiệp, mục 6.7.2) có bộ đếm, bắt buộc, cắt khoảng trắng hai đầu.
 - Ô ẩn `website` (honeypot) không hiện với người, gửi kèm.
 - Nút "Treo lên cây" → `POST /api/trees/:id/messages` với `X-Device-Id`. Đang gửi thì khoá nút.
 - Thành công (G4): lưu `msg:{treeId}:{slot}` = `{ messageId, editToken, editUntil }`, lưu `lastName` (nếu Để tên), đóng bảng, phụ kiện rơi vào chỗ (`drop-in`), thông báo "Đã treo! Còn 15 phút để sửa".
@@ -434,7 +434,7 @@ M3 chia **3 phần làm nối tiếp**, mỗi phần một kế hoạch, xong ph
 
 **Trên trình duyệt** (7.6, đã có): `deviceId`, `msg:{treeId}:{slot}`, `lastName`. Không thêm khoá mới.
 
-**Kiểm thử (Vitest + RTL).** Module thuần: đổi toạ độ điểm theo cây (lật, cỡ, vị trí), tâm/hệ số zoom, đếm vòng hiệu ứng theo món, `parts()` ổn định theo hạt giống, chọn trạng thái điểm (trống / của người khác / của mình còn hạn / hết hạn). Màn: chạm cây → hiện điểm; bảng viết (bắt buộc lời nhắn, ≤ 300, tên khi Ghi tên, điền `lastName`, honeypot có trong body); treo thành công lưu `msg:` và hiện thông báo; từng mã lỗi ở trên (đặc biệt `slot_taken` giữ chữ); sửa/xoá trong hạn, hết hạn; giai đoạn `NOTICE` không có bong bóng; cây đầy; khách không có đường nào gọi API đọc nội dung người khác. Server: không thêm API; thêm test nếu phải sửa server.
+**Kiểm thử (Vitest + RTL).** Module thuần: đổi toạ độ điểm theo cây (lật, cỡ, vị trí), tâm/hệ số zoom, đếm vòng hiệu ứng theo món, `parts()` ổn định theo hạt giống, chọn trạng thái điểm (trống / của người khác / của mình còn hạn / hết hạn). Màn: chạm cây → hiện điểm; bảng viết (bắt buộc lời nhắn, ≤ 400, ≤ 9 dòng thiệp, tên khi Ghi tên, điền `lastName`, honeypot có trong body); treo thành công lưu `msg:` và hiện thông báo; từng mã lỗi ở trên (đặc biệt `slot_taken` giữ chữ); sửa/xoá trong hạn, hết hạn; giai đoạn `NOTICE` không có bong bóng; cây đầy; khách không có đường nào gọi API đọc nội dung người khác. Server: không thêm API; thêm test nếu phải sửa server.
 
 **Danh sách thử tay khi xong phần 1** (chủ dự án, `pnpm dev`): mở link khách ở tab ẩn danh → chạm cây zoom mượt (thử cây đã kéo lệch, thu nhỏ, lật) → treo 1 lời nhắn → thấy rơi vào chỗ → chạm lại sửa và xoá → treo đủ 3 lời nhắn, cái thứ 4 bị chặn → hai tab ẩn danh khác nhau cùng chọn một bong bóng → tab sau được báo, chữ còn nguyên → chạm quà/thú cưng/lò sưởi nhiều lần thấy hiệu ứng đổi → `FAKE_NOW` sang 26/12 không còn bong bóng → thử ở 360×640 và 390×844.
 

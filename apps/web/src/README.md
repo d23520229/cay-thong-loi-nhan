@@ -10,6 +10,7 @@ M2, M3 xong; M3b (quản trị) chưa làm.
 | `ui/` | `Button.tsx`, `PinInput.tsx`, `Sheet.tsx` (có `className`), `ConfirmDialog.tsx`, `Toast.tsx` | M3 bổ sung |
 | `guest/` | `geometry.ts` (vị trí điểm, camera zoom), `useTreeZoom.ts`, `slots.ts` (trạng thái điểm), `SlotsLayer.tsx` (cả trạng thái quà của chủ cây), `Compose.tsx` (bảng viết/sửa), `GuestTree.tsx` (điều khiển khách) | M3 xong |
 | `owner/` | `OwnerTree.tsx` (chế độ Xem của chủ cây), `countdown.ts`, `MessageCard.tsx`, `ReportSheet.tsx`, `OwnerOptions.tsx`, `ShareSheet.tsx` | M3 xong |
+| `card/` | `layout.ts` (bộ xếp chữ thiệp, `layoutCard`/`fitCard`, ≤ 9 dòng), `measure.ts`, `draw.ts` (vẽ thiệp canvas), `CardCanvas.tsx`, `CardViewer.tsx` (xem toàn màn hình, xoay), `download.ts` (tải/chia sẻ thiệp), `photo.ts` (chọn, thu nhỏ, mã hoá ảnh kèm), `card.css` | Thiệp, ảnh kèm, tải ảnh (23/11, đặc tả 6.7) |
 | `admin/` | — (`Overview`, `Reports`, `TreeLookup`, ...) | Chưa làm (M3b) |
 | `art/` | — (bọc `@ctln/art` thành component) | Chưa làm |
 | `styles/` | `base.css`, `room-animations.css` (gom từ bản thiết kế), `app.css`; `admin.css` chưa có | Một phần |

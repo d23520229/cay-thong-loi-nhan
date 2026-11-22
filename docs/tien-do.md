@@ -5,10 +5,32 @@
 ## Hiện tại
 
 - **Ngày cập nhật:** 23/11/2026
+- **Nhánh `thiep-anh-kem` (23/11):** xong cả đặc tả 6.7 (thiệp lời nhắn, ảnh kèm, tải ảnh): lời nhắn 400 ký tự / ≤ 9 dòng, thiệp vẽ canvas, xem trước trước khi treo, ảnh kèm lưu qua `PhotoStore` (thư mục `.data/photos/` khi phát triển, Azure Blob ở M4), chủ cây đọc ảnh, tải ảnh phòng () và ảnh thiệp, phụ kiện hiện trên cây khi xem toàn phòng. Nay **413 test web + 207 test server + 42 test shared + 1 test art**, typecheck sạch, build JS + CSS ≈ 158 KB gzip (giới hạn 250 KB). Chưa PR vào . Danh sách thử tay và việc còn lại ở mục "Thiệp, ảnh kèm, tải ảnh" bên dưới.
 - **Nhánh `fix-luong-sau-m2` (23/11):** đã gộp `main` (có M3) vào nhánh này: rà soát luồng 22/11 (`docs/luong-hoat-dong.md`: khoá PIN theo phòng + IP, CSP Google, `POST /owner/visit`, cookie `ctln_did`, `pagehide` keepalive…) + lượt 3 (lời nhắn ghi `created_at` theo đồng hồ app; chủ cây chỉ báo cáo lời nhắn đã mở, ngược lại 403 `not_opened` và web báo "Chỉ báo cáo được lời nhắn bạn đã mở."). Xung đột đã giải: CSP giữ cả chỉ thị Google lẫn `upgradeInsecureRequests` của M3; `request()` nhận `{ keepalive, headers }`. Nay **345 test web + 147 test server + 40 test shared**, typecheck sạch. Chưa PR vào `main`.
 - **Mốc đang ở:** **M3 xong**, đã gộp vào `main` (PR #3). M1, M2 đã gộp vào `main` (PR #1, #2). M3 gồm 3 phần (đặc tả 6.6): (1) khách treo lời nhắn, (2) chủ cây đọc & quản lý, (3) chia sẻ + OG. Chủ dự án chọn làm liền cả 3 phần rồi thử tay một lần (21/11).
 - **Số liệu lúc xong M3 (21/11):** 290 test web + 136 test server + 40 test shared, typecheck sạch, build JS + CSS ≈ 155 KB gzip (giới hạn 250 KB). Đã chạy thật (21/11): qua Vite + PostgreSQL khách treo → 201, `GET /api/trees/{id}` không có nội dung; server từ bản build (`WEB_DIST=apps/web/dist`, cổng 3001) trả `/c/{id}` có đủ thẻ OG, `/og/{id}.png` PNG 1200×630, `/tao` trả trang, file tĩnh và API chạy. Kế hoạch: `docs/superpowers/plans/2026-11-21-m3-p1-khach-treo-loi-nhan.md`, `docs/superpowers/plans/2026-11-21-m3-p2-p3-chu-cay-chia-se-og.md`.
 - **Việc tiếp theo:** **chủ dự án thử tay M3** (danh sách bên dưới) trên nhánh `fix-luong-sau-m2` (đã có cả M3 lẫn bản sửa 22–23/11) → sửa lỗi nếu có → PR `fix-luong-sau-m2` vào `main` → M3b (trang quản trị).
+
+### Thiệp, ảnh kèm, tải ảnh — thử tay và việc còn lại (nhánh `thiep-anh-kem`)
+
+**Thử tay (chủ dự án)**
+1. Viết lời nhắn, bấm xem trước: thấy thiệp đúng chữ, tên người gửi, ngày; "Sửa lại" giữ chữ; "Treo lên cây" mới gửi.
+2. Gõ quá 9 dòng: hiện cảnh báo, nút xem trước khoá.
+3. Chọn ảnh 20 MB: thu nhỏ được, treo được; ảnh lớn hơn 20 MB bị từ chối rõ ràng.
+4. Chọn ảnh HEIC trên Chrome Android: chuyển được hoặc báo lỗi dễ hiểu, không treo trang.
+5. Xem thiệp toàn màn hình xoay trên điện thoại thật: không tràn màn hình, chạm một lần chỉ đóng một lần.
+6. Tải thiệp trên iPhone (bảng chia sẻ, Lưu ảnh) và Android (tải về thư mục Tải xuống).
+7. Tải ảnh phòng (chủ cây và khách): file `cay-thong-{mã}.png` có đủ phụ kiện.
+8. `FAKE_NOW=2026-12-24T08:00:00+07:00`: chủ cây mở thiệp có ảnh, thấy ảnh; trước 0h 24/12 không có đường nào lấy được ảnh. **Xoá `FAKE_NOW` sau khi thử.**
+
+**Việc cho M4:** tạo Storage Account + vùng chứa `photos` (riêng tư); đặt `AZURE_STORAGE_CONNECTION_STRING` trong App Service; thử `azureStore` thật (ghi, đọc, xoá, chép, kể cả thử lại khi tạo vùng chứa lần đầu).
+**Việc cho M10:** xoá Storage Account ngày 07/01/2027.
+
+**Cần chủ dự án quyết / đo (để lại)**
+- **CẦN QUYẾT:** nếu tải ảnh có sẵn thất bại khi tác giả mở bảng sửa, bảng không mở (lỗi kéo dài chặn sửa/xoá trong 15 phút). Phương án khác: mở bảng không có ảnh kèm thông báo.
+- Đo `GUEST_BOTTOM_RESERVE` (144, ước lượng) và nút tải 28px của khách trên Chrome thật.
+- Kiểm thiệp toàn màn hình xoay trên điện thoại thật.
+- `schema.test.ts` từng hỏng cả file khi máy bận (chạy riêng thì qua): để ý có chập chờn không.
 
 ### M3 — danh sách thử tay (chủ dự án)
 
@@ -206,6 +228,7 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 
 ## Nhật ký
 
+- **23/11/2026** — Xong thiệp lời nhắn, ảnh kèm, tải ảnh (đặc tả 6.7, nhánh `thiep-anh-kem`): lời nhắn 400 ký tự / ≤ 9 dòng (migration 0004), thiệp canvas + xem trước + xem toàn màn hình, ảnh kèm qua `PhotoStore` (fs/Azure/bộ nhớ, EXIF bị bỏ, giới hạn điểm ảnh), chủ cây đọc ảnh sau 0h 24/12, dọn ảnh khi xoá lời nhắn/cây (báo cáo giữ bản chụp), `GET /api/trees/:id/image.png`, phụ kiện hiện khi xem toàn phòng. 413 test web, 207 test server, 42 test shared, 1 test art; build ≈ 158 KB gzip. Chạy thật (Postgres Docker, cổng 3098): treo lời nhắn kèm ảnh → `.data/photos/m/{cây}/{id}-….webp` xuất hiện, xoá lời nhắn → file mất; `curl -I image.png` → 200, `image/png`, `content-disposition: attachment`.
 - **22/11/2026** — Rà soát toàn bộ luồng (`docs/luong-hoat-dong.md`) và sửa (nhánh `fix-luong-sau-m2`): `GET /owner` chỉ đọc + `POST /owner/visit` (số lời nhắn mới không còn về 0); giới hạn tạo phòng 20/giờ/IP, lời nhắn 100/giờ/IP, chỉ đếm khi dữ liệu hợp lệ (chủ dự án chấp nhận rủi ro bot, đặc tả 10); "Xong" gặp 409 ở lại chế độ Sửa và hỏi; `pagehide` gửi lưu bằng `keepalive` (nhận version mới nếu thành công, tránh xung đột giả khi quay lại bằng Back); "Bạn đã có cây?" chỉ tự thử khi nhớ đúng 1 cây; bấm lại lựa chọn đang có không lưu; `fitRoom` không ra tỉ lệ âm; `pnpm install` cho typecheck web. 187 test web, 125 test server, 40 test shared.
 - **22/11/2026 (lượt 2)** — Sửa nốt: khoá PIN theo phòng + IP trong `rate_counters` (5 / 15 phút, trần 50 lần sai / phòng / ngày) + migration 0003 (bỏ 3 cột PIN và trigger `touch_updated_at`); CSP helmet cho Google Identity; `/mine` 404/403 + so token timing-safe; `deviceId` dự phòng cookie `ctln_did`; thông báo khoá theo giờ khi > 60 phút; 409 mà phòng giống hệt thì không hỏi, 409 thiếu phòng thì báo lỗi rõ. Cây mồ côi khi mất phản hồi: chấp nhận. 198 test web, 131 test server, 40 test shared.
 - **21/11/2026** — Sửa hết việc nhỏ từ lượt soát phần 1 + hỏi lại khi huỷ bảng viết (chủ dự án yêu cầu). Xong **M3 phần 2** (chủ cây: đếm ngược theo giờ server, số lời nhắn + số mới, zoom xem quà còn gói / chưa đọc / đã đọc, thẻ lời nhắn có trước/sau, xoá / chặn / báo cáo, tuỳ chọn bật-tắt số lời nhắn, xoá cây; vào trang chỉ gọi `/owner` một lần kể cả StrictMode) và **phần 3** (bảng chia sẻ: sao chép, Web Share, Messenger, Zalo; server ghép ảnh OG 1200×630 bằng `sharp`, lưu đệm; có `WEB_DIST` thì phục vụ bản build, `/c/:id` chèn thẻ OG đã thoát HTML). Thiết kế ở đặc tả 6.6.2, 6.6.3 (người làm tự chốt theo yêu cầu chủ dự án). Lượt soát cuối (agent độc lập): 0 nghiêm trọng, 3 quan trọng + 7 nhỏ — đã sửa hết (giữ trạng thái chủ cây qua Sửa phòng, tự chuyển sang mở quà lúc 0h 24/12, CSP cho phép thử qua http LAN, cảnh báo `WEB_DIST` sai, Tab trong hộp xác nhận, tiêu điểm sau khi xoá, ảnh OG nhẹ hơn ~3 lần + gộp lượt vẽ trùng, trang SPA không nuốt file thiếu, nhận HEAD, bỏ món lạ khi vẽ). Sửa thêm test Scene có `\b` bị ghi thành ký tự backspace từ M2. `pnpm test` nay chạy lần lượt từng gói. 290 test web, 136 test server.
