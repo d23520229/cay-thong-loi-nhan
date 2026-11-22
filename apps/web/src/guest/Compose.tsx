@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ornamentSVGSoft } from '@ctln/art/ornaments';
 import type { MessageInput } from '../lib/api';
 import { minutesLeft } from './slots';
@@ -6,6 +6,10 @@ import { catalog } from '../lib/catalog';
 import { serverNow } from '../lib/clock';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Sheet } from '../ui/Sheet';
+import { CardCanvas } from '../card/CardCanvas';
+import { layoutCard, signText, type Measure } from '../card/layout';
+import { cardMeasure } from '../card/measure';
+import type { CardData } from '../card/draw';
 
 export type ComposeDraft = { ornament: string; anonymous: boolean; authorName: string; content: string };
 
@@ -27,6 +31,7 @@ type Props = {
 
 const { messageMax, nameMax } = catalog.limits;
 const ORNAMENTS = Object.entries(catalog.ornaments);
+const CARD_W = 2100; // bề rộng ảo để xếp chữ kiểm luật 9 dòng
 const PICKED = { borderColor: '#FFD86B', background: '#5A4A2E' };
 
 /** Bảng viết / sửa lời nhắn (G3, G5 — đặc tả 6.6.1). Có kiểm soát: cha giữ `draft`. */
@@ -51,6 +56,15 @@ const same = (a: ComposeDraft, b: ComposeDraft) =>
 
 export function Compose({ mode, draft, onChange, editUntil, busy, error, onSubmit, onDelete, onClose }: Props) {
   const [ask, setAsk] = useState<null | 'close' | 'delete'>(null);
+  const [step, setStep] = useState<'write' | 'preview'>('write');
+  const [measure, setMeasure] = useState<Measure | null>(null);
+  useEffect(() => {
+    let alive = true;
+    void cardMeasure().then((m) => alive && setMeasure(() => m)).catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
   const initial = useRef(draft);
   const left = useMinutesLeft(mode === 'edit' ? editUntil : undefined);
   const expired = left === 0;
@@ -66,7 +80,17 @@ export function Compose({ mode, draft, onChange, editUntil, busy, error, onSubmi
   const set = (p: Partial<ComposeDraft>) => onChange({ ...draft, ...p });
   const content = draft.content.trim();
   const name = draft.authorName.trim();
-  const ok = content.length > 0 && (draft.anonymous || name.length > 0) && !expired;
+  const count = [...draft.content].length;
+  const sign = signText(draft.anonymous, name);
+  // Không đo được (không có canvas) thì bỏ qua kiểm 9 dòng; server vẫn chặn quá 8 xuống dòng.
+  const tooLong = !!measure && content.length > 0 && !layoutCard({ text: content, sign, hasPhoto: false, W: CARD_W, measure }).fits;
+  const ok = content.length > 0 && count <= messageMax && (draft.anonymous || name.length > 0) && !expired;
+  // Ngày trên thiệp xem trước lấy một lần khi vào bước xem trước (giờ server).
+  const card = useMemo<CardData | null>(
+    () => (step === 'preview' ? { content, sign, sentAt: new Date(serverNow()).toISOString() } : null),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [step],
+  );
   // Chỉ hỏi lại khi đóng làm mất chữ: bảng mới đã có chữ, hoặc bảng sửa đã đổi gì đó.
   const dirty = mode === 'new' ? content.length > 0 : !same(draft, initial.current);
   const requestClose = () => {
@@ -89,6 +113,8 @@ export function Compose({ mode, draft, onChange, editUntil, busy, error, onSubmi
       : 'Treo lời nhắn';
   return (
     <Sheet title={title} onClose={requestClose} className="compose">
+      {step === 'write' ? (
+        <>
       <div className="lab">Chọn phụ kiện để treo</div>
       <div className="row">
         {ORNAMENTS.map(([k, o]) => (
@@ -131,20 +157,27 @@ export function Compose({ mode, draft, onChange, editUntil, busy, error, onSubmi
       )}
       <label className="ed-field">
         <span className="lab">
-          Lời nhắn <span className="count">{draft.content.length}/{messageMax}</span>
+          Lời nhắn <span className="count">{count}/{messageMax}</span>
         </span>
         <textarea
           className="input"
           rows={4}
-          maxLength={messageMax}
           disabled={busy}
           placeholder="Viết lời chúc Giáng sinh của bạn..."
           value={draft.content}
           onChange={(e) => set({ content: e.target.value })}
         />
       </label>
+      {tooLong ? <div className="notice" role="alert">Lời nhắn dài quá khung thiệp, bớt vài dòng nhé</div> : null}
+        </>
+      ) : null}
       {/* Ô bẫy bot (honeypot): người dùng không thấy, bot điền vào thì server bỏ qua. */}
       <input ref={website} name="website" className="gs-hp" tabIndex={-1} autoComplete="off" aria-hidden="true" defaultValue="" />
+      {step === 'preview' && card ? (
+        <div className="cd-preview">
+          <CardCanvas data={card} />
+        </div>
+      ) : null}
       <div className="note">
         {mode === 'edit'
           ? expired
@@ -154,14 +187,25 @@ export function Compose({ mode, draft, onChange, editUntil, busy, error, onSubmi
       </div>
       {error ? <div className="notice" role="alert">{error}</div> : null}
       <div className="row" style={{ justifyContent: 'flex-end' }}>
-        {mode === 'edit' && onDelete ? (
+        {step === 'write' && mode === 'edit' && onDelete ? (
           <button type="button" className="chip" disabled={busy || expired} onClick={() => setAsk('delete')}>
             Xoá lời nhắn
           </button>
         ) : null}
-        <button type="button" className="btn btn-primary" disabled={!ok || busy} onClick={submit}>
-          {mode === 'edit' ? 'Lưu thay đổi' : 'Treo lên cây'}
-        </button>
+        {step === 'write' ? (
+          <button type="button" className="btn btn-primary" disabled={!ok || tooLong || busy} onClick={() => setStep('preview')}>
+            Xem trước thiệp
+          </button>
+        ) : (
+          <>
+            <button type="button" className="chip" disabled={busy} onClick={() => setStep('write')}>
+              ‹ Sửa lại
+            </button>
+            <button type="button" className="btn btn-primary" disabled={!ok || tooLong || busy} onClick={submit}>
+              {mode === 'edit' ? 'Lưu thay đổi' : 'Treo lên cây'}
+            </button>
+          </>
+        )}
       </div>
       {ask === 'close' ? (
         <ConfirmDialog

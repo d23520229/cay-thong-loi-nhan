@@ -3,6 +3,8 @@ import { act, render, screen, within } from '@testing-library/react';
 import { serverNow } from '../lib/clock';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
+vi.mock('../card/measure', () => ({ cardMeasure: async () => (s: string, px: number) => [...s].length * px * 0.5 }));
+vi.mock('../card/CardCanvas', () => ({ CardCanvas: ({ data }: { data: { content: string; sign: string; sentAt: string } }) => <div data-testid="thiep">{data.content}|{data.sign}|{data.sentAt}</div> }));
 import { Compose, newDraft, type ComposeDraft } from './Compose';
 
 type Extra = Partial<Parameters<typeof Compose>[0]>;
@@ -11,7 +13,12 @@ function Harness({ initial = newDraft('Lan'), ...rest }: Extra & { initial?: Com
   return <Compose mode="new" draft={draft} onChange={setDraft} busy={false} onSubmit={() => {}} onClose={() => {}} {...rest} />;
 }
 const inMinutes = (m: number) => new Date(serverNow() + m * 60_000 - 1_000).toISOString();
+const previewBtn = () => screen.getByRole('button', { name: 'Xem trước thiệp' });
 const submitBtn = () => screen.getByRole('button', { name: /Treo lên cây|Lưu thay đổi/ });
+const toPreview = async () => {
+  await userEvent.click(previewBtn());
+  await screen.findByTestId('thiep');
+};
 const text = () => screen.getByRole('textbox', { name: /Lời nhắn/ });
 
 describe('Compose', () => {
@@ -25,16 +32,16 @@ describe('Compose', () => {
 
   it('nút Treo khoá khi lời nhắn trống hoặc chỉ khoảng trắng', async () => {
     render(<Harness />);
-    expect(submitBtn()).toBeDisabled();
+    expect(previewBtn()).toBeDisabled();
     await userEvent.type(text(), '   ');
-    expect(submitBtn()).toBeDisabled();
+    expect(previewBtn()).toBeDisabled();
     await userEvent.type(text(), 'Chúc');
-    expect(submitBtn()).toBeEnabled();
+    expect(previewBtn()).toBeEnabled();
   });
 
   it('khoá khi Để tên mà tên trống', async () => {
     render(<Harness initial={{ ...newDraft(''), content: 'Chúc' }} />);
-    expect(submitBtn()).toBeDisabled();
+    expect(previewBtn()).toBeDisabled();
   });
 
   it('Ẩn danh thì ẩn ô tên và không gửi authorName', async () => {
@@ -42,14 +49,27 @@ describe('Compose', () => {
     render(<Harness initial={{ ...newDraft('Lan'), content: 'Chúc' }} onSubmit={onSubmit} />);
     await userEvent.click(screen.getByRole('button', { name: 'Ẩn danh' }));
     expect(screen.queryByRole('textbox', { name: 'Tên của bạn' })).not.toBeInTheDocument();
+    await toPreview();
     await userEvent.click(submitBtn());
     expect(onSubmit).toHaveBeenCalledWith({ ornament: 'ball', anonymous: true, content: 'Chúc' }, '');
   });
 
-  it('bộ đếm 0/400; ô lời nhắn giới hạn 400', () => {
+  it('bộ đếm tính theo ký tự Unicode, ô lời nhắn không có maxlength', () => {
+    render(<Harness initial={{ ...newDraft('Lan'), content: '🎄ê' }} />);
+    expect(screen.getByText('2/400')).toBeInTheDocument();
+    expect(text()).not.toHaveAttribute('maxlength');
+    expect(previewBtn()).toBeEnabled();
+  });
+
+  it('quá 400 ký tự: khoá Xem trước thiệp', () => {
+    render(<Harness initial={{ ...newDraft('Lan'), content: 'a '.repeat(201) }} />);
+    expect(screen.getByText('402/400')).toBeInTheDocument();
+    expect(previewBtn()).toBeDisabled();
+  });
+
+  it('bộ đếm 0/400; tên giới hạn 30', () => {
     render(<Harness />);
     expect(screen.getByText('0/400')).toBeInTheDocument();
-    expect(text()).toHaveAttribute('maxlength', '400');
     expect(screen.getByRole('textbox', { name: 'Tên của bạn' })).toHaveAttribute('maxlength', '30');
   });
 
@@ -57,6 +77,7 @@ describe('Compose', () => {
     const onSubmit = vi.fn();
     render(<Harness initial={{ ...newDraft(' Lan '), content: '  Giáng sinh vui  ' }} onSubmit={onSubmit} />);
     await userEvent.click(screen.getByRole('button', { name: 'Chuông' }));
+    await toPreview();
     await userEvent.click(submitBtn());
     expect(onSubmit).toHaveBeenCalledWith({ ornament: 'bell', anonymous: false, authorName: 'Lan', content: 'Giáng sinh vui' }, '');
   });
@@ -71,6 +92,7 @@ describe('Compose', () => {
   it('busy → nút bị disabled; bấm 2 lần chỉ gọi onSubmit 1 lần', async () => {
     const onSubmit = vi.fn();
     const { rerender } = render(<Compose mode="new" draft={{ ...newDraft('Lan'), content: 'x' }} onChange={() => {}} busy={false} onSubmit={onSubmit} onClose={() => {}} />);
+    await toPreview();
     await userEvent.dblClick(submitBtn());
     expect(onSubmit).toHaveBeenCalledTimes(1);
     rerender(<Compose mode="new" draft={{ ...newDraft('Lan'), content: 'x' }} onChange={() => {}} busy onSubmit={onSubmit} onClose={() => {}} />);
@@ -82,7 +104,7 @@ describe('Compose', () => {
     render(<Harness mode="edit" editUntil={inMinutes(7)} onDelete={onDelete} initial={{ ...newDraft('Lan'), content: 'x' }} />);
     expect(screen.getByRole('dialog', { name: 'Sửa lời nhắn của bạn (còn 7 phút)' })).toBeInTheDocument();
     expect(screen.getByText('Còn 7 phút để sửa hoặc xoá lời nhắn này.')).toBeInTheDocument();
-    expect(submitBtn()).toHaveTextContent('Lưu thay đổi');
+    expect(previewBtn()).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Xoá lời nhắn' }));
     const ask = screen.getByRole('alertdialog', { name: 'Xoá lời nhắn này?' });
     await userEvent.click(within(ask).getByRole('button', { name: 'Không xoá' }));
@@ -102,7 +124,7 @@ describe('Compose', () => {
       expect(screen.getByRole('dialog', { name: 'Sửa lời nhắn của bạn (còn 1 phút)' })).toBeInTheDocument();
       await act(() => vi.advanceTimersByTimeAsync(60_000));
       expect(screen.getByRole('dialog', { name: 'Sửa lời nhắn của bạn (đã hết giờ sửa)' })).toBeInTheDocument();
-      expect(submitBtn()).toBeDisabled();
+      expect(previewBtn()).toBeDisabled();
       expect(screen.getByRole('button', { name: 'Xoá lời nhắn' })).toBeDisabled();
     } finally {
       vi.useRealTimers();
@@ -168,5 +190,48 @@ describe('Compose', () => {
     render(<Harness onClose={onClose} />);
     await userEvent.keyboard('{Escape}');
     expect(onClose).toHaveBeenCalled();
+  });
+
+  it('quá 9 dòng: hiện cảnh báo và khoá Xem trước thiệp', async () => {
+    const dai = Array.from({ length: 10 }, (_, i) => `dòng ${i}`).join('\n');
+    render(<Harness initial={{ ...newDraft('Lan'), content: dai }} />);
+    expect(await screen.findByText('Lời nhắn dài quá khung thiệp, bớt vài dòng nhé')).toBeInTheDocument();
+    expect(previewBtn()).toBeDisabled();
+    await userEvent.clear(text());
+    await userEvent.type(text(), 'Ngắn');
+    expect(screen.queryByText('Lời nhắn dài quá khung thiệp, bớt vài dòng nhé')).not.toBeInTheDocument();
+    expect(previewBtn()).toBeEnabled();
+  });
+
+  it('Xem trước thiệp: thấy thiệp; Sửa lại giữ chữ; Treo lên cây gọi onSubmit', async () => {
+    const onSubmit = vi.fn();
+    render(<Harness initial={{ ...newDraft('Lan'), content: 'Chúc vui' }} onSubmit={onSubmit} />);
+    await toPreview();
+    expect(screen.getByTestId('thiep').textContent).toMatch(/^Chúc vui\|— Lan\|\d{4}-\d\d-\d\dT/);
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(screen.queryByRole('textbox', { name: /Lời nhắn/ })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '‹ Sửa lại' }));
+    expect(text()).toHaveValue('Chúc vui');
+    await toPreview();
+    await userEvent.click(screen.getByRole('button', { name: 'Treo lên cây' }));
+    expect(onSubmit).toHaveBeenCalledWith({ ornament: 'ball', anonymous: false, authorName: 'Lan', content: 'Chúc vui' }, '');
+  });
+
+  it('chế độ sửa cũng qua xem trước, nút Lưu thay đổi', async () => {
+    const onSubmit = vi.fn();
+    render(<Harness mode="edit" editUntil={inMinutes(7)} onSubmit={onSubmit} initial={{ ...newDraft('Lan'), content: 'Cũ' }} />);
+    expect(screen.queryByRole('button', { name: 'Lưu thay đổi' })).not.toBeInTheDocument();
+    await toPreview();
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }));
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+  });
+
+  it('đóng từ bước xem trước cũng hỏi xác nhận khi đã viết chữ', async () => {
+    const onClose = vi.fn();
+    render(<Harness onClose={onClose} initial={{ ...newDraft('Lan'), content: 'Dở' }} />);
+    await toPreview();
+    await userEvent.click(screen.getByRole('button', { name: 'Đóng' }));
+    expect(screen.getByRole('alertdialog', { name: 'Huỷ lời nhắn đang viết?' })).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
   });
 });

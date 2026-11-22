@@ -6,6 +6,8 @@ import { ApiError, api, type PublicRoom } from '../lib/api';
 import { resetClock } from '../lib/clock';
 import { storage } from '../lib/storage';
 import { defaultRoom } from '../room/model';
+vi.mock('../card/measure', () => ({ cardMeasure: async () => null }));
+vi.mock('../card/CardCanvas', () => ({ CardCanvas: () => <div data-testid="thiep" /> }));
 import { GuestTree } from './GuestTree';
 
 vi.mock('../lib/api', async (orig) => {
@@ -65,7 +67,8 @@ const writeAndSend = async (text = 'Giáng sinh vui') => {
     await userEvent.click(screen.getByRole('button', { name: 'Ẩn danh' }));
   }
   await userEvent.type(screen.getByRole('textbox', { name: /Lời nhắn/ }), text);
-  await userEvent.click(screen.getByRole('button', { name: 'Treo lên cây' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Xem trước thiệp' }));
+  await userEvent.click(await screen.findByRole('button', { name: 'Treo lên cây' }));
 };
 const posted = { messageId: '9', editToken: 'tok', editUntil: new Date(NOW + 15 * 60_000).toISOString() };
 const mineMsg = (until: string) => ({ messageId: '9', slotIndex: 2, ornament: 'bell', anonymous: true, authorName: null, content: 'Cũ', editUntil: until });
@@ -125,7 +128,7 @@ describe('GuestTree', () => {
     expect(screen.getByRole('button', { name: 'Lời nhắn của bạn: Quả châu' })).toHaveClass('gs-drop');
   });
 
-  it('slot_taken: toast, tải lại slots, chạm bong bóng khác thấy chữ cũ', async () => {
+  it('slot_taken từ bước xem trước: bảng đóng, chữ giữ, mở bong bóng khác thấy chữ cũ; toast, tải lại slots, chạm bong bóng khác thấy chữ cũ', async () => {
     mocked.postMessage.mockRejectedValue(new ApiError(409, 'slot_taken', 'Chỗ này vừa có người treo, chọn chỗ khác nhé'));
     const { container } = show();
     await zoom(container);
@@ -156,8 +159,9 @@ describe('GuestTree', () => {
     await writeAndSend('Còn đây');
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).getByRole('alert')).toHaveTextContent(msg);
+    expect(screen.getByRole('button', { name: 'Treo lên cây' })).toBeEnabled(); // vẫn ở bước xem trước, bấm lại được
+    await userEvent.click(screen.getByRole('button', { name: '‹ Sửa lại' }));
     expect(within(dialog).getByRole('textbox', { name: /Lời nhắn/ })).toHaveValue('Còn đây');
-    expect(screen.getByRole('button', { name: 'Treo lên cây' })).toBeEnabled();
   });
 
   it('write_closed: bảng đóng, không còn bong bóng', async () => {
@@ -206,6 +210,7 @@ describe('GuestTree', () => {
     await zoom(container);
     await openMine();
     await userEvent.type(await screen.findByRole('textbox', { name: /Lời nhắn/ }), ' mới');
+    await userEvent.click(screen.getByRole('button', { name: 'Xem trước thiệp' }));
     await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }));
     expect(mocked.editMessage).toHaveBeenCalledWith('9', 'tok', { ornament: 'bell', anonymous: true, content: 'Cũ mới' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -216,6 +221,7 @@ describe('GuestTree', () => {
     const { container } = show(withMine(7));
     await zoom(container);
     await openMine();
+    await userEvent.click(await screen.findByRole('button', { name: 'Xem trước thiệp' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Lưu thay đổi' }));
     expect(toast).toHaveBeenCalledWith('Chủ cây đã mở lời nhắn này, không sửa được nữa.');
     expect(storage.getMine(ID, 2)).toBeNull();
@@ -227,6 +233,7 @@ describe('GuestTree', () => {
     const { container } = show(withMine(7));
     await zoom(container);
     await openMine();
+    await userEvent.click(await screen.findByRole('button', { name: 'Xem trước thiệp' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Lưu thay đổi' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Lời nhắn vừa thay đổi, thử lại nhé.');
     expect(storage.getMine(ID, 2)).not.toBeNull();
