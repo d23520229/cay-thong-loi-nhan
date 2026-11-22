@@ -6,7 +6,13 @@ export function azureStore(connectionString: string, container = 'photos'): Phot
   const client = BlobServiceClient.fromConnectionString(connectionString).getContainerClient(container);
   let ready: Promise<ContainerClient> | undefined;
   // Tạo container lười, một lần (không đặt access → riêng tư).
-  const c = () => (ready ??= client.createIfNotExists().then(() => client));
+  const c = () => (ready ??= client.createIfNotExists().then(
+    () => client,
+    (e) => {
+      ready = undefined; // lần sau thử lại, không giữ lỗi tạm thời mãi
+      throw e;
+    },
+  ));
   const isNotFound = (e: unknown) => (e as { statusCode?: number }).statusCode === 404;
   return {
     async put(key, data) {

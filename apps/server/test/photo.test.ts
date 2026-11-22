@@ -1,7 +1,7 @@
 import sharp from 'sharp';
 import { describe, expect, it } from 'vitest';
 import { HttpError } from '../src/errors.js';
-import { PHOTO_MAX_BYTES, photoKey, processPhoto } from '../src/photo.js';
+import { PHOTO_MAX_BYTES, PHOTO_MAX_PIXELS, photoKey, processPhoto } from '../src/photo.js';
 
 const img = (w: number, h: number) => sharp({ create: { width: w, height: h, channels: 3, background: '#c33' } });
 const b64 = (b: Buffer) => b.toString('base64');
@@ -40,8 +40,25 @@ describe('processPhoto', () => {
     await bad(b64(await img(20, 20).png().toBuffer()));
     await bad(b64(await img(20, 20).gif().toBuffer()));
   });
-  it('> 3 MB sau giải mã → bad_photo', async () => {
-    await bad(b64(Buffer.alloc(PHOTO_MAX_BYTES + 1, 1)));
+  it('ảnh hợp lệ nhưng > 3 MB sau giải mã → bad_photo', async () => {
+    const raw = Buffer.alloc(1500 * 1500 * 3);
+    for (let i = 0; i < raw.length; i += 1) raw[i] = Math.floor(Math.random() * 256);
+    const big = await sharp(raw, { raw: { width: 1500, height: 1500, channels: 3 } }).jpeg({ quality: 100 }).toBuffer();
+    expect(big.length).toBeGreaterThan(PHOTO_MAX_BYTES);
+    await bad(b64(big));
+  });
+  it('chuỗi base64 quá dài → bad_photo', async () => {
+    await bad('A'.repeat(Math.ceil(PHOTO_MAX_BYTES / 3) * 4 + 8));
+  });
+  it('ảnh WebP quá nhiều điểm ảnh (6000×6000, file nhỏ) → bad_photo', async () => {
+    const webp = await img(6000, 6000).webp().toBuffer();
+    expect(webp.length).toBeLessThan(PHOTO_MAX_BYTES);
+    expect(6000 * 6000).toBeGreaterThan(PHOTO_MAX_PIXELS);
+    await bad(b64(webp));
+  });
+  it('thông báo lỗi là câu tiếng Việt cố định', async () => {
+    const e = await processPhoto('xxxx').then(() => null, (x) => x);
+    expect(e.message).toBe('Ảnh không hợp lệ, chọn ảnh khác nhé');
   });
 });
 
