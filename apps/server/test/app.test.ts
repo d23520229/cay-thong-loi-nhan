@@ -40,6 +40,14 @@ describe('app', () => {
     }
     expect(dir('style-src')).toContain("'unsafe-inline'");
   });
+  it('CSP img-src có blob:', async () => {
+    t = await makeTestApp();
+    const csp = String((await t.app.inject('/api/config')).headers['content-security-policy']);
+    const img = csp.split(';').find((d) => d.startsWith('img-src ')) ?? '';
+    expect(img).toContain("'self'");
+    expect(img).toContain('data:');
+    expect(img).toContain('blob:');
+  });
   it('/api/config ở ENDED vẫn 200, route khác 410', async () => {
     t = await makeTestApp({ at: '2027-01-01T00:00:00+07:00' });
     expect((await t.app.inject('/api/config')).json().phase).toBe('ENDED');

@@ -953,9 +953,10 @@ JSON, UTF-8. Header `X-Device-Id` cho người viết. Quyền chủ cây qua co
 ### 8.4 Lời nhắn (người viết)
 | Phương thức | Đường dẫn | Mô tả |
 |---|---|---|
-| POST | `/api/trees/:id/messages` | Body `{ slotIndex, ornament, anonymous, authorName?, content, website }` → `{ messageId, editToken, editUntil }` |
-| GET | `/api/messages/:mid/mine` | Header `X-Edit-Token` → nội dung của chính người viết (để mở bảng sửa). Không có lời nhắn → 404, sai token → 403 (như `PUT`/`DELETE`) |
-| PUT | `/api/messages/:mid` | Sửa `ornament, anonymous, authorName, content`; điều kiện ở 7.4 |
+| POST | `/api/trees/:id/messages` | Body `{ slotIndex, ornament, anonymous, authorName?, content, website, photo? }` → `{ messageId, editToken, editUntil }`. `photo` = base64 ảnh WebP/JPEG ≤ 3 MB (6.7.5); route đặt `bodyLimit` 4,5 MB; ảnh hỏng → 400 `bad_photo`; `photo:ip:` 30 ảnh/giờ → 429 |
+| GET | `/api/messages/:mid/mine` | Header `X-Edit-Token` → nội dung của chính người viết (để mở bảng sửa), thêm `hasPhoto`. Không có lời nhắn → 404, sai token → 403 (như `PUT`/`DELETE`) |
+| GET | `/api/messages/:mid/photo` | Header `X-Edit-Token` → ảnh WebP của chính người viết, `Cache-Control: private, no-store`. Không có lời nhắn hoặc không có ảnh → 404, sai token → 403 |
+| PUT | `/api/messages/:mid` | Sửa `ornament, anonymous, authorName, content, photo?` (chuỗi = thay ảnh, `null` = gỡ ảnh, không có = giữ); `bodyLimit` 4,5 MB; điều kiện ở 7.4 |
 | DELETE | `/api/messages/:mid` | Người viết gỡ lời nhắn; cùng điều kiện |
 
 ### 8.5 Chủ cây đọc & quản lý

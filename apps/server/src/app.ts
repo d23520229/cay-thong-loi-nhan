@@ -64,6 +64,8 @@ export async function buildApp(deps: AppDeps, opts: { logStream?: { write(msg: s
         'frame-src': ["'self'", GOOGLE],
         'connect-src': ["'self'", GOOGLE],
         'style-src': ["'self'", "'unsafe-inline'", GOOGLE],
+        // blob: để xem trước ảnh chọn từ máy (URL.createObjectURL) và tải thiệp.
+        'img-src': ["'self'", 'data:', 'blob:'],
         // Chưa production: bỏ upgrade-insecure-requests để mở bản build qua http trong mạng LAN (thử trên điện thoại).
         upgradeInsecureRequests: deps.env.production ? [] : null,
       },
