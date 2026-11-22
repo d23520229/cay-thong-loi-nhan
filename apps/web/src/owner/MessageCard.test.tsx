@@ -49,6 +49,31 @@ describe('MessageCard', () => {
     expect(downloadCard).toHaveBeenCalledWith(expect.any(Blob), 'loi-nhan-3.png');
   });
 
+  it('dùng ảnh dựng sẵn, không dựng lại khi bấm', async () => {
+    renderCardBlob.mockClear();
+    downloadCard.mockClear();
+    card();
+    await vi.waitFor(() => expect(renderCardBlob).toHaveBeenCalledTimes(1));
+    await new Promise((r) => setTimeout(r, 0));
+    await userEvent.click(screen.getByRole('button', { name: '⬇ Tải ảnh' }));
+    await vi.waitFor(() => expect(downloadCard).toHaveBeenCalledTimes(1));
+    expect(renderCardBlob).toHaveBeenCalledTimes(1);
+  });
+
+  it('huỷ chia sẻ không báo lỗi; lỗi thật báo đúng một lần', async () => {
+    const onNotice = vi.fn();
+    downloadCard.mockClear();
+    downloadCard.mockResolvedValueOnce('cancelled');
+    card({ onNotice });
+    await userEvent.click(screen.getByRole('button', { name: '⬇ Tải ảnh' }));
+    await vi.waitFor(() => expect(downloadCard).toHaveBeenCalledTimes(1));
+    expect(onNotice).not.toHaveBeenCalled();
+    downloadCard.mockRejectedValueOnce(new Error('x'));
+    await userEvent.click(screen.getByRole('button', { name: '⬇ Tải ảnh' }));
+    await vi.waitFor(() => expect(onNotice).toHaveBeenCalledTimes(1));
+    expect(onNotice).toHaveBeenCalledWith('Chưa lưu được ảnh, thử lại nhé');
+  });
+
   it('chạm thiệp mở CardViewer', async () => {
     window.matchMedia = vi.fn().mockImplementation((q: string) => ({
       matches: false, media: q, addEventListener: vi.fn(), removeEventListener: vi.fn(),

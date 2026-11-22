@@ -285,6 +285,7 @@ export function OwnerTree({ treeId, meta, room, toast, onUnauthorized, onChange 
         <MessageCard
           message={card.message}
           slotIndex={card.index}
+          onNotice={toast}
           hasPrev={pos > 0}
           hasNext={pos >= 0 && pos < order.length - 1}
           busy={busy}

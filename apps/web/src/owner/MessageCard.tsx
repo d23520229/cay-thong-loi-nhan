@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ornamentSVGSoft } from '@ctln/art/ornaments';
 import type { OpenedMessage } from '../lib/api';
 import { CardCanvas } from '../card/CardCanvas';
@@ -22,10 +22,11 @@ type Props = {
   onBlock: () => void;
   onReport: () => void;
   onClose: () => void;
+  onNotice?: (m: string) => void;
 };
 
 /** Thẻ lời nhắn của chủ cây (đặc tả 9.6, 6.6.2). Nội dung vẽ lên canvas thiệp (chữ thuần, không HTML). */
-export function MessageCard({ message: m, slotIndex, hasPrev, hasNext, busy, onPrev, onNext, onDelete, onBlock, onReport, onClose }: Props) {
+export function MessageCard({ message: m, slotIndex, hasPrev, hasNext, busy, onPrev, onNext, onDelete, onBlock, onReport, onClose, onNotice }: Props) {
   const [ask, setAsk] = useState<null | 'delete' | 'block'>(null);
   const [viewing, setViewing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -33,12 +34,25 @@ export function MessageCard({ message: m, slotIndex, hasPrev, hasNext, busy, onP
     () => ({ content: m.content, sign: signText(m.anonymous, m.authorName), sentAt: m.createdAt }),
     [m.content, m.anonymous, m.authorName, m.createdAt],
   );
+  // Dựng sẵn ảnh để bấm "Tải ảnh" gọi chia sẻ ngay trong thao tác chạm (iOS đòi vậy).
+  const ready = useRef<{ data: typeof data; blob: Blob } | null>(null);
+  useEffect(() => {
+    let alive = true;
+    ready.current = null;
+    renderCardBlob(data).then((blob) => {
+      if (alive) ready.current = { data, blob };
+    }, () => {});
+    return () => {
+      alive = false;
+    };
+  }, [data]);
   const save = async () => {
     setSaving(true);
     try {
-      await downloadCard(await renderCardBlob(data), `loi-nhan-${slotIndex + 1}.png`);
+      const pre = ready.current?.data === data ? ready.current.blob : null;
+      await downloadCard(pre ?? (await renderCardBlob(data)), `loi-nhan-${slotIndex + 1}.png`);
     } catch {
-      // người dùng huỷ chia sẻ hoặc trình duyệt từ chối: không cần báo
+      onNotice?.('Chưa lưu được ảnh, thử lại nhé');
     } finally {
       setSaving(false);
     }
