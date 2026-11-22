@@ -46,10 +46,10 @@ describe('Compose', () => {
     expect(onSubmit).toHaveBeenCalledWith({ ornament: 'ball', anonymous: true, content: 'Chúc' }, '');
   });
 
-  it('bộ đếm 0/300; ô lời nhắn giới hạn 300', () => {
+  it('bộ đếm 0/400; ô lời nhắn giới hạn 400', () => {
     render(<Harness />);
-    expect(screen.getByText('0/300')).toBeInTheDocument();
-    expect(text()).toHaveAttribute('maxlength', '300');
+    expect(screen.getByText('0/400')).toBeInTheDocument();
+    expect(text()).toHaveAttribute('maxlength', '400');
     expect(screen.getByRole('textbox', { name: 'Tên của bạn' })).toHaveAttribute('maxlength', '30');
   });
 

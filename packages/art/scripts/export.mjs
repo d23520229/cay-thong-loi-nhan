@@ -71,7 +71,7 @@ function buildCatalog() {
   const catalog = {
     version: 1,
     room: { w: 720, h: 1080, floorY: R.FLOOR },
-    limits: { maxItems: 25, scaleMin: 0.5, scaleMax: 1.6, messageMax: 300, nameMax: 30, titleMax: 40, perDeviceMessages: 3, editMinutes: 15 },
+    limits: { maxItems: 25, scaleMin: 0.5, scaleMax: 1.6, messageMax: 400, nameMax: 30, titleMax: 40, perDeviceMessages: 3, editMinutes: 15 },
     backgrounds: Object.fromEntries(Object.entries(R.ROOMS).map(([k, o]) => [k, { name: o.name, asset: `room/bg-${k}.webp` }])),
     tree: {
       frame: { w: 400, h: 600, baseY: 538, scaleInRoom: R.TREE_POS.scale },

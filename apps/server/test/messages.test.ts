@@ -164,6 +164,19 @@ describe('POST /api/trees/:id/messages', () => {
     expect(r.json().error.code).toBe('write_closed');
   });
 
+  it('400 ký tự treo được, 401 → 400 invalid_body, 9 lần xuống dòng → 400', async () => {
+    const { id } = await setup();
+    const ok = await post(id, body(0, { content: '🎄'.repeat(400) }));
+    expect(ok.statusCode).toBe(201);
+    const long = await post(id, body(1, { content: '🎄'.repeat(401) }));
+    expect(long.statusCode).toBe(400);
+    expect(long.json().error.code).toBe('invalid_body');
+    const lines = await post(id, body(2, { content: 'a\n'.repeat(9) + 'b' }));
+    expect(lines.statusCode).toBe(400);
+    expect(lines.json().error.code).toBe('invalid_body');
+    expect((await post(id, body(3, { content: 'a\n'.repeat(8) + 'b' }))).statusCode).toBe(201);
+  });
+
   it('nội dung <script> lưu và trả nguyên văn', async () => {
     const { id } = await setup();
     const c = '<script>alert(1)</script>';

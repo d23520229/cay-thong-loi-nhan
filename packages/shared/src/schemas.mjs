@@ -53,7 +53,9 @@ const messageFields = {
   ornament: z.enum(keys(catalog.ornaments)),
   anonymous: z.boolean(),
   authorName: text(1, limits.nameMax).optional(),
-  content: text(1, limits.messageMax),
+  content: text(1, limits.messageMax).refine((s) => (s.match(/\n/g)?.length ?? 0) <= 8, {
+    message: 'Lời nhắn dài quá khung thiệp, bớt vài dòng nhé',
+  }),
 };
 
 const checkAuthor = (v, ctx) => {

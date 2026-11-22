@@ -705,13 +705,14 @@ CREATE TABLE messages (
                     'snowflake','mitten','minigift','pinecone','bow','snowman','moon','lantern','stripeball','cookie','reindeer','cocoa')),
   is_anonymous    boolean NOT NULL DEFAULT false,
   author_name     text CHECK (author_name IS NULL OR char_length(author_name) BETWEEN 1 AND 30),
-  content         text NOT NULL CHECK (char_length(content) BETWEEN 1 AND 300),
+  content         text NOT NULL CHECK (char_length(content) BETWEEN 1 AND 400),
   edit_token_hash text NOT NULL,                                      -- HMAC token sửa lưu trên thiết bị người viết
   edit_until      timestamptz NOT NULL,                               -- created_at + 15 phút, không kéo dài khi sửa
   device_hash     text NOT NULL,
   ip_hash         text,
   created_at      timestamptz NOT NULL DEFAULT now(),
   updated_at      timestamptz NOT NULL DEFAULT now(),
+  photo_key       text,                                               -- ảnh kèm (migration 0004), NULL nếu không có
   read_at         timestamptz,                                        -- NULL = chưa mở
   UNIQUE (tree_id, slot_index),
   CONSTRAINT messages_anon_name CHECK ((is_anonymous AND author_name IS NULL) OR (NOT is_anonymous AND author_name IS NOT NULL))
@@ -772,6 +773,7 @@ CREATE TABLE reports (
   tree_id          text NOT NULL REFERENCES trees(id) ON DELETE CASCADE,
   message_id       bigint,                                            -- NULL nếu báo cáo cả phòng
   message_snapshot text,                                              -- chép nội dung lúc báo cáo
+  photo_snapshot_key text,                                            -- chép khoá ảnh kèm lúc báo cáo (migration 0004)
   reason           text CHECK (reason IS NULL OR char_length(reason) <= 200),
   reporter         text NOT NULL CHECK (reporter IN ('owner','guest')),
   reporter_hash    text,

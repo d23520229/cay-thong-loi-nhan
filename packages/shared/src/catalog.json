@@ -9,7 +9,7 @@
     "maxItems": 25,
     "scaleMin": 0.5,
     "scaleMax": 1.6,
-    "messageMax": 300,
+    "messageMax": 400,
     "nameMax": 30,
     "titleMax": 40,
     "perDeviceMessages": 3,
