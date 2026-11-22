@@ -1,11 +1,12 @@
 import type { FastifyInstance } from 'fastify';
-import { and, count, eq, gte, ne, notInArray, sql } from 'drizzle-orm';
+import { and, count, eq, gte, isNotNull, ne, notInArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { RoomSchema, validateRoom } from '@ctln/shared';
 import { messages, roomItems, trees } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import { logEvent } from '../events.js';
 import { assertWritable, phaseOf, requireOwner } from '../guards.js';
+import { dropPhoto } from '../photo.js';
 import { rateLimit } from '../security.js';
 import { buildPublicRoom, roomItemRow } from './trees.js';
 
@@ -104,7 +105,14 @@ export async function roomRoutes(app: FastifyInstance) {
   app.delete<{ Params: { id: string } }>('/api/trees/:id', async (req, reply) => {
     const treeId = req.params.id;
     await requireOwner(app, req, treeId);
-    await app.deps.db.db.delete(trees).where(eq(trees.id, treeId)); // ON DELETE CASCADE
+    const { db, photos } = app.deps;
+    // Lấy khoá ảnh trước: CASCADE xoá dòng lời nhắn rồi thì không còn biết khoá.
+    const withPhoto = await db.db
+      .select({ k: messages.photoKey })
+      .from(messages)
+      .where(and(eq(messages.treeId, treeId), isNotNull(messages.photoKey)));
+    await db.db.delete(trees).where(eq(trees.id, treeId)); // ON DELETE CASCADE
+    for (const { k } of withPhoto) await dropPhoto(photos, req, k!);
     reply.clearCookie(`ctln_owner_${treeId}`, { path: '/' });
     return reply.code(204).send();
   });

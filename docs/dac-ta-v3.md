@@ -945,7 +945,7 @@ JSON, UTF-8. Header `X-Device-Id` cho người viết. Quyền chủ cây qua co
 |---|---|---|---|
 | GET | `/api/trees/:id` | Công khai | Phòng: phông, cấu hình cây, món đồ, trạng thái từng điểm nhắn `{ index, occupied, ornament? }` — không có nội dung, tên |
 | PUT | `/api/trees/:id/room` | Chủ cây | Lưu toàn bộ phòng kèm `roomVersion` (xem 7.5) |
-| DELETE | `/api/trees/:id` | Chủ cây | Xoá phòng và mọi dữ liệu |
+| DELETE | `/api/trees/:id` | Chủ cây | Xoá phòng và mọi dữ liệu, kể cả ảnh của các lời nhắn |
 | GET | `/api/trees/:id/owner` | Chủ cây | Như GET công khai + `{ messageId, unread, locked }` cho từng điểm + `{ messageCount, newSinceLastVisit, showMessageCount }`. **Chỉ đọc**, không ghi gì (sửa 22/11) |
 | POST | `/api/trees/:id/owner/visit` | Chủ cây | Ghi `last_owner_visit_at = now` → 204. Web gọi một lần khi hiện chế độ Xem của chủ cây; "Bạn đã có cây?" không gọi (sửa 22/11: trước đây GET tự ghi nên số mới luôn về 0) |
 | PUT | `/api/trees/:id/settings` | Chủ cây | `{ showMessageCount }` — bật/tắt hiện số lời nhắn (O10) |
@@ -957,16 +957,17 @@ JSON, UTF-8. Header `X-Device-Id` cho người viết. Quyền chủ cây qua co
 | GET | `/api/messages/:mid/mine` | Header `X-Edit-Token` → nội dung của chính người viết (để mở bảng sửa), thêm `hasPhoto`. Không có lời nhắn → 404, sai token → 403 (như `PUT`/`DELETE`) |
 | GET | `/api/messages/:mid/photo` | Header `X-Edit-Token` → ảnh WebP của chính người viết, `Cache-Control: private, no-store`. Không có lời nhắn hoặc không có ảnh → 404, sai token → 403 |
 | PUT | `/api/messages/:mid` | Sửa `ornament, anonymous, authorName, content, photo?` (chuỗi = thay ảnh, `null` = gỡ ảnh, không có = giữ); `bodyLimit` 4,5 MB; điều kiện ở 7.4 |
-| DELETE | `/api/messages/:mid` | Người viết gỡ lời nhắn; cùng điều kiện |
+| DELETE | `/api/messages/:mid` | Người viết gỡ lời nhắn (xoá cả ảnh); cùng điều kiện |
 
 ### 8.5 Chủ cây đọc & quản lý
 | Phương thức | Đường dẫn | Mô tả |
 |---|---|---|
-| POST | `/api/trees/:id/messages/:mid/open` | Trả nội dung, đặt `read_at`; 423 nếu chưa tới `UNLOCK_AT` |
+| POST | `/api/trees/:id/messages/:mid/open` | Trả nội dung và `hasPhoto` (không trả khoá ảnh), đặt `read_at`; 423 `locked` kèm `unlockAt` nếu chưa tới `UNLOCK_AT` |
+| GET | `/api/trees/:id/messages/:mid/photo` | Ảnh WebP của lời nhắn, `Cache-Control: private, no-store`. Chưa tới `UNLOCK_AT` → 423 `locked` (như `open`); lời nhắn không thuộc cây → 404; chưa mở (`read_at` NULL) → 403 `not_opened`; không có ảnh → 404 (6.7.5) |
 | GET | `/api/trees/:id/messages` | Danh sách lời nhắn đã mở được (P1) |
-| DELETE | `/api/trees/:id/messages/:mid` | Chủ cây xoá |
-| POST | `/api/trees/:id/block` | `{ messageId }` → chặn thiết bị người gửi, xoá lời nhắn |
-| POST | `/api/trees/:id/reports` | Báo cáo (chủ cây hoặc khách). Chủ cây kèm `messageId` chỉ được với lời nhắn đã mở (`read_at` khác NULL), ngược lại 403 `not_opened` — không để báo cáo làm lộ nội dung còn khoá |
+| DELETE | `/api/trees/:id/messages/:mid` | Chủ cây xoá; xoá cả ảnh (lỗi xoá ảnh chỉ ghi log) |
+| POST | `/api/trees/:id/block` | `{ messageId }` → chặn thiết bị người gửi, xoá lời nhắn và ảnh |
+| POST | `/api/trees/:id/reports` | Báo cáo (chủ cây hoặc khách). Chủ cây kèm `messageId` chỉ được với lời nhắn đã mở (`read_at` khác NULL), ngược lại 403 `not_opened` — không để báo cáo làm lộ nội dung còn khoá. Lời nhắn có ảnh → chép sang `r/{reportId}.webp`, ghi `photo_snapshot_key`; chép lỗi vẫn giữ báo cáo (đã có bản chụp chữ) |
 
 ### 8.6 Trang & ảnh
 | Phương thức | Đường dẫn | Mô tả |

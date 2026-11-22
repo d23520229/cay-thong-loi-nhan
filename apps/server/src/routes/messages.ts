@@ -4,7 +4,7 @@ import { and, count, eq, gt, isNull } from 'drizzle-orm';
 import { MessageBodySchema, MessageEditSchema, catalog } from '@ctln/shared';
 import { blockedDevices, messages, trees } from '../db/schema.js';
 import { HttpError } from '../errors.js';
-import { photoKey, processPhoto } from '../photo.js';
+import { dropPhoto, photoKey, processPhoto } from '../photo.js';
 import { logEvent } from '../events.js';
 import {
   assertNotGloballyBlocked,
@@ -51,14 +51,6 @@ function sameHash(a: string, b: string): boolean {
 const PHOTO_ROUTE = { bodyLimit: 4_718_592 };
 
 export async function messagesRoutes(app: FastifyInstance) {
-  /** Xoá ảnh không làm hỏng thao tác chính; log chỉ mã lỗi, không có dữ liệu ảnh. */
-  const dropPhoto = async (req: FastifyRequest, key: string) => {
-    try {
-      await app.deps.photos.delete(key);
-    } catch (e) {
-      req.log.warn({ code: (e as { code?: string })?.code }, 'photo_delete_failed');
-    }
-  };
   const editUntilOf = (at: Date) => new Date(at.getTime() + catalog.limits.editMinutes * 60_000);
 
   app.post<{ Params: { id: string } }>('/api/trees/:id/messages', PHOTO_ROUTE, async (req, reply) => {
@@ -150,7 +142,7 @@ export async function messagesRoutes(app: FastifyInstance) {
         return row!.id;
       });
     } catch (e) {
-      if (putKey) await dropPhoto(req, putKey);
+      if (putKey) await dropPhoto(app.deps.photos, req, putKey);
       if (isUniqueViolation(e)) {
         throw new HttpError(409, 'slot_taken', 'Chỗ này vừa có người treo, chọn chỗ khác nhé');
       }
@@ -270,11 +262,11 @@ export async function messagesRoutes(app: FastifyInstance) {
         return { treeId: m.treeId, oldKey: m.photoKey };
       });
     } catch (e) {
-      if (newKey) await dropPhoto(req, newKey);
+      if (newKey) await dropPhoto(app.deps.photos, req, newKey);
       throw e;
     }
     if (!done) return denyReason(mid, token);
-    if (photoChange && done.oldKey) await dropPhoto(req, done.oldKey);
+    if (photoChange && done.oldKey) await dropPhoto(app.deps.photos, req, done.oldKey);
     await logEvent(db.db, 'message_edited', done.treeId);
     return { ok: true };
   });
@@ -285,8 +277,12 @@ export async function messagesRoutes(app: FastifyInstance) {
     const mid = parseMid(req.params.mid);
     const token = editToken(req);
     const { db, now } = app.deps;
-    const rows = await db.db.delete(messages).where(editable(mid, token, now())).returning({ treeId: messages.treeId });
+    const rows = await db.db
+      .delete(messages)
+      .where(editable(mid, token, now()))
+      .returning({ treeId: messages.treeId, photoKey: messages.photoKey });
     if (rows.length === 0) return denyReason(mid, token);
+    if (rows[0]!.photoKey) await dropPhoto(app.deps.photos, req, rows[0]!.photoKey);
     await logEvent(db.db, 'message_deleted_by_author', rows[0]!.treeId);
     return reply.code(204).send();
   });

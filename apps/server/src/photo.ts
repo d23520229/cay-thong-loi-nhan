@@ -1,6 +1,8 @@
 import sharp from 'sharp';
+import type { FastifyRequest } from 'fastify';
 import { HttpError } from './errors.js';
 import { randomToken } from './security.js';
+import type { PhotoStore } from './storage/index.js';
 
 export const PHOTO_MAX_BYTES = 3 * 1024 * 1024;
 /** Giới hạn số điểm ảnh đầu vào: chặn ảnh nhỏ file nhưng giải mã ngốn RAM (sharp kiểm tra ở phần đầu file). */
@@ -29,4 +31,13 @@ export async function processPhoto(base64: string): Promise<Buffer> {
 
 export function photoKey(treeId: string, messageId: number): string {
   return `m/${treeId}/${messageId}-${randomToken(9)}.webp`;
+}
+
+/** Xoá ảnh không làm hỏng thao tác chính; log chỉ mã lỗi, không có dữ liệu ảnh. */
+export async function dropPhoto(photos: PhotoStore, req: FastifyRequest, key: string): Promise<void> {
+  try {
+    await photos.delete(key);
+  } catch (e) {
+    req.log.warn({ code: (e as { code?: string })?.code }, 'photo_delete_failed');
+  }
 }

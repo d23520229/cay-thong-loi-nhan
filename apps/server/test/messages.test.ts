@@ -537,3 +537,21 @@ describe('Lời nhắn kèm ảnh', () => {
     expect(none.statusCode).toBe(404);
   });
 });
+
+describe('Người viết xoá lời nhắn kèm ảnh', () => {
+  it('xoá → 204, không còn khoá ảnh', async () => {
+    const { id } = await setup();
+    const { messageId, editToken } = (await post(id, body(1, { photo: JPEG }))).json();
+    expect(t.photos.keys()).toHaveLength(1);
+    expect((await del(messageId, editToken)).statusCode).toBe(204);
+    expect(t.photos.keys()).toEqual([]);
+  });
+
+  it('store.delete ném lỗi → vẫn 204', async () => {
+    const { id } = await setup();
+    const { messageId, editToken } = (await post(id, body(1, { photo: JPEG }))).json();
+    t.photos.delete = async () => { throw Object.assign(new Error('blob hỏng'), { code: 'EIO' }); };
+    expect((await del(messageId, editToken)).statusCode).toBe(204);
+    expect(await count()).toBe(0);
+  });
+});

@@ -182,6 +182,28 @@ describe('DELETE /api/trees/:id', () => {
   });
 });
 
+describe('DELETE /api/trees/:id — ảnh', () => {
+  it('xoá cây → không còn khoá ảnh của cây đó; cây khác giữ nguyên; delete ném lỗi vẫn 204', async () => {
+    const a = await setup();
+    const b = await create('Mai');
+    await addMsg(a.id, 0);
+    await addMsg(a.id, 1);
+    await addMsg(b.id, 0);
+    const rows = await t.h.db.select({ id: messages.id, treeId: messages.treeId }).from(messages);
+    for (const m of rows) {
+      const k = `m/${m.treeId}/${m.id}-x.webp`;
+      await t.photos.put(k, Buffer.from('w'));
+      await t.h.db.update(messages).set({ photoKey: k }).where(eq(messages.id, m.id));
+    }
+    const bKey = `m/${b.id}/${rows.find((m) => m.treeId === b.id)!.id}-x.webp`;
+    expect(t.photos.keys()).toHaveLength(3);
+    expect((await t.app.inject({ method: 'DELETE', url: `/api/trees/${a.id}`, cookies: a.cookies })).statusCode).toBe(204);
+    expect(t.photos.keys()).toEqual([bKey]);
+    t.photos.delete = async () => { throw Object.assign(new Error('blob hỏng'), { code: 'EIO' }); };
+    expect((await t.app.inject({ method: 'DELETE', url: `/api/trees/${b.id}`, cookies: b.cookies })).statusCode).toBe(204);
+  });
+});
+
 describe('GET /api/trees/:id/owner', () => {
   it('BUILD: slot có lời nhắn có messageId, locked, không có content', async () => {
     const { id, cookies } = await setup();
