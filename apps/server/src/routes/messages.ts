@@ -143,8 +143,8 @@ export async function messagesRoutes(app: FastifyInstance) {
         if (webp) {
           // Lưu ảnh trong giao dịch: lưu lỗi thì không có lời nhắn.
           const key = photoKey(treeId, row!.id);
+          putKey = key; // gán trước put: put hỏng giữa chừng vẫn được dọn
           await app.deps.photos.put(key, webp);
-          putKey = key;
           await tx.update(messages).set({ photoKey: key }).where(eq(messages.id, row!.id));
         }
         return row!.id;
@@ -225,11 +225,21 @@ export async function messagesRoutes(app: FastifyInstance) {
     const mid = parseMid(req.params.mid);
     const token = editToken(req);
     const body = MessageEditSchema.parse(req.body);
-    const { db, now, photos } = app.deps;
+    const { db, env, now, photos } = app.deps;
     const at = now();
     // photo: chuỗi = thay, null = gỡ, không có = giữ nguyên.
     const photoChange = body.photo !== undefined;
-    const webp = typeof body.photo === 'string' ? await processPhoto(body.photo) : undefined;
+    let webp: Buffer | undefined;
+    if (typeof body.photo === 'string') {
+      // Kiểm token/hạn sửa trước khi giải mã ảnh (tốn CPU): sai thì trả lỗi, không đếm, không giải mã.
+      // Kiểm lại trong giao dịch có khoá dòng bên dưới mới là kiểm chính thức.
+      const [ok] = await db.db.select({ id: messages.id }).from(messages).where(editable(mid, token, at)).limit(1);
+      if (!ok) return denyReason(mid, token);
+      if (!(await rateLimit(db.db, 'photo:ip:' + ipHash(env, clientIp(req), at), 30, at))) {
+        throw new HttpError(429, 'rate_limited', 'Bạn thao tác nhanh quá, đợi một lát nhé.');
+      }
+      webp = await processPhoto(body.photo);
+    }
     let newKey = null as string | null; // ảnh mới đã lưu, cần xoá nếu giao dịch lỗi
     let done: { treeId: string; oldKey: string | null } | null;
     try {
@@ -243,8 +253,8 @@ export async function messagesRoutes(app: FastifyInstance) {
         if (!m) return null;
         if (webp) {
           const key = photoKey(m.treeId, mid);
+          newKey = key; // gán trước put: put hỏng giữa chừng vẫn được dọn
           await photos.put(key, webp);
-          newKey = key;
         }
         await tx
           .update(messages)

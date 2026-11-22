@@ -450,6 +450,60 @@ describe('Lời nhắn kèm ảnh', () => {
     expect(await keyOf(messageId)).toBe(old);
   });
 
+  it('PUT sai token kèm ảnh hỏng → 403 bad_token (không giải mã ảnh), không đếm photo:ip', async () => {
+    const { id } = await setup();
+    const { messageId } = (await post(id, body(1))).json();
+    const r = await edit(messageId, 'sai', body(1, { photo: 'aGVsbG8=' }));
+    expect(r.statusCode).toBe(403);
+    expect(r.json().error.code).toBe('bad_token');
+    expect((await edit('999999', 'sai', body(1, { photo: 'aGVsbG8=' }))).statusCode).toBe(404);
+    const rows = await t.h.db.select().from(rateCounters);
+    expect(rows.filter((x) => x.bucket.startsWith('photo:ip:'))).toEqual([]);
+  });
+
+  it('PUT kèm ảnh vượt 30/giờ → 429; PUT photo:null không bị đếm', async () => {
+    const { id } = await setup();
+    const { messageId, editToken } = (await post(id, body(1))).json();
+    const { loadEnv } = await import('../src/env.js');
+    const at = new Date('2026-12-01T10:00:00+07:00');
+    const bucket = 'photo:ip:' + ipHash(loadEnv({}), '127.0.0.1', at);
+    await t.h.db.insert(rateCounters).values({
+      bucket, windowStart: new Date(Math.floor(at.getTime() / 3600_000) * 3600_000), hits: 29,
+    });
+    expect((await edit(messageId, editToken, body(1, { photo: JPEG }))).statusCode).toBe(200);
+    const r = await edit(messageId, editToken, body(1, { photo: JPEG }));
+    expect(r.statusCode).toBe(429);
+    expect(r.json().error.code).toBe('rate_limited');
+    const hits = async () => (await t.h.db.select().from(rateCounters).where(eq(rateCounters.bucket, bucket)))[0]!.hits;
+    const before = await hits();
+    expect((await edit(messageId, editToken, body(1, { photo: null }))).statusCode).toBe(200);
+    expect(await hits()).toBe(before);
+    expect(t.photos.keys()).toEqual([]);
+  });
+
+  it('POST: ảnh đã lưu rồi giao dịch lỗi → dọn khoá, không có dòng', async () => {
+    const { id } = await setup();
+    const orig = t.photos.put;
+    t.photos.put = async (k, d) => { await orig(k, d); throw new Error('lỗi sau khi lưu'); };
+    const r = await post(id, body(0, { photo: JPEG }));
+    expect(r.statusCode).toBe(500);
+    expect(t.photos.keys()).toEqual([]);
+    expect(await count()).toBe(0);
+  });
+
+  it('PUT: ảnh mới đã lưu rồi giao dịch lỗi → dọn khoá mới, giữ ảnh cũ', async () => {
+    const { id } = await setup();
+    const { messageId, editToken } = (await post(id, body(1, { photo: JPEG }))).json();
+    const old = await keyOf(messageId);
+    const orig = t.photos.put;
+    t.photos.put = async (k, d) => { await orig(k, d); throw new Error('lỗi sau khi lưu'); };
+    const r = await edit(messageId, editToken, body(1, { photo: JPEG, content: 'mới' }));
+    expect(r.statusCode).toBe(500);
+    expect(t.photos.keys()).toEqual([old]);
+    expect(await keyOf(messageId)).toBe(old);
+    expect((await mine(messageId, editToken)).json().content).toBe('Chúc mừng Giáng sinh');
+  });
+
   it('PUT ảnh hỏng → 400 bad_photo, giữ ảnh cũ', async () => {
     const { id } = await setup();
     const { messageId, editToken } = (await post(id, body(1, { photo: JPEG }))).json();
