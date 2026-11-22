@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { catalog } from '../lib/catalog';
+import './card.css';
 import { drawCard, ensureCardFonts, loadCardAssets, type CardData } from './draw';
 
 /** Thiệp vẽ trên canvas; vẽ ở bề rộng thật × devicePixelRatio, vẽ lại khi đổi cỡ. */

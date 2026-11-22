@@ -43,7 +43,7 @@ export function CardViewer({ data, onClose }: { data: CardData; onClose: () => v
     >
       <button type="button" className="cd-close" aria-label="Đóng" onClick={(e) => { e.stopPropagation(); onClose(); }}>✕</button>
       <div className={portrait ? 'cd-stage cd-rotated' : 'cd-stage'}>
-        <CardCanvas data={data} onTap={onClose} />
+        <CardCanvas data={data} />
       </div>
     </div>
   );
