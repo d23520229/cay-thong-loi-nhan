@@ -13,3 +13,6 @@ data/*.db
 
 # graphify (đồ thị tri thức sinh tự động)
 graphify-out/
+
+# Mẫu thiết kế tạm (superpowers brainstorm)
+.superpowers/
