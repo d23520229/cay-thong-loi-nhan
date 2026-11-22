@@ -7,7 +7,11 @@ import { resetClock } from '../lib/clock';
 import { storage } from '../lib/storage';
 import { defaultRoom } from '../room/model';
 vi.mock('../card/measure', () => ({ cardMeasure: async () => null }));
-vi.mock('../card/CardCanvas', () => ({ CardCanvas: () => <div data-testid="thiep" /> }));
+vi.mock('../card/CardCanvas', () => ({
+  CardCanvas: ({ data }: { data: { photo?: { id?: string } | null } }) => <div data-testid="thiep" data-photo={data.photo?.id ?? ''} />,
+}));
+const { preparePhoto, bitmapFromBlob } = vi.hoisted(() => ({ preparePhoto: vi.fn(), bitmapFromBlob: vi.fn() }));
+vi.mock('../card/photo', async (orig) => ({ ...(await orig<typeof import('../card/photo')>()), preparePhoto, bitmapFromBlob }));
 import { GuestTree } from './GuestTree';
 
 vi.mock('../lib/api', async (orig) => {
@@ -15,7 +19,7 @@ vi.mock('../lib/api', async (orig) => {
   return {
     ...actual,
     api: {
-      getConfig: vi.fn(), getTree: vi.fn(), postMessage: vi.fn(), getMine: vi.fn(), editMessage: vi.fn(), deleteMessage: vi.fn(),
+      getConfig: vi.fn(), getTree: vi.fn(), postMessage: vi.fn(), getMine: vi.fn(), getMyPhoto: vi.fn(), editMessage: vi.fn(), deleteMessage: vi.fn(),
       getOwnerTree: vi.fn(), saveRoom: vi.fn(), authPin: vi.fn(), authLink: vi.fn(), authGoogle: vi.fn(), createTree: vi.fn(), logout: vi.fn(), roomImageUrl: actual.api.roomImageUrl,
     },
   };
@@ -39,6 +43,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   resetClock();
   vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null); // ảnh nhỏ xem trước: jsdom không có canvas
   vi.stubGlobal('matchMedia', (q: string) => ({ matches: false, media: q, addEventListener: () => {}, removeEventListener: () => {} }));
   mocked.getConfig.mockResolvedValue({ now: new Date(NOW).toISOString() } as never);
 });
@@ -71,7 +76,7 @@ const writeAndSend = async (text = 'Giáng sinh vui') => {
   await userEvent.click(await screen.findByRole('button', { name: 'Treo lên cây' }));
 };
 const posted = { messageId: '9', editToken: 'tok', editUntil: new Date(NOW + 15 * 60_000).toISOString() };
-const mineMsg = (until: string) => ({ messageId: '9', slotIndex: 2, ornament: 'bell', anonymous: true, authorName: null, content: 'Cũ', editUntil: until });
+const mineMsg = (until: string) => ({ messageId: '9', slotIndex: 2, ornament: 'bell', anonymous: true, authorName: null, content: 'Cũ', editUntil: until, hasPhoto: false });
 /** Điểm 2 là lời nhắn của máy này, còn `minutes` phút. */
 const withMine = (minutes: number) => {
   const until = new Date(NOW + minutes * 60_000).toISOString();
@@ -144,6 +149,25 @@ describe('GuestTree', () => {
     expect(screen.getByRole('button', { name: 'Ẩn danh' })).toHaveAttribute('aria-pressed', 'true');
   });
 
+  it('slot_taken giữ cả ảnh: mở bong bóng khác, xem trước vẫn có ảnh', async () => {
+    const bitmap = { id: 'p1', width: 4, height: 3, close: vi.fn() };
+    preparePhoto.mockResolvedValue({ bitmap, base64: 'b64' });
+    mocked.postMessage.mockRejectedValue(new ApiError(409, 'slot_taken', 'Chỗ này vừa có người treo, chọn chỗ khác nhé'));
+    const { container } = show();
+    await zoom(container);
+    mocked.getTree.mockResolvedValue(meta({ slots: slotsWith(0) }));
+    await userEvent.click(bubbles()[0]!);
+    await userEvent.upload(screen.getByLabelText('Chọn ảnh'), new File(['x'], 'a.jpg', { type: 'image/jpeg' }));
+    await screen.findByRole('button', { name: 'Gỡ ảnh' });
+    await writeAndSend('Chữ của tôi');
+    expect(mocked.postMessage).toHaveBeenCalledWith(ID, expect.objectContaining({ photo: 'b64' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Chuông đã treo' })).toBeInTheDocument());
+    expect(bitmap.close).not.toHaveBeenCalled();
+    await userEvent.click(bubbles()[0]!);
+    await userEvent.click(screen.getByRole('button', { name: 'Xem trước thiệp' }));
+    expect(await screen.findByTestId('thiep')).toHaveAttribute('data-photo', 'p1');
+  });
+
   it.each([
     ['device_limit', new ApiError(409, 'device_limit', 'Mỗi người chỉ treo được 3 lời nhắn trên một cây.'), 'Mỗi người chỉ treo được 3 lời nhắn trên một cây.'],
     ['blocked', new ApiError(403, 'blocked', 'Bạn không thể gửi lời nhắn tới cây này.'), 'Bạn không thể gửi lời nhắn tới cây này.'],
@@ -202,6 +226,35 @@ describe('GuestTree', () => {
     expect(mocked.getMine).toHaveBeenCalledWith('9', 'tok');
     expect(await screen.findByText('Còn 7 phút để sửa hoặc xoá lời nhắn này.')).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: /Lời nhắn/ })).toHaveValue('Cũ');
+  });
+
+  it('sửa lời nhắn có ảnh → gọi getMyPhoto, xem trước có ảnh; lưu không gửi trường photo', async () => {
+    const blob = new Blob(['w'], { type: 'image/webp' });
+    const bitmap = { id: 'mine', width: 4, height: 3, close: vi.fn() };
+    const m = withMine(7);
+    mocked.getMine.mockResolvedValue({ ...mineMsg(new Date(NOW + 7 * 60_000).toISOString()), hasPhoto: true });
+    mocked.getMyPhoto.mockResolvedValue(blob);
+    bitmapFromBlob.mockResolvedValue(bitmap);
+    mocked.editMessage.mockResolvedValue({ ok: true });
+    const { container } = show(m);
+    await zoom(container);
+    await openMine();
+    await screen.findByRole('button', { name: 'Gỡ ảnh' });
+    expect(mocked.getMyPhoto).toHaveBeenCalledWith('9', 'tok');
+    expect(bitmapFromBlob).toHaveBeenCalledWith(blob);
+    await userEvent.click(screen.getByRole('button', { name: 'Xem trước thiệp' }));
+    expect(await screen.findByTestId('thiep')).toHaveAttribute('data-photo', 'mine');
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }));
+    expect(mocked.editMessage).toHaveBeenCalledWith('9', 'tok', { ornament: 'bell', anonymous: true, content: 'Cũ' });
+    expect(bitmap.close).toHaveBeenCalled();
+  });
+
+  it('sửa lời nhắn không có ảnh → không gọi getMyPhoto', async () => {
+    const { container } = show(withMine(7));
+    await zoom(container);
+    await openMine();
+    await screen.findByRole('textbox', { name: /Lời nhắn/ });
+    expect(mocked.getMyPhoto).not.toHaveBeenCalled();
   });
 
   it('sửa: lưu thành công gọi editMessage và đóng bảng', async () => {

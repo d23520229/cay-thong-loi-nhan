@@ -10,11 +10,22 @@ import { CardCanvas } from '../card/CardCanvas';
 import { layoutCard, signText, type Measure } from '../card/layout';
 import { cardMeasure } from '../card/measure';
 import type { CardData } from '../card/draw';
+import { PhotoError, preparePhoto, type PreparedPhoto } from '../card/photo';
 
-export type ComposeDraft = { ornament: string; anonymous: boolean; authorName: string; content: string };
+/** `photo`: ảnh đã thu nhỏ (bảng sửa: ảnh đang có, base64 rỗng); `photoChanged`: người viết đã chọn/gỡ ảnh. */
+export type ComposeDraft = {
+  ornament: string;
+  anonymous: boolean;
+  authorName: string;
+  content: string;
+  photo: PreparedPhoto | null;
+  photoChanged: boolean;
+};
 
 /** Mặc định như canvas: quả châu, Để tên, điền sẵn tên lần trước. */
-export const newDraft = (lastName: string): ComposeDraft => ({ ornament: 'ball', anonymous: false, authorName: lastName, content: '' });
+export const newDraft = (lastName: string): ComposeDraft => ({
+  ornament: 'ball', anonymous: false, authorName: lastName, content: '', photo: null, photoChanged: false,
+});
 
 type Props = {
   mode: 'new' | 'edit';
@@ -33,6 +44,24 @@ const { messageMax, nameMax } = catalog.limits;
 const ORNAMENTS = Object.entries(catalog.ornaments);
 const CARD_W = 2100; // bề rộng ảo để xếp chữ kiểm luật 9 dòng
 const PICKED = { borderColor: '#FFD86B', background: '#5A4A2E' };
+const PHOTO_ERRORS = {
+  too_big: 'Ảnh lớn quá, chọn ảnh dưới 20 MB nhé',
+  unreadable: 'Ảnh này chưa đọc được, chọn ảnh JPG hoặc PNG nhé',
+} as const;
+const THUMB = 72;
+
+/** Ảnh nhỏ xem trước dưới ô lời nhắn, vẽ từ ảnh đã thu nhỏ (cắt vuông giữa ảnh). */
+function PhotoThumb({ bitmap }: { bitmap: ImageBitmap }) {
+  const ref = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const ctx = ref.current?.getContext('2d');
+    if (!ctx) return;
+    const s = Math.min(bitmap.width, bitmap.height);
+    ctx.clearRect(0, 0, THUMB, THUMB);
+    ctx.drawImage(bitmap, (bitmap.width - s) / 2, (bitmap.height - s) / 2, s, s, 0, 0, THUMB, THUMB);
+  }, [bitmap]);
+  return <canvas ref={ref} className="cd-thumb" width={THUMB} height={THUMB} role="img" aria-label="Ảnh đã chọn" />;
+}
 
 /** Bảng viết / sửa lời nhắn (G3, G5 — đặc tả 6.6.1). Có kiểm soát: cha giữ `draft`. */
 const TICK_MS = 10_000;
@@ -52,7 +81,8 @@ function useMinutesLeft(editUntil?: string): number | null {
 }
 
 const same = (a: ComposeDraft, b: ComposeDraft) =>
-  a.ornament === b.ornament && a.anonymous === b.anonymous && a.authorName === b.authorName && a.content === b.content;
+  a.ornament === b.ornament && a.anonymous === b.anonymous && a.authorName === b.authorName && a.content === b.content &&
+  a.photo === b.photo;
 
 export function Compose({ mode, draft, onChange, editUntil, busy, error, onSubmit, onDelete, onClose }: Props) {
   const [ask, setAsk] = useState<null | 'close' | 'delete'>(null);
@@ -78,21 +108,54 @@ export function Compose({ mode, draft, onChange, editUntil, busy, error, onSubmi
   }, [busy]);
 
   const set = (p: Partial<ComposeDraft>) => onChange({ ...draft, ...p });
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [preparing, setPreparing] = useState(false);
+  const alive = useRef(true);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+  // Đọc draft mới nhất khi ảnh thu nhỏ xong (người viết có thể đã gõ thêm chữ trong lúc chờ).
+  const latest = useRef(draft);
+  latest.current = draft;
+  const setPhoto = (photo: PreparedPhoto | null) => {
+    const d = latest.current;
+    if (d.photo && d.photo !== photo) d.photo.bitmap.close?.();
+    onChange({ ...d, photo, photoChanged: true });
+  };
+  const pickPhoto = async (input: HTMLInputElement) => {
+    const file = input.files?.[0];
+    input.value = ''; // chọn lại cùng tệp vẫn nhận
+    if (!file) return;
+    setPhotoError(null);
+    setPreparing(true);
+    try {
+      const p = await preparePhoto(file);
+      if (alive.current) setPhoto(p);
+      else p.bitmap.close?.();
+    } catch (e) {
+      if (alive.current) setPhotoError(PHOTO_ERRORS[e instanceof PhotoError ? e.code : 'unreadable']);
+    } finally {
+      if (alive.current) setPreparing(false);
+    }
+  };
   const content = draft.content.trim();
   const name = draft.authorName.trim();
   const count = [...draft.content].length;
   const sign = signText(draft.anonymous, name);
   // Không đo được (không có canvas) thì bỏ qua kiểm 9 dòng; server vẫn chặn quá 8 xuống dòng.
-  const tooLong = !!measure && content.length > 0 && !layoutCard({ text: content, sign, hasPhoto: false, W: CARD_W, measure }).fits;
+  const tooLong = !!measure && content.length > 0 && !layoutCard({ text: content, sign, hasPhoto: !!draft.photo, W: CARD_W, measure }).fits;
   const ok = content.length > 0 && count <= messageMax && (draft.anonymous || name.length > 0) && !expired;
   // Ngày trên thiệp xem trước lấy một lần khi vào bước xem trước (giờ server).
   const card = useMemo<CardData | null>(
-    () => (step === 'preview' ? { content, sign, sentAt: new Date(serverNow()).toISOString() } : null),
+    () => (step === 'preview' ? { content, sign, sentAt: new Date(serverNow()).toISOString(), photo: draft.photo?.bitmap ?? null } : null),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [step],
   );
   // Chỉ hỏi lại khi đóng làm mất chữ: bảng mới đã có chữ, hoặc bảng sửa đã đổi gì đó.
-  const dirty = mode === 'new' ? content.length > 0 : !same(draft, initial.current);
+  const dirty = mode === 'new' ? content.length > 0 || !!draft.photo : !same(draft, initial.current);
   const requestClose = () => {
     if (busy) return;
     if (dirty) setAsk('close');
@@ -104,6 +167,8 @@ export function Compose({ mode, draft, onChange, editUntil, busy, error, onSubmi
     locked.current = true;
     const input: MessageInput = { ornament: draft.ornament, anonymous: draft.anonymous, content };
     if (!draft.anonymous) input.authorName = name;
+    // Bảng mới: có ảnh thì gửi. Bảng sửa: chỉ gửi khi đã đổi ảnh; gỡ ảnh → null.
+    if (mode === 'new' ? draft.photo : draft.photoChanged) input.photo = draft.photo ? draft.photo.base64 : null;
     onSubmit(input, website.current?.value ?? '');
   };
 
@@ -169,6 +234,26 @@ export function Compose({ mode, draft, onChange, editUntil, busy, error, onSubmi
         />
       </label>
       {tooLong ? <div className="notice" role="alert">Lời nhắn dài quá khung thiệp, bớt vài dòng nhé</div> : null}
+      <div className="row cd-photo">
+        {draft.photo ? <PhotoThumb bitmap={draft.photo.bitmap} /> : null}
+        <label className={`chip cd-pick${busy || preparing ? ' is-disabled' : ''}`}>
+          {preparing ? 'Đang xử lý ảnh…' : draft.photo ? 'Đổi ảnh' : 'Kèm ảnh'}
+          <input
+            type="file"
+            accept="image/*"
+            className="cd-file"
+            aria-label="Chọn ảnh"
+            disabled={busy || preparing}
+            onChange={(e) => void pickPhoto(e.currentTarget)}
+          />
+        </label>
+        {draft.photo ? (
+          <button type="button" className="chip" disabled={busy || preparing} onClick={() => setPhoto(null)}>
+            Gỡ ảnh
+          </button>
+        ) : null}
+      </div>
+      {photoError ? <div className="notice" role="alert">{photoError}</div> : null}
         </>
       ) : null}
       {/* Ô bẫy bot (honeypot): người dùng không thấy, bot điền vào thì server bỏ qua. */}
@@ -185,6 +270,7 @@ export function Compose({ mode, draft, onChange, editUntil, busy, error, onSubmi
             : `Còn ${left ?? 1} phút để sửa hoặc xoá lời nhắn này.`
           : 'Chủ cây sẽ đọc được từ đêm 24/12. Sau khi treo, bạn có 15 phút để sửa trên thiết bị này.'}
       </div>
+      {busy && draft.photo && (mode === 'new' || draft.photoChanged) ? <div className="cd-sending" role="status">Đang gửi…</div> : null}
       {error ? <div className="notice" role="alert">{error}</div> : null}
       <div className="row" style={{ justifyContent: 'flex-end' }}>
         {step === 'write' && mode === 'edit' && onDelete ? (
@@ -193,7 +279,7 @@ export function Compose({ mode, draft, onChange, editUntil, busy, error, onSubmi
           </button>
         ) : null}
         {step === 'write' ? (
-          <button type="button" className="btn btn-primary" disabled={!ok || tooLong || busy} onClick={() => setStep('preview')}>
+          <button type="button" className="btn btn-primary" disabled={!ok || tooLong || busy || preparing} onClick={() => setStep('preview')}>
             Xem trước thiệp
           </button>
         ) : (

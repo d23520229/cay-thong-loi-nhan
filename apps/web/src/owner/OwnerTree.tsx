@@ -283,6 +283,7 @@ export function OwnerTree({ treeId, meta, room, toast, onUnauthorized, onChange 
       </div>
       {card && sheet !== 'report' ? (
         <MessageCard
+          treeId={treeId}
           message={card.message}
           slotIndex={card.index}
           onNotice={toast}

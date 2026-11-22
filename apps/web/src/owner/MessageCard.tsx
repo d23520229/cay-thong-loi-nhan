@@ -1,16 +1,18 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ornamentSVGSoft } from '@ctln/art/ornaments';
-import type { OpenedMessage } from '../lib/api';
+import { api, type OpenedMessage } from '../lib/api';
 import { CardCanvas } from '../card/CardCanvas';
 import { CardViewer } from '../card/CardViewer';
 import { downloadCard } from '../card/download';
 import { renderCardBlob } from '../card/draw';
+import { bitmapFromBlob } from '../card/photo';
 import { signText } from '../card/layout';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Sheet } from '../ui/Sheet';
 import { formatSentAt } from './countdown';
 
 type Props = {
+  treeId: string;
   message: OpenedMessage;
   slotIndex: number;
   hasPrev: boolean;
@@ -26,26 +28,49 @@ type Props = {
 };
 
 /** Thẻ lời nhắn của chủ cây (đặc tả 9.6, 6.6.2). Nội dung vẽ lên canvas thiệp (chữ thuần, không HTML). */
-export function MessageCard({ message: m, slotIndex, hasPrev, hasNext, busy, onPrev, onNext, onDelete, onBlock, onReport, onClose, onNotice }: Props) {
+export function MessageCard({ treeId, message: m, slotIndex, hasPrev, hasNext, busy, onPrev, onNext, onDelete, onBlock, onReport, onClose, onNotice }: Props) {
   const [ask, setAsk] = useState<null | 'delete' | 'block'>(null);
   const [viewing, setViewing] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Ảnh kèm, ghi theo lời nhắn (đổi Trước/Sau thì không lẫn ảnh cũ); tải lỗi thì hiện thiệp không ảnh.
+  const [got, setGot] = useState<{ mid: string; bm: ImageBitmap | null } | null>(null);
+  useEffect(() => {
+    if (!m.hasPhoto) return;
+    let alive = true;
+    let bitmap: ImageBitmap | null = null;
+    api
+      .getOwnerPhoto(treeId, m.messageId)
+      .then((b) => (b ? bitmapFromBlob(b) : null))
+      .catch(() => null)
+      .then((bm) => {
+        if (!alive) return bm?.close?.();
+        bitmap = bm;
+        setGot({ mid: m.messageId, bm });
+      });
+    return () => {
+      alive = false;
+      bitmap?.close?.();
+    };
+  }, [treeId, m.messageId, m.hasPhoto]);
+  const photo = !m.hasPhoto ? null : got?.mid === m.messageId ? got.bm : 'loading';
+  const loading = photo === 'loading';
   const data = useMemo(
-    () => ({ content: m.content, sign: signText(m.anonymous, m.authorName), sentAt: m.createdAt }),
-    [m.content, m.anonymous, m.authorName, m.createdAt],
+    () => ({ content: m.content, sign: signText(m.anonymous, m.authorName), sentAt: m.createdAt, photo: loading ? null : photo }),
+    [m.content, m.anonymous, m.authorName, m.createdAt, photo, loading],
   );
   // Dựng sẵn ảnh để bấm "Tải ảnh" gọi chia sẻ ngay trong thao tác chạm (iOS đòi vậy).
   const ready = useRef<{ data: typeof data; blob: Blob } | null>(null);
   useEffect(() => {
     let alive = true;
     ready.current = null;
+    if (loading) return;
     renderCardBlob(data).then((blob) => {
       if (alive) ready.current = { data, blob };
     }, () => {});
     return () => {
       alive = false;
     };
-  }, [data]);
+  }, [data, loading]);
   const save = async () => {
     setSaving(true);
     try {
@@ -64,8 +89,8 @@ export function MessageCard({ message: m, slotIndex, hasPrev, hasNext, busy, onP
         <svg viewBox="-30 -6 60 60" width="48" height="48" aria-hidden="true" dangerouslySetInnerHTML={{ __html: ornamentSVGSoft(m.ornament, 'read', null) }} />
         <span className="hint">{formatSentAt(m.createdAt)}</span>
       </div>
-      <CardCanvas data={data} onTap={() => setViewing(true)} />
-      <button type="button" className="chip cd-save" disabled={saving} onClick={() => void save()}>⬇ Tải ảnh</button>
+      {loading ? <div className="cd-canvas cd-loading" aria-busy="true" /> : <CardCanvas data={data} onTap={() => setViewing(true)} />}
+      <button type="button" className="chip cd-save" disabled={saving || loading} onClick={() => void save()}>⬇ Tải ảnh</button>
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <button type="button" className="chip" disabled={!hasPrev || busy} onClick={onPrev}>‹ Trước</button>
         <button type="button" className="chip" disabled={!hasNext || busy} onClick={onNext}>Sau ›</button>

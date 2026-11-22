@@ -4,6 +4,7 @@ import type { Room } from '@ctln/shared';
 import { ApiError, api, type MessageInput, type PublicRoom } from '../lib/api';
 import { serverNow, syncClock } from '../lib/clock';
 import { storage, type MineEntry } from '../lib/storage';
+import { bitmapFromBlob, type PreparedPhoto } from '../card/photo';
 import { RoomStage } from '../room/RoomStage';
 import { useItemFx } from '../room/useItemFx';
 import { Compose, newDraft, type ComposeDraft } from './Compose';
@@ -48,7 +49,7 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [slotFx, setSlotFx] = useState<Record<number, 'ring' | 'drop-in'>>({});
-  const held = useRef<ComposeDraft | null>(null); // chữ giữ lại sau slot_taken
+  const held = useRef<ComposeDraft | null>(null); // chữ (và ảnh) giữ lại sau slot_taken
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const { fx, tap } = useItemFx(room);
 
@@ -116,7 +117,12 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
     });
   };
 
-  const close = () => {
+  /** Đóng bảng; trừ khi giữ bản nháp (`keep`, sau slot_taken), bỏ luôn ảnh đã thu nhỏ. */
+  const close = (keep = false) => {
+    if (!keep) {
+      if (open?.mode === 'new') held.current = null;
+      draft.photo?.bitmap.close?.();
+    }
     setOpen(null);
     setError(null);
   };
@@ -140,7 +146,13 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
     const m = v.mine!;
     try {
       const msg = await api.getMine(m.messageId, m.editToken);
-      setDraft({ ornament: msg.ornament, anonymous: msg.anonymous, authorName: msg.authorName ?? '', content: msg.content });
+      // Ảnh đang có chỉ để xem; không đổi ảnh thì không gửi lại (base64 rỗng).
+      let photo: PreparedPhoto | null = null;
+      if (msg.hasPhoto) {
+        const b = await api.getMyPhoto(m.messageId, m.editToken);
+        if (b) photo = { bitmap: await bitmapFromBlob(b), base64: '' };
+      }
+      setDraft({ ornament: msg.ornament, anonymous: msg.anonymous, authorName: msg.authorName ?? '', content: msg.content, photo, photoChanged: false });
       setError(null);
       setOpen({ mode: 'edit', slot, messageId: m.messageId, token: m.editToken, editUntil: msg.editUntil });
     } catch (e) {
@@ -193,7 +205,7 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
       if (writeClosed(err)) return;
       if (open.mode === 'new' && err.code === 'slot_taken') {
         held.current = draft;
-        close();
+        close(true);
         toast(err.message);
         void refresh();
       } else if (open.mode === 'edit' && (err.status === 403 || err.status === 404)) {

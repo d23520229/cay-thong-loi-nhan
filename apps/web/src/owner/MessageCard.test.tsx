@@ -10,16 +10,22 @@ const { renderCardBlob, downloadCard } = vi.hoisted(() => ({
 }));
 vi.mock('../card/draw', async (orig) => ({ ...(await orig<typeof import('../card/draw')>()), renderCardBlob }));
 vi.mock('../card/download', () => ({ downloadCard }));
+const { getOwnerPhoto, bitmapFromBlob } = vi.hoisted(() => ({ getOwnerPhoto: vi.fn(), bitmapFromBlob: vi.fn() }));
+vi.mock('../lib/api', async (orig) => {
+  const actual = await orig<typeof import('../lib/api')>();
+  return { ...actual, api: { ...actual.api, getOwnerPhoto } };
+});
+vi.mock('../card/photo', () => ({ bitmapFromBlob }));
 import { ReportSheet } from './ReportSheet';
 
 const msg = (over: Partial<OpenedMessage> = {}): OpenedMessage => ({
   messageId: '5', slotIndex: 2, ornament: 'bell', anonymous: false, authorName: 'An',
-  content: 'Chúc mừng', createdAt: '2026-11-21T13:05:00Z', ...over,
+  content: 'Chúc mừng', createdAt: '2026-11-21T13:05:00Z', hasPhoto: false, ...over,
 });
 const noop = () => {};
 const card = (over: Partial<Parameters<typeof MessageCard>[0]> = {}) =>
   render(
-    <MessageCard message={msg()} slotIndex={2} hasPrev={false} hasNext busy={false} onPrev={noop} onNext={noop}
+    <MessageCard treeId="abcdefgh" message={msg()} slotIndex={2} hasPrev={false} hasNext busy={false} onPrev={noop} onNext={noop}
       onDelete={noop} onBlock={noop} onReport={noop} onClose={noop} {...over} />,
   );
 
@@ -72,6 +78,40 @@ describe('MessageCard', () => {
     await userEvent.click(screen.getByRole('button', { name: '⬇ Tải ảnh' }));
     await vi.waitFor(() => expect(onNotice).toHaveBeenCalledTimes(1));
     expect(onNotice).toHaveBeenCalledWith('Chưa lưu được ảnh, thử lại nhé');
+  });
+
+  it('hasPhoto → gọi getOwnerPhoto, thiệp nhận photo; tải ảnh có ảnh', async () => {
+    const blob = new Blob(['w'], { type: 'image/webp' });
+    const bitmap = { width: 4, height: 3, close: vi.fn() };
+    getOwnerPhoto.mockResolvedValue(blob);
+    bitmapFromBlob.mockResolvedValue(bitmap);
+    renderCardBlob.mockClear();
+    downloadCard.mockClear();
+    const { unmount } = card({ message: msg({ hasPhoto: true }) });
+    expect(getOwnerPhoto).toHaveBeenCalledWith('abcdefgh', '5');
+    await vi.waitFor(() => expect(renderCardBlob).toHaveBeenCalledWith(expect.objectContaining({ photo: bitmap })));
+    expect(renderCardBlob).not.toHaveBeenCalledWith(expect.objectContaining({ photo: null }));
+    expect(screen.getByRole('img', { name: 'Chúc mừng — An' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: '⬇ Tải ảnh' }));
+    await vi.waitFor(() => expect(downloadCard).toHaveBeenCalledTimes(1));
+    expect(renderCardBlob.mock.calls.every((c) => (c as unknown[])[0] && ((c as unknown[])[0] as { photo?: unknown }).photo === bitmap)).toBe(true);
+    unmount();
+    expect(bitmap.close).toHaveBeenCalled();
+  });
+
+  it('getOwnerPhoto lỗi → vẫn hiện thiệp không ảnh, không vỡ', async () => {
+    getOwnerPhoto.mockRejectedValue(new Error('x'));
+    renderCardBlob.mockClear();
+    card({ message: msg({ hasPhoto: true }) });
+    await vi.waitFor(() => expect(renderCardBlob).toHaveBeenCalledWith(expect.objectContaining({ photo: null })));
+    expect(screen.getByRole('img', { name: 'Chúc mừng — An' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '⬇ Tải ảnh' })).toBeEnabled();
+  });
+
+  it('không có ảnh → không gọi getOwnerPhoto', () => {
+    getOwnerPhoto.mockClear();
+    card();
+    expect(getOwnerPhoto).not.toHaveBeenCalled();
   });
 
   it('chạm thiệp mở CardViewer', async () => {

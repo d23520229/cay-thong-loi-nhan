@@ -37,7 +37,7 @@ const meta = (over: Partial<OwnerRoom> = {}): OwnerRoom => ({
 });
 const opened = (index: number, over: Partial<OpenedMessage> = {}): OpenedMessage => ({
   messageId: String(100 + index), slotIndex: index, ornament: 'bell', anonymous: false, authorName: `Bạn ${index}`,
-  content: `Nội dung ${index}`, createdAt: '2026-12-01T01:00:00Z', ...over,
+  content: `Nội dung ${index}`, createdAt: '2026-12-01T01:00:00Z', hasPhoto: false, ...over,
 });
 
 beforeEach(() => {
