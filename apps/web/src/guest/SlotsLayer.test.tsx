@@ -57,6 +57,7 @@ describe('SlotsLayer', () => {
     slots.forEach((s) => {
       expect(s.tagName).toBe('SPAN');
       expect(s).toHaveAttribute('aria-hidden', 'true');
+      expect(s).toHaveStyle({ pointerEvents: 'none' });
     });
     expect(container.firstElementChild).toHaveStyle({ pointerEvents: 'none' });
     fireEvent.click(slots[0]!);

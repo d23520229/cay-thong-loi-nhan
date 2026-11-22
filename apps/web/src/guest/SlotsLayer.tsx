@@ -45,10 +45,12 @@ export function SlotsLayer({ rects, views, fx, onTap, hideEmpty, states, interac
         const svg = v.kind === 'empty' ? slotBubbleSVG() : ornamentSVGSoft(v.ornament ?? 'ball', look, null);
         const cls = ['gs-slot', v.kind === 'mine' || v.kind === 'mineExpired' ? 'is-mine' : '', fx[r.index] ? FX_CLASS[fx[r.index]!] : ''].filter(Boolean).join(' ');
         const pos = { left: r.left, top: r.top, width: r.size, height: r.size };
+        // .gs-slot đặt pointer-events: auto trong app.css; span tĩnh phải ghi đè để chạm xuyên xuống cây.
+        const posStatic = { ...pos, pointerEvents: 'none' as const };
         const art = <svg viewBox="-30 -6 60 60" width="100%" height="100%" aria-hidden="true" dangerouslySetInnerHTML={{ __html: svg }} />;
         if (!interactive) {
           return (
-            <span key={r.index} className={cls} aria-hidden="true" style={pos}>
+            <span key={r.index} className={cls} aria-hidden="true" style={posStatic}>
               {art}
             </span>
           );
