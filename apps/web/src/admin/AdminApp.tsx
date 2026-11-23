@@ -6,6 +6,8 @@ import { AdminLogin } from './AdminLogin';
 import { AdminContext, type AdminCtx } from './context';
 import { Overview } from './Overview';
 import { Reports } from './Reports';
+import { TreeLookup } from './TreeLookup';
+import { AuditLog } from './AuditLog';
 import './admin.css';
 
 /** Trang quản trị `/quan-tri/*` (đặc tả 6.8): tải riêng (lazy), chỉ chủ dự án dùng. */
@@ -81,8 +83,8 @@ export function AdminApp() {
           <Routes>
             <Route index element={<Overview />} />
             <Route path="bao-cao" element={<Reports />} />
-            <Route path="phong" element={<h1>Tra cứu phòng</h1>} />
-            <Route path="nhat-ky" element={<h1>Nhật ký</h1>} />
+            <Route path="phong" element={<TreeLookup />} />
+            <Route path="nhat-ky" element={<AuditLog />} />
           </Routes>
         </main>
       </div>
