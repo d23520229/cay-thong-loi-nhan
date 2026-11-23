@@ -555,3 +555,21 @@ describe('Người viết xoá lời nhắn kèm ảnh', () => {
     expect(await count()).toBe(0);
   });
 });
+
+describe('photo_bytes (đặc tả 6.8.3)', () => {
+  const bytesOf = async (mid: string) =>
+    (await t.h.db.select({ b: messages.photoBytes }).from(messages).where(eq(messages.id, Number(mid))))[0]?.b ?? null;
+  it('treo kèm ảnh ghi đúng số byte ảnh đã lưu; thay ảnh cập nhật; gỡ ảnh → null', async () => {
+    const { id } = await setup();
+    const r = await post(id, body(0, { photo: JPEG }));
+    const mid = r.json().messageId as string;
+    const stored = await t.photos.get((await keyOf(mid))!);
+    expect(await bytesOf(mid)).toBe(stored!.length);
+    const big = (await sharp({ create: { width: 64, height: 64, channels: 3, background: '#0f0' } }).jpeg().toBuffer()).toString('base64');
+    expect((await edit(mid, r.json().editToken, body(0, { photo: big }))).statusCode).toBe(200);
+    const stored2 = await t.photos.get((await keyOf(mid))!);
+    expect(await bytesOf(mid)).toBe(stored2!.length);
+    expect((await edit(mid, r.json().editToken, body(0, { photo: null }))).statusCode).toBe(200);
+    expect(await bytesOf(mid)).toBeNull();
+  });
+});

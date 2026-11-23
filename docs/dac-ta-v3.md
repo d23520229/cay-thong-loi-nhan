@@ -740,7 +740,7 @@ erDiagram
     ADMIN_USERS |o--o{ REPORTS : "xử lý"
 ```
 
-Tổng cộng **16 bảng**: 10 bảng cho người dùng (`owner_accounts`, `trees`, `room_items`, `owner_sessions`, `messages`, `blocked_devices`, `auth_attempts`, `rate_counters`, `reports`, `events`) và 6 bảng cho quản trị (`admin_users`, `admin_sessions`, `admin_audit`, `global_blocks`, `banned_words`, `site_settings`).
+Tổng cộng **17 bảng** (từ migration 0005): 10 bảng cho người dùng (`owner_accounts`, `trees`, `room_items`, `owner_sessions`, `messages`, `blocked_devices`, `auth_attempts`, `rate_counters`, `reports`, `events`) và 7 bảng cho quản trị (`admin_users`, `admin_sessions`, `admin_audit`, `global_blocks`, `banned_words`, `site_settings`, `error_counts`).
 
 ### 7.3 Lược đồ (PostgreSQL 16)
 
@@ -837,6 +837,7 @@ CREATE TABLE messages (
   created_at      timestamptz NOT NULL DEFAULT now(),
   updated_at      timestamptz NOT NULL DEFAULT now(),
   photo_key       text,                                               -- ảnh kèm (migration 0004), NULL nếu không có
+  photo_bytes     integer,                                            -- số byte ảnh đã lưu (migration 0005)
   read_at         timestamptz,                                        -- NULL = chưa mở
   UNIQUE (tree_id, slot_index),
   CONSTRAINT messages_anon_name CHECK ((is_anonymous AND author_name IS NULL) OR (NOT is_anonymous AND author_name IS NOT NULL))
@@ -946,6 +947,15 @@ CREATE TABLE site_settings (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Đếm lỗi 5xx theo giờ cho Tổng quan quản trị (migration 0005, đặc tả 6.8.3)
+CREATE TABLE error_counts (
+  hour        timestamptz PRIMARY KEY,   -- đầu giờ
+  count       integer NOT NULL DEFAULT 0,
+  last_at     timestamptz NOT NULL,
+  last_route  text,                      -- mẫu route, không có giá trị tham số
+  last_status smallint NOT NULL
+);
+
 -- ===== Thống kê =====
 
 CREATE TABLE events (
@@ -1038,7 +1048,7 @@ Ghi chú: trình duyệt trong Zalo/Messenger có bộ nhớ riêng, nên chủ 
 ### 7.9 Kết nối, migration, sao lưu
 
 - **Kết nối:** driver `postgres` (postgres.js) qua Drizzle, nhóm kết nối 10 / instance, bắt buộc TLS tới Azure.
-- **Migration:** file SQL viết tay trong `apps/server/src/db/migrations/` là gốc; `schema.ts` của Drizzle chỉ để có kiểu khi truy vấn, có test đối chiếu với CSDL. Script tự viết chạy các file theo thứ tự khi khởi động server (giữ khoá `pg_advisory_xact_lock` trong giao dịch, tự nhả khi xong), ghi file đã chạy vào bảng `meta.migrations` (schema riêng, không tính vào 16 bảng).
+- **Migration:** file SQL viết tay trong `apps/server/src/db/migrations/` là gốc; `schema.ts` của Drizzle chỉ để có kiểu khi truy vấn, có test đối chiếu với CSDL. Script tự viết chạy các file theo thứ tự khi khởi động server (giữ khoá `pg_advisory_xact_lock` trong giao dịch, tự nhả khi xong), ghi file đã chạy vào bảng `meta.migrations` (schema riêng, không tính vào 17 bảng).
 - **Sao lưu:** Azure tự sao lưu hằng ngày, giữ 7 ngày, khôi phục về một thời điểm bất kỳ. Không cần tự viết script sao lưu như SQLite.
 - **Môi trường phát triển:** PostgreSQL chạy bằng Docker trên máy; kiểm thử tự động dùng PGlite (PostgreSQL chạy trong tiến trình, không cần cài).
 - **Xoá cuối mùa:** sau 07/01/2027 xoá luôn máy chủ PostgreSQL, toàn bộ dữ liệu và bản sao lưu biến mất cùng lúc.

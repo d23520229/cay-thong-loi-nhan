@@ -68,6 +68,7 @@ export const messages = pgTable('messages', {
   authorName: text('author_name'),
   content: text('content').notNull(),
   photoKey: text('photo_key'),
+  photoBytes: integer('photo_bytes'),
   editTokenHash: text('edit_token_hash').notNull(),
   editUntil: ts('edit_until').notNull(),
   deviceHash: text('device_hash').notNull(),
@@ -174,4 +175,13 @@ export const events = pgTable('events', {
   type: text('type').notNull(),
   treeId: text('tree_id'),
   createdAt: createdAt(),
+});
+
+/** Đếm lỗi 5xx theo giờ cho Tổng quan quản trị (migration 0005, đặc tả 6.8.3). */
+export const errorCounts = pgTable('error_counts', {
+  hour: ts('hour').primaryKey(),
+  count: integer('count').notNull().default(0),
+  lastAt: ts('last_at').notNull(),
+  lastRoute: text('last_route'),
+  lastStatus: smallint('last_status').notNull(),
 });

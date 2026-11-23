@@ -17,6 +17,7 @@ import { roomRoutes } from './routes/room.js';
 import { treesRoutes } from './routes/trees.js';
 import { adminRoutes } from './routes/admin/index.js';
 import { ensureBootstrapAdmin } from './admin/bootstrap.js';
+import { LatencyTracker, recordError } from './metrics.js';
 
 export type GoogleVerifier = (idToken: string) => Promise<{ sub: string; name?: string; email?: string; emailVerified?: boolean }>;
 export type AppDeps = {
@@ -35,6 +36,8 @@ export type AppDeps = {
 declare module 'fastify' {
   interface FastifyInstance {
     deps: AppDeps;
+    /** p95 thời gian phản hồi `/api/*` (Tổng quan quản trị). */
+    latency: LatencyTracker;
   }
 }
 
@@ -56,6 +59,7 @@ const WRITE_METHODS =new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 export async function buildApp(deps: AppDeps, opts: { logStream?: { write(msg: string): void } } = {}): Promise<FastifyInstance> {
   const app = Fastify({ logger: opts.logStream ? { ...loggerOptions, stream: opts.logStream } : process.env.VITEST ? false : loggerOptions, bodyLimit: 65536, trustProxy: (_addr: string, hop: number) => hop < deps.env.trustProxyHops });
   app.decorate('deps', deps);
+  app.decorate('latency', new LatencyTracker(deps.now()));
   await app.register(cookie);
   const GOOGLE = 'https://accounts.google.com';
   // Giữ mặc định helmet cho các chỉ thị khác; chỉ mở đúng accounts.google.com cho Google Identity.
@@ -122,6 +126,19 @@ export async function buildApp(deps: AppDeps, opts: { logStream?: { write(msg: s
   app.addHook('onSend', async (req, reply) => {
     const path = req.url.split('?')[0]!;
     if (path.startsWith('/api/admin') || path.startsWith('/quan-tri')) reply.header('x-robots-tag', 'noindex');
+  });
+
+  // Khối "Máy chủ" của Tổng quan (đặc tả 6.8.3): đo thời gian /api/*, đếm lỗi 5xx theo mẫu route.
+  app.addHook('onResponse', async (req, reply) => {
+    if (!req.url.startsWith('/api/')) return;
+    const at = deps.now();
+    app.latency.record(reply.elapsedTime, at);
+    if (reply.statusCode < 500) return;
+    try {
+      await recordError(deps.db.db, at, req.routeOptions.url ?? null, reply.statusCode);
+    } catch (e) {
+      req.log.warn({ code: (e as { code?: string })?.code }, 'error_count_failed');
+    }
   });
 
   app.get('/healthz', async () => ({ ok: true }));
