@@ -36,6 +36,11 @@ describe('MessageCard', () => {
     expect(screen.getByText('21/11 lúc 20:05')).toBeInTheDocument();
   });
 
+  it('thẻ hiện trong khung thiệp (cd-frame), không phải bảng trượt thường', () => {
+    card();
+    expect(screen.getByRole('dialog', { name: 'Lời nhắn từ An' })).toHaveClass('cd-frame');
+  });
+
   it('ẩn danh', () => {
     card({ message: msg({ anonymous: true, authorName: null }) });
     expect(screen.getByRole('dialog', { name: 'Lời nhắn ẩn danh' })).toBeInTheDocument();

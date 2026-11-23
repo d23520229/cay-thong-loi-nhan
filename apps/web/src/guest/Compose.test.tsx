@@ -259,6 +259,15 @@ describe('Compose', () => {
     expect(onSubmit).toHaveBeenCalledWith({ ornament: 'ball', anonymous: false, authorName: 'Lan', content: 'Chúc vui' }, '');
   });
 
+  it('xem trước hiện trong khung thiệp (cd-frame), Sửa lại trả về bảng viết thường', async () => {
+    render(<Harness initial={{ ...newDraft('Lan'), content: 'Chúc vui' }} />);
+    expect(screen.getByRole('dialog', { name: 'Treo lời nhắn' })).not.toHaveClass('cd-frame');
+    await toPreview();
+    expect(screen.getByRole('dialog', { name: 'Xem trước thiệp' })).toHaveClass('cd-frame');
+    await userEvent.click(screen.getByRole('button', { name: '‹ Sửa lại' }));
+    expect(screen.getByRole('dialog', { name: 'Treo lời nhắn' })).not.toHaveClass('cd-frame');
+  });
+
   it('chế độ sửa cũng qua xem trước, nút Lưu thay đổi', async () => {
     const onSubmit = vi.fn();
     render(<Harness mode="edit" editUntil={inMinutes(7)} onSubmit={onSubmit} initial={{ ...newDraft('Lan'), content: 'Cũ' }} />);

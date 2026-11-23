@@ -181,7 +181,7 @@ export function Compose({ mode, draft, onChange, editUntil, busy, error, onSubmi
       ? `Sửa lời nhắn của bạn (${expired ? 'đã hết giờ sửa' : `còn ${left ?? 1} phút`})`
       : 'Treo lời nhắn';
   return (
-    <Sheet title={title} onClose={requestClose} className="compose">
+    <Sheet title={step === 'preview' ? 'Xem trước thiệp' : title} onClose={requestClose} className={step === 'preview' ? 'compose cd-frame' : 'compose'}>
       {step === 'write' ? (
         <>
       <div className="lab">Chọn phụ kiện để treo</div>
@@ -263,11 +263,7 @@ export function Compose({ mode, draft, onChange, editUntil, busy, error, onSubmi
       ) : null}
       {/* Ô bẫy bot (honeypot): người dùng không thấy, bot điền vào thì server bỏ qua. */}
       <input ref={website} name="website" className="gs-hp" tabIndex={-1} autoComplete="off" aria-hidden="true" defaultValue="" />
-      {step === 'preview' && card ? (
-        <div className="cd-preview">
-          <CardCanvas data={card} />
-        </div>
-      ) : null}
+      {step === 'preview' && card ? <CardCanvas data={card} /> : null}
       <div className="note">
         {mode === 'edit'
           ? expired

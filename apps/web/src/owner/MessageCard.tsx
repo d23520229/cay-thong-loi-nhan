@@ -92,7 +92,7 @@ export function MessageCard({ treeId, message: m, slotIndex, hasPrev, hasNext, b
   };
   const title = m.anonymous || !m.authorName ? 'Lời nhắn ẩn danh' : `Lời nhắn từ ${m.authorName}`;
   return (
-    <Sheet title={title} onClose={onClose} className="ow-card">
+    <Sheet title={title} onClose={onClose} className="ow-card cd-frame">
       <div className="ow-card-head">
         <svg viewBox="-30 -6 60 60" width="48" height="48" aria-hidden="true" dangerouslySetInnerHTML={{ __html: ornamentSVGSoft(m.ornament, 'read', null) }} />
         <span className="hint">{formatSentAt(m.createdAt)}</span>

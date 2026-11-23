@@ -1,8 +1,27 @@
 /* Xem thiệp toàn màn hình (tiền tố cd-). */
 .cd-fail { padding: 24px 16px; text-align: center; color: var(--ink, inherit); }
 .cd-canvas { display: block; width: 100%; height: auto; aspect-ratio: 2100 / 1500; }
+/* Khung thiệp (khách xem trước, chủ cây đọc): bảng thành lớp phủ toàn trang, thiệp nằm giữa.
+   Điện thoại: thiệp rộng hết màn hình. Màn rộng: 2/3 bề ngang, thu lại nếu màn thấp (chừa ~300px cho tiêu đề + nút; 1.4 = 2100/1500). */
+.sheet.cd-frame {
+  position: fixed; inset: 0; z-index: 2000; max-height: none; overflow-y: auto; border-radius: 0;
+  background: rgba(20, 16, 26, 0.92); box-shadow: none; animation: cd-frame-in .25s ease-out;
+}
+@keyframes cd-frame-in { from { opacity: 0; } to { opacity: 1; } }
+.cd-frame .sheet-head { margin-top: auto; }
+.cd-frame .sheet-body { margin-bottom: auto; padding: 4px 0 18px; overflow: visible; }
+.cd-frame .sheet-body > * { margin-inline: 16px; }
+.cd-frame .sheet-body > .cd-canvas, .cd-frame .sheet-body > .cd-loading { margin-inline: 0; }
+@media (min-width: 900px) {
+  .cd-frame .sheet-head, .cd-frame .sheet-body {
+    box-sizing: border-box; width: min(66.667vw, calc((100vh - 300px) * 1.4)); min-width: 480px; margin-inline: auto;
+  }
+  .cd-frame .sheet-head { padding-inline: 0; }
+  .cd-frame .sheet-body > * { margin-inline: 0; }
+}
+@media (prefers-reduced-motion: reduce) { .sheet.cd-frame { animation: none; } }
 .cd-viewer {
-  position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+  position: fixed; inset: 0; z-index: 2500; display: flex; align-items: center; justify-content: center;
   background: rgba(0, 0, 0, 0.88); touch-action: pinch-zoom; outline: none; overflow: hidden;
 }
 .cd-close {
