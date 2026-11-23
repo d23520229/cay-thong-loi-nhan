@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Sheet } from '../ui/Sheet';
+import { SupportHint } from '../ui/SupportHint';
 
 type Props = {
   showCount: boolean;
@@ -10,7 +11,7 @@ type Props = {
   onClose: () => void;
 };
 
-/** "⋯ Tuỳ chọn" của chủ cây: bật/tắt số lời nhắn (O10), xoá cây (O5). */
+/** "⋯ Tuỳ chọn" của chủ cây: bật/tắt số lời nhắn (O10), xoá cây (O5), email hỗ trợ (6.8.7). */
 export function OwnerOptions({ showCount, busy, onToggleCount, onDeleteTree, onClose }: Props) {
   const [ask, setAsk] = useState(false);
   return (
@@ -21,6 +22,7 @@ export function OwnerOptions({ showCount, busy, onToggleCount, onDeleteTree, onC
       </label>
       <p className="hint">Tắt nếu bạn muốn để dành bất ngờ đến đêm 24/12.</p>
       <button type="button" className="chip ow-danger" disabled={busy} onClick={() => setAsk(true)}>Xoá cây này</button>
+      <SupportHint />
       {ask ? (
         <ConfirmDialog
           title="Xoá cây và mọi lời nhắn?"

@@ -684,7 +684,7 @@ Giữ mục 7.3 và `docs/schema.postgres.sql` khớp (17 bảng). Bảng này x
 #### 6.8.7 Email hỗ trợ
 
 - Biến `SUPPORT_EMAIL`; `/api/config` trả thêm `supportEmail` (hoặc `null`, khi đó ẩn mọi chỗ nhắc).
-- Hiện ở: chân trang chủ ("Cần giúp? {email}"); thông báo khi PIN bị khoá đến hết ngày; thông báo "Không mở được cây này"; thông báo Google `not_owner` / không có cây. Trang chính sách (M4) cũng nhắc.
+- Hiện ở: chân trang chủ ("Cần giúp? {email}"); bảng "⋯ Tuỳ chọn" của chủ cây (thêm 24/11); thông báo khi PIN bị khoá đến hết ngày; thông báo "Không mở được cây này"; thông báo Google `not_owner` / không có cây. Trang chính sách (M4) cũng nhắc.
 - Câu nhắc: gửi **mã cây** và mô tả vấn đề. *(Bỏ câu "đừng gửi PIN hay link riêng" theo chủ dự án, 24/11.)*
 
 #### 6.8.8 Bố cục trang quản trị
