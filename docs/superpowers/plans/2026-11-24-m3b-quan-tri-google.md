@@ -12,11 +12,14 @@
 
 ## Trạng thái (cập nhật 24/11/2026)
 
-**Đã xong Task 0–6** trên nhánh `m3b` (toàn bộ phía server + nút Google cho chủ cây): 247 test server, 431 test web, typecheck sạch. **Dừng trước Task 7** theo yêu cầu chủ dự án. Phiên sau: đọc mục này, `git switch m3b`, làm tiếp **Task 7** (khung trang quản trị web), rồi 8–12, rồi duyệt cả nhánh.
+**Đã xong cả 13 task** (24/11) trên nhánh `m3b`: 247 test server, 460 test web, typecheck sạch, gói quản trị tách riêng. Còn: duyệt cả nhánh, chủ dự án thử tay (danh sách ở `docs/tien-do.md`), PR vào `main`.
 
 Sổ tiến độ chi tiết (bị git bỏ qua, chỉ có trên máy này): `.superpowers/sdd/2026-11-24-m3b-quan-tri-google/progress.md`.
 
 **Quyết định khi làm (lệch nhẹ so với kế hoạch):**
+- Task 7: thêm `apps/web/src/admin/context.ts` (AdminContext); số báo cáo chờ trên thanh bên lấy từ `overview()`.
+- Task 10: sau mỗi hành động ở Tra cứu phòng, ô ghi chú được xoá (mỗi hành động một ghi chú).
+- Task 11: email hỗ trợ ở trang phòng chỉ hiện khi "Không mở được cây này." (không hiện khi 404).
 - Task 2: bỏ 2 kiểm tra cũ "nút Google sắp có bị khoá" (`ReopenDialog.test`, `RoomPage.test`) vì nút đã làm thật.
 - Task 4: `schema.test.ts` vẫn 16 bảng (test này chỉ chạy `0000_init.sql`); `migrate.test.ts`, `room.test.ts` cập nhật 17 bảng / thêm `0005`.
 - Task 4: số lỗi 24 giờ đếm theo ô giờ từ giờ chứa (now − 24h), có thể dư tối đa 1 giờ.
@@ -239,27 +242,27 @@ type AdminTree = {
 - `AdminContext = { email: string; onError(e: unknown): void }`; `onError` với `ApiError` 401 → về màn đăng nhập (đặt `me = null`).
 - `AdminApp`: lúc vào gọi `me()`; 401 → `<AdminLogin>` (một `GoogleButton` + lỗi `not_admin` "Tài khoản này không có quyền quản trị"); có `me` → khung: thanh bên (≥ 900px) / tab trên cùng với Tổng quan · Báo cáo (số chờ) · Tra cứu phòng · Nhật ký · email + Đăng xuất; `<Routes>` con: `''`, `bao-cao`, `phong`, `nhat-ky` (trang con là placeholder ở task này). `useEffect` thêm `<meta name="robots" content="noindex">` và gỡ khi rời trang.
 
-- [ ] **Step 1:** Test: `me` 401 → thấy màn đăng nhập; đăng nhập (mock `GoogleButton` + `adminApi.login`) → thấy thanh bên có email; một trang con ném `ApiError(401)` qua `onError` → về màn đăng nhập và `me` chỉ bị gọi đúng số lần mong đợi (không lặp); 403 `csrf` lần đầu → `me` được gọi lại và yêu cầu thử lại thành công (test trên `adminApi` với `fetch` giả); meta `robots` có khi mở và mất khi gỡ.
-- [ ] **Step 2:** Chạy → FAIL.
-- [ ] **Step 3:** Làm theo Interfaces.
-- [ ] **Step 4:** Chạy test web → PASS. `pnpm --filter @ctln/web build`: có chunk riêng chứa `AdminApp`; chunk chính không chứa chuỗi `"Tài khoản này không có quyền quản trị"` (`grep` trên file `dist/assets/index-*.js`); gzip chunk chính ≤ 250 KB.
-- [ ] **Step 5:** Commit `feat(web): khung trang quản trị /quan-tri (lazy), đăng nhập Google`.
+- [x] **Step 1:** Test: `me` 401 → thấy màn đăng nhập; đăng nhập (mock `GoogleButton` + `adminApi.login`) → thấy thanh bên có email; một trang con ném `ApiError(401)` qua `onError` → về màn đăng nhập và `me` chỉ bị gọi đúng số lần mong đợi (không lặp); 403 `csrf` lần đầu → `me` được gọi lại và yêu cầu thử lại thành công (test trên `adminApi` với `fetch` giả); meta `robots` có khi mở và mất khi gỡ.
+- [x] **Step 2:** Chạy → FAIL.
+- [x] **Step 3:** Làm theo Interfaces.
+- [x] **Step 4:** Chạy test web → PASS. `pnpm --filter @ctln/web build`: có chunk riêng chứa `AdminApp`; chunk chính không chứa chuỗi `"Tài khoản này không có quyền quản trị"` (`grep` trên file `dist/assets/index-*.js`); gzip chunk chính ≤ 250 KB.
+- [x] **Step 5:** Commit `feat(web): khung trang quản trị /quan-tri (lazy), đăng nhập Google`.
 
 ### Task 8: Trang Tổng quan (web)
 
 **Files:** Create `apps/web/src/admin/Overview.tsx`, `Overview.test.tsx`.
 
-- [ ] **Step 1:** Test với `overview()` giả: hiện giai đoạn và đếm ngược tới `next.at`; ba thẻ tổng + "+N trong 24 giờ"; "Báo cáo đang chờ: N" là link `/quan-tri/bao-cao`; lan truyền hiện `0,33` (`viral: null` → "—"); khối Máy chủ hiện lỗi 24 giờ, lần lỗi gần nhất (route + mã), p95 (`null` → "chưa có số liệu"; `latencySince` trong vòng 60 phút → ghi "từ {giờ}"), CSDL "x / 32 GB", kho ảnh (`unknown > 0` → "{n} ảnh chưa rõ dung lượng"), link Azure chỉ khi `azureUrl` khác null; dùng đồng hồ giả: sau 60 giây gọi `overview()` lần 2.
-- [ ] **Step 2:** Chạy → FAIL. **Step 3:** Làm. **Step 4:** Chạy → PASS.
-- [ ] **Step 5:** Commit `feat(web): trang tổng quan quản trị`.
+- [x] **Step 1:** Test với `overview()` giả: hiện giai đoạn và đếm ngược tới `next.at`; ba thẻ tổng + "+N trong 24 giờ"; "Báo cáo đang chờ: N" là link `/quan-tri/bao-cao`; lan truyền hiện `0,33` (`viral: null` → "—"); khối Máy chủ hiện lỗi 24 giờ, lần lỗi gần nhất (route + mã), p95 (`null` → "chưa có số liệu"; `latencySince` trong vòng 60 phút → ghi "từ {giờ}"), CSDL "x / 32 GB", kho ảnh (`unknown > 0` → "{n} ảnh chưa rõ dung lượng"), link Azure chỉ khi `azureUrl` khác null; dùng đồng hồ giả: sau 60 giây gọi `overview()` lần 2.
+- [x] **Step 2:** Chạy → FAIL. **Step 3:** Làm. **Step 4:** Chạy → PASS.
+- [x] **Step 5:** Commit `feat(web): trang tổng quan quản trị`.
 
 ### Task 9: Trang Báo cáo (web)
 
 **Files:** Create `apps/web/src/admin/Reports.tsx`, `Reports.test.tsx`.
 
-- [ ] **Step 1:** Test: tab "Đang chờ" / "Đã xử lý" gọi `reports('open' | 'handled')`; bấm một báo cáo → chi tiết có bản chụp chữ, `<img src={reportPhotoUrl(id)}>` chỉ khi `hasPhoto`, mã phòng là link `/quan-tri/phong?id=…`; ba nút; ghi chú trống → nút khoá; báo cáo cả phòng (`messageId: null`) không có nút xoá lời nhắn; `messageExists: false` → nút xoá lời nhắn khoá kèm chữ "Lời nhắn đã bị xoá"; xoá lời nhắn / xoá phòng mở `ConfirmDialog`, xác nhận → `resolve(id, action, note)` → báo cáo rời danh sách; 409 `already_handled` → thông báo và tải lại danh sách.
-- [ ] **Step 2:** FAIL. **Step 3:** Làm. **Step 4:** PASS.
-- [ ] **Step 5:** Commit `feat(web): hàng đợi báo cáo quản trị`.
+- [x] **Step 1:** Test: tab "Đang chờ" / "Đã xử lý" gọi `reports('open' | 'handled')`; bấm một báo cáo → chi tiết có bản chụp chữ, `<img src={reportPhotoUrl(id)}>` chỉ khi `hasPhoto`, mã phòng là link `/quan-tri/phong?id=…`; ba nút; ghi chú trống → nút khoá; báo cáo cả phòng (`messageId: null`) không có nút xoá lời nhắn; `messageExists: false` → nút xoá lời nhắn khoá kèm chữ "Lời nhắn đã bị xoá"; xoá lời nhắn / xoá phòng mở `ConfirmDialog`, xác nhận → `resolve(id, action, note)` → báo cáo rời danh sách; 409 `already_handled` → thông báo và tải lại danh sách.
+- [x] **Step 2:** FAIL. **Step 3:** Làm. **Step 4:** PASS.
+- [x] **Step 5:** Commit `feat(web): hàng đợi báo cáo quản trị`.
 
 ### Task 10: Trang Tra cứu phòng + Nhật ký (web)
 
@@ -267,9 +270,9 @@ type AdminTree = {
 
 **Interfaces — Consumes:** `parseTreeRef(input)` trong `apps/web/src/lib/treeRef.ts` (trả `{ id, key? }`), `api.roomImageUrl(id)`.
 
-- [ ] **Step 1:** Test `TreeLookup`: nhập `https://x/c/abc12345#k=SECRET` → `adminApi.tree` được gọi với `'abc12345'` và **không** lời gọi nào chứa `SECRET`; URL trang thành `?id=abc12345`; mở với `?id=` tự tra; hiện các số liệu, ảnh `roomImageUrl`, "PIN đang bị khoá đến {giờ}" khi `lockedUntil`; ba nút đều qua `ConfirmDialog`; xoá phòng bắt ghi chú; 404 → "Không tìm thấy cây này". Test `AuditLog`: hiện danh sách, "Xem thêm" gọi `audit(nextBefore)` và nối thêm, ẩn khi `nextBefore: null`.
-- [ ] **Step 2:** FAIL. **Step 3:** Làm. **Step 4:** PASS.
-- [ ] **Step 5:** Commit `feat(web): tra cứu phòng và nhật ký quản trị`.
+- [x] **Step 1:** Test `TreeLookup`: nhập `https://x/c/abc12345#k=SECRET` → `adminApi.tree` được gọi với `'abc12345'` và **không** lời gọi nào chứa `SECRET`; URL trang thành `?id=abc12345`; mở với `?id=` tự tra; hiện các số liệu, ảnh `roomImageUrl`, "PIN đang bị khoá đến {giờ}" khi `lockedUntil`; ba nút đều qua `ConfirmDialog`; xoá phòng bắt ghi chú; 404 → "Không tìm thấy cây này". Test `AuditLog`: hiện danh sách, "Xem thêm" gọi `audit(nextBefore)` và nối thêm, ẩn khi `nextBefore: null`.
+- [x] **Step 2:** FAIL. **Step 3:** Làm. **Step 4:** PASS.
+- [x] **Step 5:** Commit `feat(web): tra cứu phòng và nhật ký quản trị`.
 
 ### Task 11: Email hỗ trợ (web)
 
@@ -277,14 +280,14 @@ type AdminTree = {
 
 **Interfaces — Produces:** `<SupportHint />` — `useConfig()?.supportEmail` null → không render; có → "Cần giúp? Gửi mã cây và mô tả vấn đề tới {email} (đừng gửi PIN hay link riêng)." với `mailto:`.
 
-- [ ] **Step 1:** Test: ẩn khi `supportEmail: null`; Home có chân trang với email; `ReopenDialog`/`OwnerLogin` hiện `SupportHint` khi lỗi `pin_locked` có `retryAt` > 60 phút, khi `not_owner`, khi Google không có cây; `RoomPage` hiện khi "Không mở được cây này."
-- [ ] **Step 2:** FAIL. **Step 3:** Làm. **Step 4:** PASS.
-- [ ] **Step 5:** Commit `feat(web): email hỗ trợ`.
+- [x] **Step 1:** Test: ẩn khi `supportEmail: null`; Home có chân trang với email; `ReopenDialog`/`OwnerLogin` hiện `SupportHint` khi lỗi `pin_locked` có `retryAt` > 60 phút, khi `not_owner`, khi Google không có cây; `RoomPage` hiện khi "Không mở được cây này."
+- [x] **Step 2:** FAIL. **Step 3:** Làm. **Step 4:** PASS.
+- [x] **Step 5:** Commit `feat(web): email hỗ trợ`.
 
 ### Task 12: Kiểm tra cuối + tài liệu
 
-- [ ] **Step 1:** `pnpm test` và `pnpm typecheck` → tất cả qua; ghi số test.
-- [ ] **Step 2:** `pnpm --filter @ctln/web build` → ghi kích thước gzip chunk chính và chunk quản trị.
-- [ ] **Step 3:** Chạy thật: `pnpm db:up`, `pnpm dev`; `pnpm db:migrate` báo chạy `0005_admin_metrics.sql`; mở `http://localhost:5173/quan-tri`, đăng nhập Google bằng email bootstrap; mở `/tao` thấy nút Google.
-- [ ] **Step 4:** Cập nhật `docs/tien-do.md`: trạng thái M3b, số test, danh sách thử tay M3b (đăng nhập quản trị; email khác bị từ chối; tổng quan; báo cáo 3 hành động; tra cứu + 3 hành động; nhật ký; Google tạo cây / mở lại / chào chủ cây; email hỗ trợ), việc M4 (thêm nguồn Azure vào Google Cloud, Publish app, `ADMIN_AZURE_URL`, `SUPPORT_EMAIL`, `ADMIN_BOOTSTRAP_EMAIL` trong App Service).
-- [ ] **Step 5:** Commit `docs: tiến độ M3b`.
+- [x] **Step 1:** `pnpm test` và `pnpm typecheck` → tất cả qua; ghi số test.
+- [x] **Step 2:** `pnpm --filter @ctln/web build` → ghi kích thước gzip chunk chính và chunk quản trị.
+- [x] **Step 3:** Chạy thật: `pnpm db:up`, `pnpm dev`; `pnpm db:migrate` báo chạy `0005_admin_metrics.sql`; mở `http://localhost:5173/quan-tri`, đăng nhập Google bằng email bootstrap; mở `/tao` thấy nút Google.
+- [x] **Step 4:** Cập nhật `docs/tien-do.md`: trạng thái M3b, số test, danh sách thử tay M3b (đăng nhập quản trị; email khác bị từ chối; tổng quan; báo cáo 3 hành động; tra cứu + 3 hành động; nhật ký; Google tạo cây / mở lại / chào chủ cây; email hỗ trợ), việc M4 (thêm nguồn Azure vào Google Cloud, Publish app, `ADMIN_AZURE_URL`, `SUPPORT_EMAIL`, `ADMIN_BOOTSTRAP_EMAIL` trong App Service).
+- [x] **Step 5:** Commit `docs: tiến độ M3b`.
