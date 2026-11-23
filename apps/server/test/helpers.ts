@@ -5,8 +5,11 @@ import { runMigrations } from '../src/db/migrate.js';
 import { loadEnv } from '../src/env.js';
 import { memoryStore } from '../src/storage/memory.js';
 
+/** `ok:SUB` → { sub }; `ok:SUB:EMAIL` → có email đã xác minh; `unverified:SUB:EMAIL` → email chưa xác minh. */
 export const FakeGoogle: GoogleVerifier = async (token) => {
-  if (token.startsWith('ok:')) return { sub: token.slice(3) };
+  const [kind, sub, email] = token.split(':');
+  if (kind === 'ok' && sub && email === undefined) return { sub };
+  if ((kind === 'ok' || kind === 'unverified') && sub && email) return { sub, email, emailVerified: kind === 'ok' };
   throw new Error('invalid token');
 };
 

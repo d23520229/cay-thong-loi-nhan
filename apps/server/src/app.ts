@@ -16,7 +16,7 @@ import { ownerRoutes } from './routes/owner.js';
 import { roomRoutes } from './routes/room.js';
 import { treesRoutes } from './routes/trees.js';
 
-export type GoogleVerifier = (idToken: string) => Promise<{ sub: string; name?: string }>;
+export type GoogleVerifier = (idToken: string) => Promise<{ sub: string; name?: string; email?: string; emailVerified?: boolean }>;
 export type AppDeps = {
   db: DbHandle;
   env: Env;
