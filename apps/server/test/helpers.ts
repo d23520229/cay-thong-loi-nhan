@@ -30,3 +30,16 @@ export async function seedTree(h: { db: import('../src/db/client.js').Db }, id: 
   const { trees } = await import('../src/db/schema.js');
   await h.db.insert(trees).values({ id, ownerName: 'Chủ cây', privateKeyHash: 'x', pinHash: 'x' });
 }
+
+export const ADMIN_EMAIL = 'admin@test.vn';
+export const ADMIN_ENV = { ADMIN_BOOTSTRAP_EMAIL: ADMIN_EMAIL };
+
+/** Đăng nhập quản trị bằng email bootstrap; trả cookie (`ctln_admin=…`) và token CSRF. */
+export async function adminLogin(app: import('fastify').FastifyInstance): Promise<{ cookie: string; csrf: string }> {
+  const r = await app.inject({
+    method: 'POST', url: '/api/admin/auth/google', headers: { 'content-type': 'application/json' },
+    payload: { idToken: `ok:admin-sub:${ADMIN_EMAIL}` },
+  });
+  if (r.statusCode !== 200) throw new Error(`adminLogin ${r.statusCode} ${r.body}`);
+  return { cookie: String(r.headers['set-cookie']).split(';')[0]!, csrf: r.json().csrfToken as string };
+}

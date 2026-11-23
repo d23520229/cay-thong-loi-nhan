@@ -15,6 +15,8 @@ import type { OgRoom } from './og/render.js';
 import { ownerRoutes } from './routes/owner.js';
 import { roomRoutes } from './routes/room.js';
 import { treesRoutes } from './routes/trees.js';
+import { adminRoutes } from './routes/admin/index.js';
+import { ensureBootstrapAdmin } from './admin/bootstrap.js';
 
 export type GoogleVerifier = (idToken: string) => Promise<{ sub: string; name?: string; email?: string; emailVerified?: boolean }>;
 export type AppDeps = {
@@ -75,7 +77,8 @@ export async function buildApp(deps: AppDeps, opts: { logStream?: { write(msg: s
   app.addHook('onRequest', async (req, reply) => {
     const path = req.url.split('?')[0]!;
     if (!path.startsWith('/api/') || path === '/api/config') return;
-    if (phaseOf(app).phase === 'ENDED') {
+    // Quản trị vẫn chạy sau 01/01/2027 đến ngày xoá dữ liệu (đặc tả 6.8.2).
+    if (phaseOf(app).phase === 'ENDED' && !path.startsWith('/api/admin/')) {
       return reply.code(410).send(body('service_ended', 'Mùa Noel đã kết thúc, cảm ơn bạn!'));
     }
     const hasBody = Number(req.headers['content-length'] ?? 0) > 0 || req.headers['transfer-encoding'] !== undefined;
@@ -116,6 +119,11 @@ export async function buildApp(deps: AppDeps, opts: { logStream?: { write(msg: s
     return reply.code(500).send(body('internal', 'Có lỗi xảy ra, thử lại sau nhé.'));
   });
 
+  app.addHook('onSend', async (req, reply) => {
+    const path = req.url.split('?')[0]!;
+    if (path.startsWith('/api/admin') || path.startsWith('/quan-tri')) reply.header('x-robots-tag', 'noindex');
+  });
+
   app.get('/healthz', async () => ({ ok: true }));
   await app.register(configRoutes);
   await app.register(ogRoutes);
@@ -124,5 +132,7 @@ export async function buildApp(deps: AppDeps, opts: { logStream?: { write(msg: s
   await app.register(authRoutes);
   await app.register(messagesRoutes);
   await app.register(ownerRoutes);
+  await app.register(adminRoutes);
+  await ensureBootstrapAdmin(deps.db.db, deps.env.adminBootstrapEmail);
   return app;
 }
