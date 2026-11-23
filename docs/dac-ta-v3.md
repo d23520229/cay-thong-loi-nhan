@@ -530,6 +530,8 @@ Lớp phụ kiện (`SlotsLayer`) hiện chỉ vẽ khi đã zoom vào cây. S�
 
 **Thẻ lời nhắn của chủ cây** (thay nội dung `MessageCard`, giữ tiêu đề, "‹ Trước" / "Sau ›", Xoá / Chặn / Báo cáo): hiện tấm thiệp, thêm nút **"⬇ Tải ảnh"**. **Chạm thiệp → xem toàn màn hình:** trên điện thoại dọc thiệp xoay 90° cho lấp màn hình, chụm hai ngón để phóng to; chạm lần nữa hoặc nút ✕ để đóng (Escape trên máy tính). *(Phương án A, chủ dự án chọn 23/11.)*
 
+**Khung thiệp (chủ dự án chốt 24/11):** bước xem trước của khách và thẻ lời nhắn của chủ cây **không nằm trong bảng trượt** mà hiện thành một khung phủ toàn trang (nền tối, thiệp ở giữa, tiêu đề + ✕ phía trên, các nút ngay dưới thiệp). Thiệp co theo bề ngang: điện thoại rộng hết màn hình; màn từ 900px trở lên rộng 2/3 bề ngang, thu lại nếu màn thấp để thiệp và nút không tràn. "‹ Sửa lại" quay về bảng viết thường. Vẫn giữ chạm thiệp → xem toàn màn hình xoay 90° (điện thoại dọc). Làm bằng lớp `cd-frame` trên `Sheet` (`card/card.css`), giữ nguyên giữ tiêu điểm / Escape của `Sheet`.
+
 #### 6.7.4 Tải ảnh (O7)
 
 - **Ảnh phòng:** `GET /api/trees/:id/image.png` (công khai như `GET /api/trees/:id`). Ghép bằng bộ vẽ OG (`og/render.ts`, tách phần vẽ phòng 720 × 1080 dùng chung) ở tỉ lệ 1,5 (1080 × 1620), có phụ kiện đã treo (`filled`), không có chữ hay nội dung lời nhắn. `Content-Disposition: attachment; filename="cay-thong-{id}.png"`, lưu đệm như ảnh OG, ghi `events` loại `image_downloaded`. Nút: chủ cây trong Sheet "Chia sẻ" ("⬇ Tải ảnh phòng"); khách thêm một nút chữ trong khối nút dưới (tính lại `GUEST_BOTTOM_RESERVE`).
