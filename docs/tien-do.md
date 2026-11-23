@@ -23,6 +23,14 @@ Chuẩn bị: **tắt `pnpm dev` cũ rồi bật lại** (bản đang chạy đ�
 7. Email hỗ trợ: chân trang chủ có "Cần giúp? …"; bấm mở ứng dụng thư.
 8. Điện thoại: `/quan-tri` dùng được (thanh tab trên cùng, bảng thành thẻ).
 
+**Việc nhỏ còn lại từ lượt duyệt M3b (24/11, chưa sửa, không ảnh hưởng riêng tư):**
+- Xoá phòng (từ báo cáo) song song với "Bỏ qua" ở tab khác → tab sau nhận 404 thay vì 409 (web đã tự tải lại).
+- Hiếm: quản trị xoá lời nhắn đúng lúc chủ cây xoá cây có thể deadlock (500, thử lại được). Cách sửa: trong `delete_message` khoá dòng cây trước.
+- Phiên quản trị được tạo ngoài giao dịch ghi nhật ký `login`.
+- Ảnh phòng ở Tra cứu phòng dùng `/api/trees/:id/image.png` nên mỗi lần tra ghi một event `image_downloaded` và vỡ ảnh sau 01/01/2027.
+- Đổi tab Báo cáo rất nhanh có thể để phản hồi cũ ghi đè danh sách.
+- Đăng xuất quản trị khi mất mạng vẫn về màn đăng nhập nhưng phiên còn hiệu lực.
+
 **Việc cho M4 (thêm từ M3b):** Google Cloud: thêm địa chỉ Azure vào *Authorized JavaScript origins* và bấm *Publish app*; App Service đặt `GOOGLE_CLIENT_ID`, `ADMIN_BOOTSTRAP_EMAIL`, `SUPPORT_EMAIL`, `ADMIN_AZURE_URL` (link resource group), `DB_QUOTA_GB` đúng dung lượng đã chọn; dọn `error_counts` cùng các bảng khác ngày 07/01/2027.
 **Để cuối, nếu chủ dự án muốn:** chặn thiết bị người viết từ báo cáo; đổi link riêng / PIN (O8) — đặc tả 6.8.
 
