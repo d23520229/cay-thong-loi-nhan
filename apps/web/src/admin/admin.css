@@ -1,0 +1,45 @@
+/* Trang quản trị (đặc tả 6.8.8): cùng bảng màu, gọn và nhiều thông tin hơn. */
+.adm-login { max-width: 420px; margin: 10vh auto; padding: 0 16px; display: flex; flex-direction: column; gap: 14px; }
+.adm-login h1 { font-family: var(--font-title); font-size: 44px; margin: 0; }
+
+.adm { min-height: 100vh; display: flex; flex-direction: column; }
+.adm-nav { display: flex; gap: 4px; overflow-x: auto; padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line); }
+.adm-nav a { flex: none; min-height: 44px; display: flex; align-items: center; padding: 0 12px; border-radius: 12px; color: var(--text); text-decoration: none; font-size: 17px; }
+.adm-nav a.active { background: var(--chip); color: var(--gold); }
+.adm-badge { color: var(--gold); font-weight: 700; }
+.adm-who { margin-left: auto; display: flex; align-items: center; gap: 8px; flex: none; color: var(--muted); font-size: 15px; }
+.adm-main { flex: 1; padding: 16px; max-width: 1100px; width: 100%; margin: 0 auto; font-family: system-ui, sans-serif; font-size: 15px; }
+.adm-main h1 { font-family: var(--font-title); font-size: 38px; margin: 0 0 12px; }
+.adm-main h2 { font-size: 18px; margin: 18px 0 8px; color: var(--muted); }
+
+.adm-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; }
+.adm-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px; }
+.adm-card .lab { color: var(--muted); font-size: 13px; }
+.adm-card .big { font-size: 26px; font-weight: 700; }
+.adm-card .sub { color: var(--muted); font-size: 13px; }
+.adm-card a { color: var(--gold); }
+
+.adm-split { display: grid; gap: 12px; }
+.adm-list { display: flex; flex-direction: column; gap: 6px; }
+.adm-item { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 10px; color: var(--text); font: inherit; cursor: pointer; }
+.adm-item[aria-pressed='true'] { border-color: var(--gold); }
+.adm-detail { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+.adm-detail img { max-width: 100%; max-height: 320px; border-radius: 10px; object-fit: contain; }
+.adm-quote { white-space: pre-wrap; background: var(--chip); border-radius: 10px; padding: 10px; }
+.adm-main textarea { min-height: 70px; width: 100%; padding: 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--chip); color: var(--text); font: inherit; }
+.adm-room { max-width: 240px; border-radius: 12px; }
+.adm-table { width: 100%; border-collapse: collapse; }
+.adm-table th, .adm-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+
+@media (min-width: 900px) {
+  .adm { flex-direction: row; }
+  .adm-nav { flex-direction: column; width: 220px; border-bottom: 0; border-right: 1px solid var(--line); min-height: 100vh; overflow: visible; }
+  .adm-who { margin-left: 0; margin-top: auto; flex-direction: column; align-items: flex-start; }
+  .adm-split { grid-template-columns: minmax(260px, 1fr) 1.4fr; align-items: start; }
+}
+
+@media (max-width: 640px) {
+  .adm-table thead { display: none; }
+  .adm-table tr { display: block; border-bottom: 1px solid var(--line); padding: 6px 0; }
+  .adm-table td { display: block; border: 0; padding: 2px 0; }
+}

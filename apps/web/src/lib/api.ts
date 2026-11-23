@@ -75,7 +75,7 @@ export type OpenedMessage = {
 
 type RequestOpts = { keepalive?: boolean; headers?: Record<string, string>; as?: 'blob' };
 
-async function request<T>(method: string, path: string, body?: unknown, opts?: RequestOpts): Promise<T> {
+export async function request<T>(method: string, path: string, body?: unknown, opts?: RequestOpts): Promise<T> {
   const headers: Record<string, string> = { 'x-device-id': storage.deviceId(), ...opts?.headers };
   if (body !== undefined) headers['content-type'] = 'application/json';
   let res: Response;
