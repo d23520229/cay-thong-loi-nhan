@@ -59,14 +59,17 @@ export function Reports() {
     setError('');
     try {
       await adminApi.resolve(cur.id, action, note.trim());
-      setItems((list) => list?.filter((r) => r.id !== cur.id) ?? null);
       setSel(null);
       setNote('');
       refreshCount();
+      // Xoá phòng kéo theo mọi báo cáo khác của phòng đó: tải lại thay vì chỉ bỏ một dòng.
+      if (action === 'delete_tree') void load(tab);
+      else setItems((list) => list?.filter((r) => r.id !== cur.id) ?? null);
     } catch (e) {
       setError(onError(e));
-      if (e instanceof ApiError && e.status === 409 && e.code === 'already_handled') {
-        setSel(null);
+      // Trạng thái đã đổi ở nơi khác (đã xử lý, lời nhắn / phòng đã bị xoá): tải lại cho đúng.
+      if (e instanceof ApiError && (e.status === 409 || e.status === 404)) {
+        if (e.code === 'already_handled' || e.status === 404) setSel(null);
         void load(tab);
         refreshCount();
       }

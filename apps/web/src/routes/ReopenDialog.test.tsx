@@ -167,5 +167,16 @@ describe('ReopenDialog', () => {
       expect(await screen.findByText('Phòng đã mở')).toBeInTheDocument();
       expect(mocked.authGoogle).toHaveBeenLastCalledWith(GTOKEN, 'xyz98765');
     });
+
+    it('token Google hết hạn khi đang chọn cây → báo lỗi và hiện lại nút Google', async () => {
+      mocked.authGoogle
+        .mockResolvedValueOnce({ trees: [{ id: 'abc12345', title: 'Cây A' }, { id: 'xyz98765', title: null }] })
+        .mockRejectedValueOnce(new ApiError(400, 'google_invalid', 'x'));
+      renderDialog();
+      await userEvent.click(screen.getByRole('button', { name: 'Google giả' }));
+      await userEvent.click(await screen.findByRole('button', { name: 'xyz98765' }));
+      expect(await screen.findByText('Đăng nhập Google chưa thành công, thử lại nhé.')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Google giả' })).toBeInTheDocument();
+    });
   });
 });

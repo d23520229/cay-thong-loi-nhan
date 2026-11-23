@@ -113,4 +113,28 @@ describe('Báo cáo', () => {
     expect(within(detail()).getByText('delete_message: vi phạm')).toBeInTheDocument();
     expect(within(detail()).queryByRole('button', { name: 'Bỏ qua' })).not.toBeInTheDocument();
   });
+
+  it('xoá phòng xong tải lại danh sách: báo cáo khác của cùng phòng cũng biến mất', async () => {
+    mocked.reports.mockResolvedValueOnce({ items: [OWNER, GUEST] }).mockResolvedValueOnce({ items: [] });
+    mocked.resolve.mockResolvedValue({ ok: true });
+    renderPage();
+    await open('lời nhắn xấu');
+    await userEvent.type(within(detail()).getByLabelText('Ghi chú'), 'vi phạm');
+    await userEvent.click(within(detail()).getByRole('button', { name: 'Xoá phòng' }));
+    await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Xoá' }));
+    await waitFor(() => expect(mocked.reports).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(screen.queryByRole('button', { name: /phòng xấu/ })).not.toBeInTheDocument());
+  });
+
+  it('lời nhắn vừa bị xoá ở nơi khác (409 message_gone) → tải lại, nút xoá lời nhắn bị khoá', async () => {
+    mocked.reports.mockResolvedValueOnce({ items: [OWNER] }).mockResolvedValueOnce({ items: [{ ...OWNER, messageExists: false }] });
+    mocked.resolve.mockRejectedValue(new ApiError(409, 'message_gone', 'Lời nhắn đã bị xoá trước đó.'));
+    renderPage();
+    await open('lời nhắn xấu');
+    await userEvent.type(within(detail()).getByLabelText('Ghi chú'), 'x');
+    await userEvent.click(within(detail()).getByRole('button', { name: 'Xoá lời nhắn' }));
+    await userEvent.click(within(screen.getByRole('alertdialog')).getByRole('button', { name: 'Xoá' }));
+    expect(await within(detail()).findByText('Lời nhắn đã bị xoá')).toBeInTheDocument();
+    expect(within(detail()).getByRole('button', { name: 'Xoá lời nhắn' })).toBeDisabled();
+  });
 });

@@ -70,6 +70,8 @@ export function ReopenDialog({ onClose }: { onClose: () => void }) {
     } catch (e) {
       setError(authErrorMessage(e));
       setStuck(needsSupport(e));
+      // idToken hết hạn khi đang chọn cây: bỏ danh sách để hiện lại nút Google.
+      if (e instanceof ApiError && e.code === 'google_invalid') setGoogle(null);
     } finally {
       busy.current = false;
       setPending(false);

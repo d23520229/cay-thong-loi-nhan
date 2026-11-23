@@ -126,6 +126,8 @@ export async function buildApp(deps: AppDeps, opts: { logStream?: { write(msg: s
   app.addHook('onSend', async (req, reply) => {
     const path = req.url.split('?')[0]!;
     if (path.startsWith('/api/admin') || path.startsWith('/quan-tri')) reply.header('x-robots-tag', 'noindex');
+    // API quản trị trả token CSRF và bản chụp lời nhắn: không cho lưu đệm.
+    if (path.startsWith('/api/admin') && !reply.hasHeader('cache-control')) reply.header('cache-control', 'no-store');
   });
 
   // Khối "Máy chủ" của Tổng quan (đặc tả 6.8.3): đo thời gian /api/*, đếm lỗi 5xx theo mẫu route.

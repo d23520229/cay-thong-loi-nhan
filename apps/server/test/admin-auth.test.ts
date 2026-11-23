@@ -80,6 +80,7 @@ describe('phiên quản trị', () => {
     expect(ok.statusCode).toBe(200);
     expect(ok.json()).toEqual({ email: ADMIN_EMAIL, csrfToken: a.csrf });
     expect(ok.headers['x-robots-tag']).toBe('noindex');
+    expect(ok.headers['cache-control']).toBe('no-store');
     t.clock.set('2026-12-01T22:00:01+07:00');
     expect((await me(a.cookie)).statusCode).toBe(401);
   });
