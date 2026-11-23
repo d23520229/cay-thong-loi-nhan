@@ -33,6 +33,7 @@ const SLOT_FX_MS = 950;
 const NOT_EDITABLE = 'Lời nhắn này không sửa được nữa';
 const SEND_FAILED = 'Chưa gửi được, thử lại nhé';
 const LOAD_FAILED = 'Chưa tải được, thử lại nhé';
+const PHOTO_LOAD_FAILED = 'Chưa tải được ảnh cũ — ảnh vẫn giữ nguyên nếu bạn không đổi';
 
 /** Lỗi không tới được server hoặc server hỏng (trừ tạm dừng khẩn cấp có thông báo riêng). */
 const isTransport = (e: ApiError) => e.status === 0 || (e.status >= 500 && e.code !== 'paused');
@@ -149,8 +150,13 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
       // Ảnh đang có chỉ để xem; không đổi ảnh thì không gửi lại (base64 rỗng).
       let photo: PreparedPhoto | null = null;
       if (msg.hasPhoto) {
-        const b = await api.getMyPhoto(m.messageId, m.editToken);
-        if (b) photo = { bitmap: await bitmapFromBlob(b), base64: '' };
+        // Tải ảnh cũ lỗi vẫn mở bảng sửa: không đổi ảnh thì server giữ nguyên (không gửi trường photo).
+        try {
+          const b = await api.getMyPhoto(m.messageId, m.editToken);
+          if (b) photo = { bitmap: await bitmapFromBlob(b), base64: '' };
+        } catch {
+          toast(PHOTO_LOAD_FAILED);
+        }
       }
       setDraft({ ornament: msg.ornament, anonymous: msg.anonymous, authorName: msg.authorName ?? '', content: msg.content, photo, photoChanged: false });
       setError(null);

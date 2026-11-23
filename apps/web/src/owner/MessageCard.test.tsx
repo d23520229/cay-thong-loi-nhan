@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import type { OpenedMessage } from '../lib/api';
@@ -49,10 +49,30 @@ describe('MessageCard', () => {
 
   it('nút ⬇ Tải ảnh gọi renderCardBlob + downloadCard', async () => {
     card({ slotIndex: 2 });
-    await userEvent.click(screen.getByRole('button', { name: '⬇ Tải ảnh' }));
+    await userEvent.click(await screen.findByRole('button', { name: '⬇ Tải ảnh' }));
     await vi.waitFor(() => expect(downloadCard).toHaveBeenCalledTimes(1));
     expect(renderCardBlob).toHaveBeenCalledWith(expect.objectContaining({ content: 'Chúc mừng', sign: '— An', sentAt: '2026-11-21T13:05:00Z' }));
     expect(downloadCard).toHaveBeenCalledWith(expect.any(Blob), 'loi-nhan-3.png');
+  });
+
+  it('chưa dựng xong → nút khoá, chữ "Đang chuẩn bị…"; dựng xong thì mở', async () => {
+    let done!: (b: Blob) => void;
+    renderCardBlob.mockImplementationOnce(() => new Promise<Blob>((res) => { done = res; }));
+    card();
+    const btn = screen.getByRole('button', { name: 'Đang chuẩn bị…' });
+    expect(btn).toBeDisabled();
+    await act(async () => { done(new Blob(['x'], { type: 'image/png' })); });
+    expect(screen.getByRole('button', { name: '⬇ Tải ảnh' })).toBeEnabled();
+  });
+
+  it('dựng sẵn lỗi → mở khoá, bấm vẫn thử dựng lại', async () => {
+    renderCardBlob.mockClear();
+    downloadCard.mockClear();
+    renderCardBlob.mockRejectedValueOnce(new Error('hỏng'));
+    card();
+    await userEvent.click(await screen.findByRole('button', { name: '⬇ Tải ảnh' }));
+    await vi.waitFor(() => expect(downloadCard).toHaveBeenCalledTimes(1));
+    expect(renderCardBlob).toHaveBeenCalledTimes(2);
   });
 
   it('dùng ảnh dựng sẵn, không dựng lại khi bấm', async () => {
@@ -71,7 +91,7 @@ describe('MessageCard', () => {
     downloadCard.mockClear();
     downloadCard.mockResolvedValueOnce('cancelled');
     card({ onNotice });
-    await userEvent.click(screen.getByRole('button', { name: '⬇ Tải ảnh' }));
+    await userEvent.click(await screen.findByRole('button', { name: '⬇ Tải ảnh' }));
     await vi.waitFor(() => expect(downloadCard).toHaveBeenCalledTimes(1));
     expect(onNotice).not.toHaveBeenCalled();
     downloadCard.mockRejectedValueOnce(new Error('x'));

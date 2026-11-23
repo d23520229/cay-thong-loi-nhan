@@ -12,7 +12,11 @@ export type CardAssets = { plain: HTMLImageElement; photoBg: HTMLImageElement; p
 // Đợi phông chữ thiệp tải xong (kèm ký tự tiếng Việt) trước khi vẽ, nếu không canvas sẽ vẽ bằng phông dự phòng.
 export async function ensureCardFonts(): Promise<void> {
   if (typeof document === 'undefined' || !document.fonts) return;
-  await Promise.all([document.fonts.load('16px Mynerve', 'Ểữ'), document.fonts.load('16px "Grape Nuts"', 'Ểữ')]);
+  try {
+    await Promise.all([document.fonts.load('16px Mynerve', 'Ểữ'), document.fonts.load('16px "Grape Nuts"', 'Ểữ')]);
+  } catch {
+    // Phông lỗi: vẽ bằng phông dự phòng còn hơn không vẽ được thiệp.
+  }
 }
 
 const loadImage = (path: string) =>

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { catalog } from '../lib/catalog';
 import './card.css';
 import { drawCard, ensureCardFonts, loadCardAssets, type CardData } from './draw';
@@ -6,11 +6,13 @@ import { drawCard, ensureCardFonts, loadCardAssets, type CardData } from './draw
 /** Thiệp vẽ trên canvas; vẽ ở bề rộng thật × devicePixelRatio, vẽ lại khi đổi cỡ. */
 export function CardCanvas({ data, onTap }: { data: CardData; onTap?: () => void }) {
   const ref = useRef<HTMLCanvasElement>(null);
+  const [failed, setFailed] = useState(false);
 
   useEffect(() => {
     const canvas = ref.current;
     if (!canvas) return;
     let alive = true;
+    setFailed(false);
     let ready: Awaited<ReturnType<typeof loadCardAssets>> | null = null;
 
     const paint = () => {
@@ -29,7 +31,9 @@ export function CardCanvas({ data, onTap }: { data: CardData; onTap?: () => void
         ready = a;
         paint();
       })
-      .catch(() => {});
+      .catch(() => {
+        if (alive) setFailed(true);
+      });
 
     const ro = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(paint);
     ro?.observe(canvas);
@@ -39,5 +43,21 @@ export function CardCanvas({ data, onTap }: { data: CardData; onTap?: () => void
     };
   }, [data]);
 
-  return <canvas ref={ref} className="cd-canvas" role="img" aria-label={`${data.content} ${data.sign}`} onClick={onTap} />;
+  return (
+    <>
+      {failed && (
+        <div className="cd-fail" role="alert">
+          Chưa tải được thiệp, thử tải lại trang nhé
+        </div>
+      )}
+      <canvas
+        ref={ref}
+        className="cd-canvas"
+        style={failed ? { display: 'none' } : undefined}
+        role="img"
+        aria-label={`${data.content} ${data.sign}`}
+        onClick={onTap}
+      />
+    </>
+  );
 }

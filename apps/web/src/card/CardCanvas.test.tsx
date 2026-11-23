@@ -9,6 +9,7 @@ vi.mock('./draw', () => ({
   drawCard: vi.fn(() => { order.push('draw'); }),
 }));
 import { CardCanvas } from './CardCanvas';
+import { loadCardAssets } from './draw';
 
 const data = { content: 'Chúc mừng', sign: '— An', sentAt: '2026-12-24T13:05:00Z' };
 
@@ -24,6 +25,12 @@ describe('CardCanvas', () => {
     render(<CardCanvas data={data} />);
     await waitFor(() => expect(order).toContain('draw'));
     expect(order.indexOf('fonts')).toBeLessThan(order.indexOf('draw'));
+  });
+
+  it('tải ảnh nền lỗi → hiện câu báo thay cho canvas trống', async () => {
+    vi.mocked(loadCardAssets).mockRejectedValueOnce(new Error('hỏng'));
+    render(<CardCanvas data={data} />);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Chưa tải được thiệp, thử tải lại trang nhé');
   });
 
   it('aria-label chứa nội dung và ký tên', () => {

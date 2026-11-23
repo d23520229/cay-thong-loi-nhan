@@ -88,9 +88,13 @@ export function Compose({ mode, draft, onChange, editUntil, busy, error, onSubmi
   const [ask, setAsk] = useState<null | 'close' | 'delete'>(null);
   const [step, setStep] = useState<'write' | 'preview'>('write');
   const [measure, setMeasure] = useState<Measure | null>(null);
+  const [measured, setMeasured] = useState(false); // đo xong (kể cả khi không đo được: null)
   useEffect(() => {
     let alive = true;
-    void cardMeasure().then((m) => alive && setMeasure(() => m)).catch(() => {});
+    void cardMeasure()
+      .then((m) => alive && setMeasure(() => m))
+      .catch(() => {})
+      .finally(() => alive && setMeasured(true));
     return () => {
       alive = false;
     };
@@ -143,11 +147,11 @@ export function Compose({ mode, draft, onChange, editUntil, busy, error, onSubmi
   };
   const content = draft.content.trim();
   const name = draft.authorName.trim();
-  const count = [...draft.content].length;
+  const count = [...content].length; // đã trim, khớp cách server đếm
   const sign = signText(draft.anonymous, name);
   // Không đo được (không có canvas) thì bỏ qua kiểm 9 dòng; server vẫn chặn quá 8 xuống dòng.
   const tooLong = !!measure && content.length > 0 && !layoutCard({ text: content, sign, hasPhoto: !!draft.photo, W: CARD_W, measure }).fits;
-  const ok = content.length > 0 && count <= messageMax && (draft.anonymous || name.length > 0) && !expired;
+  const ok = content.length > 0 && count <= messageMax && (draft.anonymous || name.length > 0) && !expired && measured;
   // Ngày trên thiệp xem trước lấy một lần khi vào bước xem trước (giờ server).
   const card = useMemo<CardData | null>(
     () => (step === 'preview' ? { content, sign, sentAt: new Date(serverNow()).toISOString(), photo: draft.photo?.bitmap ?? null } : null),
@@ -233,6 +237,8 @@ export function Compose({ mode, draft, onChange, editUntil, busy, error, onSubmi
           onChange={(e) => set({ content: e.target.value })}
         />
       </label>
+      {!measured ? <div className="notice" role="alert">Đang chuẩn bị khung thiệp…</div> : null}
+      {count > messageMax ? <div className="notice" role="alert">Lời nhắn tối đa {messageMax} ký tự</div> : null}
       {tooLong ? <div className="notice" role="alert">Lời nhắn dài quá khung thiệp, bớt vài dòng nhé</div> : null}
       <div className="row cd-photo">
         {draft.photo ? <PhotoThumb bitmap={draft.photo.bitmap} /> : null}
@@ -242,7 +248,6 @@ export function Compose({ mode, draft, onChange, editUntil, busy, error, onSubmi
             type="file"
             accept="image/*"
             className="cd-file"
-            aria-label="Chọn ảnh"
             disabled={busy || preparing}
             onChange={(e) => void pickPhoto(e.currentTarget)}
           />

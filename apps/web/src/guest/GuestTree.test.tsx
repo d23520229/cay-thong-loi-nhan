@@ -157,7 +157,7 @@ describe('GuestTree', () => {
     await zoom(container);
     mocked.getTree.mockResolvedValue(meta({ slots: slotsWith(0) }));
     await userEvent.click(bubbles()[0]!);
-    await userEvent.upload(screen.getByLabelText('Chọn ảnh'), new File(['x'], 'a.jpg', { type: 'image/jpeg' }));
+    await userEvent.upload(screen.getByLabelText('Kèm ảnh'), new File(['x'], 'a.jpg', { type: 'image/jpeg' }));
     await screen.findByRole('button', { name: 'Gỡ ảnh' });
     await writeAndSend('Chữ của tôi');
     expect(mocked.postMessage).toHaveBeenCalledWith(ID, expect.objectContaining({ photo: 'b64' }));
@@ -247,6 +247,21 @@ describe('GuestTree', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }));
     expect(mocked.editMessage).toHaveBeenCalledWith('9', 'tok', { ornament: 'bell', anonymous: true, content: 'Cũ' });
     expect(bitmap.close).toHaveBeenCalled();
+  });
+
+  it('tải ảnh cũ lỗi mạng → vẫn mở bảng sửa, có toast, lưu không gửi trường photo', async () => {
+    const m = withMine(7);
+    mocked.getMine.mockResolvedValue({ ...mineMsg(new Date(NOW + 7 * 60_000).toISOString()), hasPhoto: true });
+    mocked.getMyPhoto.mockRejectedValue(new Error('mạng đứt'));
+    mocked.editMessage.mockResolvedValue({ ok: true });
+    const { container } = show(m);
+    await zoom(container);
+    await openMine();
+    expect(await screen.findByRole('textbox', { name: /Lời nhắn/ })).toHaveValue('Cũ');
+    expect(toast).toHaveBeenCalledWith('Chưa tải được ảnh cũ — ảnh vẫn giữ nguyên nếu bạn không đổi');
+    await userEvent.click(screen.getByRole('button', { name: 'Xem trước thiệp' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }));
+    expect(mocked.editMessage).toHaveBeenCalledWith('9', 'tok', { ornament: 'bell', anonymous: true, content: 'Cũ' });
   });
 
   it('sửa lời nhắn không có ảnh → không gọi getMyPhoto', async () => {

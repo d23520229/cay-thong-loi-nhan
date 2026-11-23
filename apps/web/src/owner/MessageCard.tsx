@@ -60,13 +60,21 @@ export function MessageCard({ treeId, message: m, slotIndex, hasPrev, hasNext, b
   );
   // Dựng sẵn ảnh để bấm "Tải ảnh" gọi chia sẻ ngay trong thao tác chạm (iOS đòi vậy).
   const ready = useRef<{ data: typeof data; blob: Blob } | null>(null);
+  // Nút khoá tới khi dựng xong; dựng sẵn lỗi thì mở khoá, bấm sẽ thử dựng lại (có báo lỗi nếu vẫn hỏng).
+  const [preparing, setPreparing] = useState(true);
   useEffect(() => {
     let alive = true;
     ready.current = null;
+    setPreparing(true);
     if (loading) return;
-    renderCardBlob(data).then((blob) => {
-      if (alive) ready.current = { data, blob };
-    }, () => {});
+    renderCardBlob(data).then(
+      (blob) => {
+        if (!alive) return;
+        ready.current = { data, blob };
+        setPreparing(false);
+      },
+      () => alive && setPreparing(false),
+    );
     return () => {
       alive = false;
     };
@@ -90,7 +98,7 @@ export function MessageCard({ treeId, message: m, slotIndex, hasPrev, hasNext, b
         <span className="hint">{formatSentAt(m.createdAt)}</span>
       </div>
       {loading ? <div className="cd-canvas cd-loading" aria-busy="true" /> : <CardCanvas data={data} onTap={() => setViewing(true)} />}
-      <button type="button" className="chip cd-save" disabled={saving || loading} onClick={() => void save()}>⬇ Tải ảnh</button>
+      <button type="button" className="chip cd-save" disabled={saving || loading || preparing} onClick={() => void save()}>{preparing && !loading ? 'Đang chuẩn bị…' : '⬇ Tải ảnh'}</button>
       <div className="row" style={{ justifyContent: 'space-between' }}>
         <button type="button" className="chip" disabled={!hasPrev || busy} onClick={onPrev}>‹ Trước</button>
         <button type="button" className="chip" disabled={!hasNext || busy} onClick={onNext}>Sau ›</button>

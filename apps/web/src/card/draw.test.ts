@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest';
-import { drawCard, type CardData } from './draw';
+import { describe, it, expect, vi } from 'vitest';
+import { drawCard, ensureCardFonts, type CardData } from './draw';
 import { catalog } from '../lib/catalog';
 
 type Call = { fn: string; args: unknown[] };
@@ -42,5 +42,16 @@ describe('drawCard', () => {
     const texts = calls.filter((c) => c.fn === 'fillText').map((c) => c.args[0]);
     expect(texts).toContain('24/12 · 20:05');
     expect(texts).toContain('— Một người bạn');
+  });
+});
+
+describe('ensureCardFonts', () => {
+  it('document.fonts.load lỗi → không ném, vẽ bằng phông dự phòng', async () => {
+    vi.stubGlobal('document', { fonts: { load: vi.fn(async () => { throw new Error('phông hỏng'); }) } });
+    try {
+      await expect(ensureCardFonts()).resolves.toBeUndefined();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

@@ -1,9 +1,12 @@
 import { useState } from 'react';
-import { act, render, screen, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import { serverNow } from '../lib/clock';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-vi.mock('../card/measure', () => ({ cardMeasure: async () => (s: string, px: number) => [...s].length * px * 0.5 }));
+const gate = vi.hoisted(() => ({ pending: null as Promise<unknown> | null }));
+vi.mock('../card/measure', () => ({
+  cardMeasure: () => gate.pending ?? Promise.resolve((s: string, px: number) => [...s].length * px * 0.5),
+}));
 vi.mock('../card/CardCanvas', () => ({
   CardCanvas: ({ data }: { data: { content: string; sign: string; sentAt: string; photo?: { id?: string } | null } }) => (
     <div data-testid="thiep" data-photo={data.photo?.id ?? ''}>{data.content}|{data.sign}|{data.sentAt}</div>
@@ -28,7 +31,7 @@ const toPreview = async () => {
 };
 const text = () => screen.getByRole('textbox', { name: /Lời nhắn/ });
 const fakePhoto = (id = 'p1') => ({ bitmap: { id, width: 4, height: 3, close: vi.fn() } as unknown as ImageBitmap, base64: `b64-${id}` });
-const pick = (f = new File(['x'], 'a.jpg', { type: 'image/jpeg' })) => userEvent.upload(screen.getByLabelText('Chọn ảnh'), f);
+const pick = (f = new File(['x'], 'a.jpg', { type: 'image/jpeg' })) => userEvent.upload(screen.getByLabelText(/Kèm ảnh|Đổi ảnh/), f);
 
 describe('Compose', () => {
   // jsdom không có canvas: ảnh nhỏ xem trước không vẽ gì (tránh lỗi 'Not implemented').
@@ -53,6 +56,30 @@ describe('Compose', () => {
     expect(previewBtn()).toBeEnabled();
   });
 
+  it('phông chưa đo xong → khoá nút và báo "Đang chuẩn bị khung thiệp…", đo xong thì mở', async () => {
+    let done!: (m: unknown) => void;
+    gate.pending = new Promise((r) => { done = r; });
+    try {
+      render(<Harness initial={{ ...newDraft('Lan'), content: 'Chúc' }} />);
+      expect(previewBtn()).toBeDisabled();
+      expect(screen.getByRole('alert')).toHaveTextContent('Đang chuẩn bị khung thiệp…');
+      await act(async () => { done((s: string, px: number) => [...s].length * px * 0.5); });
+      expect(previewBtn()).toBeEnabled();
+      expect(screen.queryByText('Đang chuẩn bị khung thiệp…')).toBeNull();
+    } finally {
+      gate.pending = null;
+    }
+  });
+
+  it('quá 400 ký tự → báo giới hạn và khoá; so theo nội dung đã trim', async () => {
+    const { rerender } = render(<Harness initial={{ ...newDraft('Lan'), content: 'a'.repeat(401) }} />);
+    expect(await screen.findByRole('alert')).toHaveTextContent('Lời nhắn tối đa 400 ký tự');
+    expect(previewBtn()).toBeDisabled();
+    rerender(<Harness key="b" initial={{ ...newDraft('Lan'), content: `  ${'a'.repeat(400)}  ` }} />);
+    await waitFor(() => expect(previewBtn()).toBeEnabled());
+    expect(screen.queryByText('Lời nhắn tối đa 400 ký tự')).toBeNull();
+  });
+
   it('khoá khi Để tên mà tên trống', async () => {
     render(<Harness initial={{ ...newDraft(''), content: 'Chúc' }} />);
     expect(previewBtn()).toBeDisabled();
@@ -68,16 +95,16 @@ describe('Compose', () => {
     expect(onSubmit).toHaveBeenCalledWith({ ornament: 'ball', anonymous: true, content: 'Chúc' }, '');
   });
 
-  it('bộ đếm tính theo ký tự Unicode, ô lời nhắn không có maxlength', () => {
+  it('bộ đếm tính theo ký tự Unicode, ô lời nhắn không có maxlength', async () => {
     render(<Harness initial={{ ...newDraft('Lan'), content: '🎄ê' }} />);
     expect(screen.getByText('2/400')).toBeInTheDocument();
     expect(text()).not.toHaveAttribute('maxlength');
-    expect(previewBtn()).toBeEnabled();
+    await waitFor(() => expect(previewBtn()).toBeEnabled());
   });
 
-  it('quá 400 ký tự: khoá Xem trước thiệp', () => {
+  it('quá 400 ký tự (đếm sau trim): khoá Xem trước thiệp', () => {
     render(<Harness initial={{ ...newDraft('Lan'), content: 'a '.repeat(201) }} />);
-    expect(screen.getByText('402/400')).toBeInTheDocument();
+    expect(screen.getByText('401/400')).toBeInTheDocument();
     expect(previewBtn()).toBeDisabled();
   });
 
@@ -194,8 +221,9 @@ describe('Compose', () => {
     expect(screen.queryByRole('button', { name: 'Xoá lời nhắn' })).not.toBeInTheDocument();
   });
 
-  it('error hiện trong bảng (role="alert")', () => {
+  it('error hiện trong bảng (role="alert")', async () => {
     render(<Harness error="Mỗi người chỉ treo được 3 lời nhắn trên một cây." />);
+    await waitFor(() => expect(screen.queryByText('Đang chuẩn bị khung thiệp…')).toBeNull());
     expect(screen.getByRole('alert')).toHaveTextContent('Mỗi người chỉ treo được 3 lời nhắn');
   });
 
