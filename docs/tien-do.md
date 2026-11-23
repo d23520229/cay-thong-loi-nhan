@@ -23,7 +23,7 @@
 7. Tải ảnh phòng (chủ cây và khách): file `cay-thong-{mã}.png` có đủ phụ kiện.
 8. `FAKE_NOW=2026-12-24T08:00:00+07:00`: chủ cây mở thiệp có ảnh, thấy ảnh; trước 0h 24/12 không có đường nào lấy được ảnh. **Xoá `FAKE_NOW` sau khi thử.**
 
-**Việc cho M4:** tạo Storage Account + vùng chứa `photos` (riêng tư); đặt `AZURE_STORAGE_CONNECTION_STRING` trong App Service; thử `azureStore` thật (ghi, đọc, xoá, chép, kể cả thử lại khi tạo vùng chứa lần đầu).
+**Việc cho M4:** tạo Storage Account + vùng chứa `photos` (riêng tư); đặt `AZURE_STORAGE_CONNECTION_STRING` trong App Service (production thiếu biến này thì server không khởi động); thử `azureStore` thật (ghi, đọc, xoá, chép, kể cả thử lại khi tạo vùng chứa lần đầu).
 **Việc cho M10:** xoá Storage Account ngày 07/01/2027.
 
 **Cần chủ dự án quyết / đo (để lại)**
