@@ -16,6 +16,8 @@ export function authErrorMessage(e: unknown, now = Date.now()): string {
     }
     if (e.status === 404) return 'Không tìm thấy cây này';
     if (e.code === 'bad_key') return 'Link riêng chưa đúng';
+    if (e.code === 'not_owner') return 'Tài khoản này không phải chủ cây.';
+    if (e.code === 'google_invalid') return 'Đăng nhập Google chưa thành công, thử lại nhé.';
     return e.message;
   }
   return 'Có lỗi xảy ra, thử lại sau nhé.';

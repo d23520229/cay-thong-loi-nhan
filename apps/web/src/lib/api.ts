@@ -45,6 +45,7 @@ export type AppConfig = {
   catalogVersion: number;
   limits: Catalog['limits'];
   googleClientId: string | null;
+  supportEmail: string | null;
 };
 
 /** `photo`: base64 trơn của ảnh WebP/JPEG đã thu nhỏ; khi sửa `null` = gỡ ảnh, không có trường = giữ nguyên. */

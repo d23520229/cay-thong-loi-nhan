@@ -108,7 +108,6 @@ describe('RoomPage', () => {
     expect(screen.getByRole('dialog', { name: 'Chào chủ cây 👋' })).toBeInTheDocument();
     expect(screen.getByText('Nhập mã PIN bạn đã đặt khi tạo cây.')).toBeInTheDocument();
     expect(screen.getByText('Có link riêng? Mở link đó là vào được ngay.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Google/ })).toBeDisabled();
 
     mocked.authPin.mockResolvedValue(undefined);
     mocked.getOwnerTree.mockResolvedValue(ownerRoom());

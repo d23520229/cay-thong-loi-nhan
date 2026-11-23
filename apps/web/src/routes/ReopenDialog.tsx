@@ -5,6 +5,7 @@ import { authErrorMessage } from '../lib/authError';
 import { storage } from '../lib/storage';
 import { parseTreeRef } from '../lib/treeRef';
 import { Button } from '../ui/Button';
+import { GoogleButton } from '../ui/GoogleButton';
 import { PinInput } from '../ui/PinInput';
 import { Sheet } from '../ui/Sheet';
 
@@ -44,6 +45,40 @@ export function ReopenDialog({ onClose }: { onClose: () => void }) {
     setError('');
     void tryOwner(id);
   };
+
+  // Google (đặc tả 6.8.1): hỏi danh sách cây của tài khoản, 1 cây thì vào luôn, nhiều cây thì chọn.
+  const [google, setGoogle] = useState<{ token: string; trees: { id: string; title: string | null }[] } | null>(null);
+
+  const googleEnter = async (token: string, t: { id: string; title: string | null }) => {
+    await api.authGoogle(token, t.id);
+    const known = storage.myTrees().find((x) => x.id === t.id);
+    storage.addMyTree({ id: t.id, title: known?.title ?? t.title, createdAt: known?.createdAt ?? new Date().toISOString() });
+    navigate(`/c/${t.id}`);
+  };
+
+  const runGoogle = async (work: () => Promise<void>) => {
+    if (busy.current) return;
+    busy.current = true;
+    setPending(true);
+    setError('');
+    try {
+      await work();
+    } catch (e) {
+      setError(authErrorMessage(e));
+    } finally {
+      busy.current = false;
+      setPending(false);
+    }
+  };
+
+  const onGoogleToken = (token: string) =>
+    void runGoogle(async () => {
+      const res = await api.authGoogle(token);
+      const list = res?.trees ?? [];
+      if (list.length === 0) return setError('Tài khoản Google này chưa có cây nào');
+      if (list.length === 1) return googleEnter(token, list[0]!);
+      setGoogle({ token, trees: list });
+    });
 
   const submit = async () => {
     if (busy.current) return;
@@ -102,7 +137,17 @@ export function ReopenDialog({ onClose }: { onClose: () => void }) {
       <PinInput value={pin} onChange={setPin} />
       {error ? <div className="notice" role="alert">{error}</div> : null}
       <Button variant="primary" disabled={pending} onClick={() => void submit()}>Mở cây</Button>
-      <Button disabled>Đăng nhập bằng Google <small>sắp có</small></Button>
+      {google ? (
+        <div className="row">
+          {google.trees.map((t) => (
+            <button key={t.id} type="button" className="chip" disabled={pending} onClick={() => void runGoogle(() => googleEnter(google.token, t))}>
+              {t.title || t.id}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <GoogleButton onToken={onGoogleToken} />
+      )}
     </Sheet>
   );
 }
