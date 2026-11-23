@@ -5,6 +5,7 @@ import { RoomStage } from '../room/RoomStage';
 import { TREE_ID } from '../lib/treeRef';
 import { storage } from '../lib/storage';
 import { ReopenDialog } from './ReopenDialog';
+import { SupportHint } from '../ui/SupportHint';
 
 const room = defaultRoom();
 
@@ -30,6 +31,7 @@ export function Home() {
         <p className="wish">Chúc bạn một mùa Noel thật ấm áp ✨</p>
         <Link to="/tao" className="btn btn-primary">Bắt đầu tạo cây</Link>
         <button type="button" className="linkbtn" onClick={() => setReopen(true)}>Bạn đã có cây?</button>
+        <footer><SupportHint /></footer>
       </div>
       {reopen ? <ReopenDialog onClose={() => setReopen(false)} /> : null}
     </div>

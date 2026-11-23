@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { storage } from '../lib/storage';
 import { Home } from './Home';
 
+vi.mock('../ui/SupportHint', () => ({ SupportHint: () => <p>HỖ TRỢ</p> }));
+
 beforeEach(() => {
   vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
   sessionStorage.clear();
@@ -16,6 +18,11 @@ const renderHome = (url = '/') =>
   render(<MemoryRouter initialEntries={[url]}><Home /></MemoryRouter>);
 
 describe('Home', () => {
+  it('chân trang có câu nhắc email hỗ trợ', () => {
+    renderHome();
+    expect(screen.getByText('HỖ TRỢ')).toBeInTheDocument();
+  });
+
   it('hiện đủ chữ giới thiệu và nút, không có nút đóng', () => {
     renderHome();
     expect(screen.getByRole('heading', { name: 'Cây Thông Lời Nhắn' })).toBeInTheDocument();

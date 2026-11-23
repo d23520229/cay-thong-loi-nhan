@@ -1,11 +1,12 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { ApiError, api } from '../lib/api';
-import { authErrorMessage } from '../lib/authError';
+import { authErrorMessage, needsSupport } from '../lib/authError';
 import { storage } from '../lib/storage';
 import { parseTreeRef } from '../lib/treeRef';
 import { Button } from '../ui/Button';
 import { GoogleButton } from '../ui/GoogleButton';
+import { SupportHint } from '../ui/SupportHint';
 import { PinInput } from '../ui/PinInput';
 import { Sheet } from '../ui/Sheet';
 
@@ -16,6 +17,7 @@ export function ReopenDialog({ onClose }: { onClose: () => void }) {
   const [code, setCode] = useState(trees[0]?.id ?? '');
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
+  const [stuck, setStuck] = useState(false);
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
 
@@ -43,6 +45,7 @@ export function ReopenDialog({ onClose }: { onClose: () => void }) {
   const pick = (id: string) => {
     setCode(id);
     setError('');
+    setStuck(false);
     void tryOwner(id);
   };
 
@@ -61,10 +64,12 @@ export function ReopenDialog({ onClose }: { onClose: () => void }) {
     busy.current = true;
     setPending(true);
     setError('');
+    setStuck(false);
     try {
       await work();
     } catch (e) {
       setError(authErrorMessage(e));
+      setStuck(needsSupport(e));
     } finally {
       busy.current = false;
       setPending(false);
@@ -75,7 +80,10 @@ export function ReopenDialog({ onClose }: { onClose: () => void }) {
     void runGoogle(async () => {
       const res = await api.authGoogle(token);
       const list = res?.trees ?? [];
-      if (list.length === 0) return setError('Tài khoản Google này chưa có cây nào');
+      if (list.length === 0) {
+        setStuck(true);
+        return setError('Tài khoản Google này chưa có cây nào');
+      }
       if (list.length === 1) return googleEnter(token, list[0]!);
       setGoogle({ token, trees: list });
     });
@@ -88,6 +96,7 @@ export function ReopenDialog({ onClose }: { onClose: () => void }) {
     busy.current = true;
     setPending(true);
     setError('');
+    setStuck(false);
     try {
       if (ref.key) await api.authLink(ref.id, ref.key);
       else await api.authPin(ref.id, pin);
@@ -100,6 +109,7 @@ export function ReopenDialog({ onClose }: { onClose: () => void }) {
       navigate(`/c/${ref.id}`);
     } catch (e) {
       setError(authErrorMessage(e));
+      setStuck(needsSupport(e));
       busy.current = false;
       setPending(false);
     }
@@ -136,6 +146,7 @@ export function ReopenDialog({ onClose }: { onClose: () => void }) {
       </div>
       <PinInput value={pin} onChange={setPin} />
       {error ? <div className="notice" role="alert">{error}</div> : null}
+      {stuck ? <SupportHint /> : null}
       <Button variant="primary" disabled={pending} onClick={() => void submit()}>Mở cây</Button>
       {google ? (
         <div className="row">

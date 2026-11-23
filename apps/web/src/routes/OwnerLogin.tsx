@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react';
 import { api } from '../lib/api';
-import { authErrorMessage } from '../lib/authError';
+import { authErrorMessage, needsSupport } from '../lib/authError';
 import { Button } from '../ui/Button';
 import { GoogleButton } from '../ui/GoogleButton';
+import { SupportHint } from '../ui/SupportHint';
 import { PinInput } from '../ui/PinInput';
 import { Sheet } from '../ui/Sheet';
 
@@ -10,6 +11,7 @@ import { Sheet } from '../ui/Sheet';
 export function OwnerLogin({ treeId, onClose, onSuccess }: { treeId: string; onClose: () => void; onSuccess: () => void }) {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
+  const [stuck, setStuck] = useState(false);
   const [pending, setPending] = useState(false);
   const busy = useRef(false);
 
@@ -24,6 +26,7 @@ export function OwnerLogin({ treeId, onClose, onSuccess }: { treeId: string; onC
       onSuccess();
     } catch (e) {
       setError(authErrorMessage(e));
+      setStuck(needsSupport(e));
       busy.current = false;
       setPending(false);
     }
@@ -39,6 +42,7 @@ export function OwnerLogin({ treeId, onClose, onSuccess }: { treeId: string; onC
       onSuccess();
     } catch (e) {
       setError(authErrorMessage(e));
+      setStuck(needsSupport(e));
       busy.current = false;
       setPending(false);
     }
@@ -49,6 +53,7 @@ export function OwnerLogin({ treeId, onClose, onSuccess }: { treeId: string; onC
       <p className="hint">Nhập mã PIN bạn đã đặt khi tạo cây.</p>
       <PinInput value={pin} onChange={setPin} disabled={pending} />
       {error ? <div className="notice" role="alert">{error}</div> : null}
+      {stuck ? <SupportHint /> : null}
       <Button variant="primary" disabled={pending} onClick={() => void submit()}>Vào cây</Button>
       <GoogleButton onToken={(t) => void google(t)} />
       <p className="hint">Có link riêng? Mở link đó là vào được ngay.</p>

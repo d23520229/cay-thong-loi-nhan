@@ -8,6 +8,8 @@ import { storage } from '../lib/storage';
 import { defaultRoom } from '../room/model';
 import { RoomPage } from './RoomPage';
 
+vi.mock('../ui/SupportHint', () => ({ SupportHint: () => <p>HỖ TRỢ</p> }));
+
 vi.mock('../lib/api', async (orig) => {
   const actual = await orig<typeof import('../lib/api')>();
   return {
@@ -224,6 +226,7 @@ describe('RoomPage', () => {
     await editBackground();
     await passDebounce();
     expect(await screen.findByText('Không mở được cây này.')).toBeInTheDocument();
+    expect(screen.getByText('HỖ TRỢ')).toBeInTheDocument();
   });
 
   it('lưu bị 401 → "Chào chủ cây" → đăng nhập → tải lại và gửi lại thay đổi', async () => {

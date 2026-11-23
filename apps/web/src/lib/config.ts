@@ -7,7 +7,7 @@ let loaded: AppConfig | null = null;
 
 function loadConfig(): Promise<AppConfig> {
   if (!pending) {
-    pending = api.getConfig().then(
+    pending = Promise.resolve().then(() => api.getConfig()).then(
       (c) => (loaded = c),
       (e: unknown) => {
         pending = null;

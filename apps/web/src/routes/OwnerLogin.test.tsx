@@ -16,6 +16,7 @@ vi.mock('../ui/GoogleButton', () => ({
 }));
 // idToken giả có tên "Lan" trong payload.
 const GTOKEN = `h.${btoa(JSON.stringify({ name: 'Lan' })).replace(/=+$/, '')}.s`;
+vi.mock('../ui/SupportHint', () => ({ SupportHint: () => <p>HỖ TRỢ</p> }));
 const mocked = vi.mocked(api);
 
 beforeEach(() => vi.resetAllMocks());
@@ -36,6 +37,7 @@ describe('OwnerLogin — Google', () => {
     render(<OwnerLogin treeId="abc12345" onClose={() => {}} onSuccess={onSuccess} />);
     await userEvent.click(screen.getByRole('button', { name: 'Google giả' }));
     expect(await screen.findByText('Tài khoản này không phải chủ cây.')).toBeInTheDocument();
+    expect(screen.getByText('HỖ TRỢ')).toBeInTheDocument();
     expect(onSuccess).not.toHaveBeenCalled();
   });
 });

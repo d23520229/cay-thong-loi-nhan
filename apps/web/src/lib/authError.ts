@@ -6,6 +6,13 @@ function lockMinutes(retryAt: unknown, now: number): number {
   return Number.isNaN(t) ? 15 : Math.max(1, Math.ceil((t - now) / 60000));
 }
 
+/** Kẹt không tự gỡ được ngay (khoá đến hết ngày, Google không phải chủ cây) → nên hiện email hỗ trợ. */
+export function needsSupport(e: unknown, now = Date.now()): boolean {
+  if (!(e instanceof ApiError)) return false;
+  if (e.code === 'not_owner') return true;
+  return e.code === 'pin_locked' && lockMinutes(e.extra.retryAt, now) > 60;
+}
+
 /** Thông báo lỗi đăng nhập chủ cây — dùng chung cho "Mở lại cây của bạn" và "Chào chủ cây" (đặc tả 6.5). */
 export function authErrorMessage(e: unknown, now = Date.now()): string {
   if (e instanceof ApiError) {
