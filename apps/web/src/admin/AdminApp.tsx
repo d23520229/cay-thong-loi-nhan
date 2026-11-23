@@ -5,6 +5,7 @@ import { adminApi, type Me } from './adminApi';
 import { AdminLogin } from './AdminLogin';
 import { AdminContext, type AdminCtx } from './context';
 import { Overview } from './Overview';
+import { Reports } from './Reports';
 import './admin.css';
 
 /** Trang quản trị `/quan-tri/*` (đặc tả 6.8): tải riêng (lazy), chỉ chủ dự án dùng. */
@@ -79,7 +80,7 @@ export function AdminApp() {
         <main className="adm-main">
           <Routes>
             <Route index element={<Overview />} />
-            <Route path="bao-cao" element={<h1>Báo cáo</h1>} />
+            <Route path="bao-cao" element={<Reports />} />
             <Route path="phong" element={<h1>Tra cứu phòng</h1>} />
             <Route path="nhat-ky" element={<h1>Nhật ký</h1>} />
           </Routes>
