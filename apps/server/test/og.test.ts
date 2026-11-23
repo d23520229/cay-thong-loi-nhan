@@ -125,6 +125,27 @@ describe('GET /api/trees/:id/image.png', () => {
   });
 });
 
+describe('bộ đệm và ghi nhận ảnh tải về', () => {
+  it('bộ đệm ảnh tải về nhỏ (8 phòng): phòng đầu bị vẽ lại khi vượt giới hạn', async () => {
+    const img = vi.fn(async () => Buffer.from('png'));
+    t = await makeTestApp({ renderRoomImage: img });
+    const ids: string[] = [];
+    for (let i = 0; i < 9; i++) ids.push((await create(`Lan${i}`)).id);
+    for (const id of ids) await t!.app.inject({ method: 'GET', url: `/api/trees/${id}/image.png` });
+    expect(img.mock.calls.length).toBe(9);
+    await t!.app.inject({ method: 'GET', url: `/api/trees/${ids[0]}/image.png` });
+    expect(img.mock.calls.length).toBe(10);
+  }, 60_000);
+
+  it('HEAD không ghi event image_downloaded', async () => {
+    t = await makeTestApp({ renderRoomImage: vi.fn(async () => Buffer.from('png')) });
+    const { id } = await create();
+    await t!.app.inject({ method: 'HEAD', url: `/api/trees/${id}/image.png` });
+    const ev = await t!.h.db.select().from(events).where(eq(events.type, 'image_downloaded'));
+    expect(ev).toEqual([]);
+  });
+});
+
 describe('trang web + thẻ OG', () => {
   const dist = () => {
     const dir = mkdtempSync(join(tmpdir(), 'ctln-dist-'));

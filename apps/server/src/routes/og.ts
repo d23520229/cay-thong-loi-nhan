@@ -9,6 +9,8 @@ import { buildPublicRoom } from './trees.js';
 
 const TREE_ID = /^[a-z2-9]{8}$/;
 const CACHE_MAX = 200;
+/** Ảnh tải về cỡ MB: giữ ít thôi để không ngốn bộ nhớ App Service B1. */
+const IMAGE_CACHE_MAX = 8;
 
 const ESC: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 export const escapeHtml = (s: string): string => s.replace(/[&<>"']/g, (c) => ESC[c]!);
@@ -44,10 +46,12 @@ export async function ogRoutes(app: FastifyInstance) {
   const { db, env } = app.deps;
   const render = app.deps.renderOg ?? defaultRender;
   const renderImage = app.deps.renderRoomImage ?? defaultRoomImage;
-  const cache = new Map<string, Promise<Buffer>>(); // giữ thứ tự chèn: phần tử đầu là lâu chưa dùng nhất
+  // Giữ thứ tự chèn: phần tử đầu là lâu chưa dùng nhất. Ảnh tải về có bộ đệm riêng, nhỏ hơn.
+  const ogCache = new Map<string, Promise<Buffer>>();
+  const imageCache = new Map<string, Promise<Buffer>>();
 
   /** Vẽ (hoặc lấy từ bộ đệm) ảnh của một phòng; `prefix` tách khoá ảnh tải về khỏi ảnh OG. */
-  const cached = (prefix: string, id: string, room: NonNullable<Awaited<ReturnType<typeof buildPublicRoom>>>, draw: typeof render) => {
+  const cached = (prefix: string, id: string, room: NonNullable<Awaited<ReturnType<typeof buildPublicRoom>>>, draw: typeof render, cache: Map<string, Promise<Buffer>>, max: number) => {
     const key = `${prefix}${id}:${room.roomVersion}:${room.slots.filter((s) => s.occupied).map((s) => `${s.index}=${s.ornament}`).join(',')}`;
     // Đệm cả lời hứa đang vẽ: nhiều trình đọc link cùng lúc chỉ vẽ một lần. Dùng lại thì dời xuống cuối (LRU).
     let job = cache.get(key);
@@ -57,7 +61,7 @@ export async function ogRoutes(app: FastifyInstance) {
       job.catch(() => cache.delete(key));
     }
     cache.set(key, job);
-    if (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value!);
+    if (cache.size > max) cache.delete(cache.keys().next().value!);
     return job;
   };
 
@@ -66,7 +70,7 @@ export async function ogRoutes(app: FastifyInstance) {
     const id = m?.[1];
     const room = id && TREE_ID.test(id) ? await buildPublicRoom(db.db, id) : null;
     if (!id || !room) throw new HttpError(404, 'not_found', 'Không tìm thấy cây này.');
-    const png = await cached('', id, room, render);
+    const png = await cached('', id, room, render, ogCache, CACHE_MAX);
     return reply.header('content-type', 'image/png').header('cache-control', 'public, max-age=300').send(png);
   });
 
@@ -75,8 +79,15 @@ export async function ogRoutes(app: FastifyInstance) {
     const id = req.params.id;
     const room = TREE_ID.test(id) ? await buildPublicRoom(db.db, id) : null;
     if (!room) throw new HttpError(404, 'not_found', 'Không tìm thấy cây này.');
-    const png = await cached('img:', id, room, renderImage);
-    await logEvent(db.db, 'image_downloaded', id);
+    const png = await cached('img:', id, room, renderImage, imageCache, IMAGE_CACHE_MAX);
+    // HEAD (Fastify tự sinh) không phải một lượt tải; ghi nhận lỗi không được làm hỏng lượt tải.
+    if (req.method === 'GET') {
+      try {
+        await logEvent(db.db, 'image_downloaded', id);
+      } catch (err) {
+        req.log.warn({ err }, 'không ghi được event image_downloaded');
+      }
+    }
     return reply
       .header('content-type', 'image/png')
       .header('content-disposition', `attachment; filename="cay-thong-${id}.png"`)

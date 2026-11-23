@@ -109,6 +109,8 @@ export async function roomRoutes(app: FastifyInstance) {
     // Một giao dịch: xoá lời nhắn và báo cáo lấy luôn khoá ảnh (ảnh lời nhắn + bản chụp báo cáo),
     // rồi xoá cây (CASCADE phần còn lại). Không có khe để lời nhắn mới lọt giữa đọc khoá và xoá.
     const keys = await db.db.transaction(async (tx) => {
+      // Khoá dòng cây trước: POST lời nhắn song song (đang chèn kèm ảnh) phải đợi, không lọt giữa chừng.
+      await tx.select({ id: trees.id }).from(trees).where(eq(trees.id, treeId)).for('update');
       const ms = await tx.delete(messages).where(eq(messages.treeId, treeId)).returning({ k: messages.photoKey });
       const rs = await tx.delete(reports).where(eq(reports.treeId, treeId)).returning({ k: reports.photoSnapshotKey });
       await tx.delete(trees).where(eq(trees.id, treeId)); // ON DELETE CASCADE

@@ -41,6 +41,9 @@ export function loadEnv(src: Record<string, string | undefined> = process.env): 
   if (production && (!blockIpKey || blockIpKey.length < 32)) {
     throw new Error('BLOCK_IP_KEY là bắt buộc và phải có ít nhất 32 ký tự khi chạy production');
   }
+  if (production && !src.AZURE_STORAGE_CONNECTION_STRING) {
+    throw new Error('AZURE_STORAGE_CONNECTION_STRING là bắt buộc khi chạy production');
+  }
   const hops = src.TRUST_PROXY_HOPS === undefined || src.TRUST_PROXY_HOPS === '' ? 1 : Number(src.TRUST_PROXY_HOPS);
   if (!Number.isInteger(hops) || hops < 0) throw new Error('TRUST_PROXY_HOPS phải là số nguyên không âm');
   const env: Env = {

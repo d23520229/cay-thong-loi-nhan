@@ -381,6 +381,21 @@ describe('ảnh: dọn khi xoá, báo cáo chép ảnh', () => {
     expect(t.photos.keys()).toEqual([snap]);
   });
 
+  it('báo cáo bị xoá giữa chừng (cây vừa bị xoá) → bản chụp ảnh vừa chép bị dọn, không mồ côi', async () => {
+    const { id, cookies } = await setup();
+    const p = (await post(id, 1, undefined, { photo: JPEG })).json();
+    const key = await keyOf(p.messageId);
+    t.clock.set('2026-12-24T08:00:00+07:00');
+    await open(id, p.messageId, cookies);
+    const copy = t.photos.copy.bind(t.photos);
+    t.photos.copy = async (from: string, to: string) => {
+      await copy(from, to);
+      await t.h.db.delete(reports); // cây bị xoá đúng lúc đang chép
+    };
+    expect((await report(id, { messageId: p.messageId }, {}, cookies)).statusCode).toBe(201);
+    expect(t.photos.keys()).toEqual([key]);
+  });
+
   it('báo cáo lời nhắn không ảnh → photo_snapshot_key NULL; chép ảnh lỗi → vẫn 201, giữ bản chụp chữ', async () => {
     const { id, cookies } = await setup();
     const a = (await post(id, 1)).json();

@@ -154,7 +154,13 @@ export async function ownerRoutes(app: FastifyInstance) {
       const snapKey = `r/${row!.id}.webp`;
       try {
         await photos.copy(photoKey, snapKey);
-        await db.db.update(reports).set({ photoSnapshotKey: snapKey }).where(eq(reports.id, row!.id));
+        const hit = await db.db
+          .update(reports)
+          .set({ photoSnapshotKey: snapKey })
+          .where(eq(reports.id, row!.id))
+          .returning({ id: reports.id });
+        // Báo cáo vừa bị xoá (cây bị xoá song song): không để bản chụp mồ côi.
+        if (hit.length === 0) await dropPhoto(photos, req, snapKey);
       } catch (e) {
         req.log.warn({ code: (e as { code?: string })?.code }, 'report_photo_copy_failed');
       }
