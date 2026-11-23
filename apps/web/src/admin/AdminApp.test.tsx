@@ -21,7 +21,15 @@ vi.mock('../ui/GoogleButton', () => ({
 
 const mocked = vi.mocked(adminApi);
 const ME = { email: 'admin@test.vn', csrfToken: 'c' };
-const overview = (openReports = 2) => ({ users: { openReports } }) as Awaited<ReturnType<typeof adminApi.overview>>;
+const c = { total: 0, last24h: 0 };
+const overview = (openReports = 2): Awaited<ReturnType<typeof adminApi.overview>> => ({
+  now: '2026-12-01T03:00:00.000Z', phase: 'BUILD', next: null,
+  users: { trees: c, messages: c, views: c, openReports, viral: null },
+  server: {
+    errors24h: 0, lastError: null, p95Ms: null, latencySince: '2026-12-01T03:00:00.000Z', dbBytes: 0, dbQuotaBytes: 1,
+    photos: { count: 0, bytes: 0, unknown: 0, reportSnapshots: 0 }, azureUrl: null,
+  },
+});
 
 const renderAdmin = (path = '/quan-tri') =>
   render(
