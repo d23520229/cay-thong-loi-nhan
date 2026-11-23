@@ -2,13 +2,13 @@ import type { FastifyInstance } from 'fastify';
 import { and, count, eq, gte, ne, notInArray, sql } from 'drizzle-orm';
 import { z } from 'zod';
 import { RoomSchema, validateRoom } from '@ctln/shared';
-import { messages, reports, roomItems, trees } from '../db/schema.js';
+import { messages, roomItems, trees } from '../db/schema.js';
 import { HttpError } from '../errors.js';
 import { logEvent } from '../events.js';
 import { assertWritable, phaseOf, requireOwner } from '../guards.js';
-import { dropPhoto } from '../photo.js';
 import { rateLimit } from '../security.js';
 import { buildPublicRoom, roomItemRow } from './trees.js';
+import { deleteTreeWithPhotos } from '../trees/delete.js';
 
 const SaveRoomBodySchema = z.object({ roomVersion: z.number().int(), room: RoomSchema });
 const SettingsBodySchema = z.object({ showMessageCount: z.boolean() });
@@ -105,19 +105,7 @@ export async function roomRoutes(app: FastifyInstance) {
   app.delete<{ Params: { id: string } }>('/api/trees/:id', async (req, reply) => {
     const treeId = req.params.id;
     await requireOwner(app, req, treeId);
-    const { db, photos } = app.deps;
-    // Một giao dịch: xoá lời nhắn và báo cáo lấy luôn khoá ảnh (ảnh lời nhắn + bản chụp báo cáo),
-    // rồi xoá cây (CASCADE phần còn lại). Không có khe để lời nhắn mới lọt giữa đọc khoá và xoá.
-    const keys = await db.db.transaction(async (tx) => {
-      // Khoá dòng cây trước: POST lời nhắn song song (đang chèn kèm ảnh) phải đợi, không lọt giữa chừng.
-      await tx.select({ id: trees.id }).from(trees).where(eq(trees.id, treeId)).for('update');
-      const ms = await tx.delete(messages).where(eq(messages.treeId, treeId)).returning({ k: messages.photoKey });
-      const rs = await tx.delete(reports).where(eq(reports.treeId, treeId)).returning({ k: reports.photoSnapshotKey });
-      await tx.delete(trees).where(eq(trees.id, treeId)); // ON DELETE CASCADE
-      return [...ms, ...rs].map((r) => r.k).filter((k): k is string => k !== null);
-    });
-    // Xoá ảnh sau khi giao dịch xong; lỗi chỉ ghi log.
-    for (const k of keys) await dropPhoto(photos, req, k);
+    await deleteTreeWithPhotos(app, req, treeId);
     reply.clearCookie(`ctln_owner_${treeId}`, { path: '/' });
     return reply.code(204).send();
   });
