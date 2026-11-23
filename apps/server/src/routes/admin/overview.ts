@@ -19,13 +19,14 @@ export async function adminOverviewRoutes(app: FastifyInstance) {
     const since = new Date(now.getTime() - DAY);
     const nextKey = MILESTONE_KEYS.find((k) => new Date(p.milestones[k]) > now);
 
-    // db.execute trả { rows } (PGlite) hoặc mảng (postgres-js).
+    // db.execute trả { rows } (PGlite) hoặc mảng (postgres-js). Ngày truyền dạng chuỗi ISO + ::timestamptz:
+    // drizzle tắt bộ chuyển Date của postgres-js nên Date thô làm hỏng câu lệnh (PGlite thì không lỗi).
     const first = async (q: SQL) => {
       const res = (await db.db.execute(q)) as unknown as { rows?: Record<string, unknown>[] } & Record<string, unknown>[];
       return (res.rows ?? res)[0]!;
     };
     const count = async (table: string, where: SQL = sql`TRUE`) => {
-      const r = await first(sql`SELECT count(*) AS total, count(*) FILTER (WHERE created_at > ${since}) AS day
+      const r = await first(sql`SELECT count(*) AS total, count(*) FILTER (WHERE created_at > ${since.toISOString()}::timestamptz) AS day
         FROM ${sql.identifier(table)} WHERE ${where}`);
       return { total: n(r.total), last24h: n(r.day) };
     };
@@ -40,7 +41,7 @@ export async function adminOverviewRoutes(app: FastifyInstance) {
       count(*) FILTER (WHERE photo_bytes IS NULL) AS unknown FROM messages WHERE photo_key IS NOT NULL`);
     const dbSize = await first(sql`SELECT pg_database_size(current_database()) AS b`);
     // Đếm theo ô giờ: lấy các ô từ giờ chứa mốc "24 giờ trước" (có thể dư tối đa 1 giờ).
-    const err = await first(sql`SELECT coalesce(sum(count), 0) AS c FROM error_counts WHERE hour >= ${windowStart(since, 3_600_000)}`);
+    const err = await first(sql`SELECT coalesce(sum(count), 0) AS c FROM error_counts WHERE hour >= ${windowStart(since, 3_600_000).toISOString()}::timestamptz`);
     const [last] = await db.db.select().from(errorCounts).where(gt(errorCounts.lastAt, since)).orderBy(desc(errorCounts.lastAt)).limit(1);
     const lat = app.latency.p95(now);
 
