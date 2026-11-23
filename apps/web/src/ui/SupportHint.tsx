@@ -6,7 +6,7 @@ export function SupportHint() {
   if (!email) return null;
   return (
     <p className="hint support-hint">
-      Cần giúp? Gửi mã cây và mô tả vấn đề tới <a href={`mailto:${email}`}>{email}</a> (đừng gửi PIN hay link riêng).
+      Cần giúp? Gửi mã cây và mô tả vấn đề tới <a href={`mailto:${email}`}>{email}</a>.
     </p>
   );
 }

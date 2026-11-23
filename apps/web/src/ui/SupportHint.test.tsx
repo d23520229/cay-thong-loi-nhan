@@ -17,12 +17,12 @@ beforeEach(() => {
 });
 
 describe('SupportHint', () => {
-  it('có email → câu nhắc kèm mailto, dặn không gửi PIN hay link riêng', async () => {
+  it('có email → câu nhắc kèm mailto, không nhắc PIN hay link riêng', async () => {
     mocked.getConfig.mockResolvedValue(cfg('hotro@vidu.vn'));
     render(<SupportHint />);
     const link = await screen.findByRole('link', { name: 'hotro@vidu.vn' });
     expect(link).toHaveAttribute('href', 'mailto:hotro@vidu.vn');
-    expect(screen.getByText(/đừng gửi PIN hay link riêng/)).toBeInTheDocument();
+    expect(screen.queryByText(/PIN|link riêng/)).not.toBeInTheDocument();
   });
 
   it('không có email → không hiện gì', async () => {
