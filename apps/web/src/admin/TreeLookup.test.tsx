@@ -9,7 +9,7 @@ import { TreeLookup } from './TreeLookup';
 
 vi.mock('./adminApi', async (orig) => {
   const actual = await orig<typeof import('./adminApi')>();
-  return { ...actual, adminApi: { tree: vi.fn(), unlockPin: vi.fn(), revokeSessions: vi.fn(), deleteTree: vi.fn() } };
+  return { ...actual, adminApi: { tree: vi.fn(), unlockPin: vi.fn(), revokeSessions: vi.fn(), deleteTree: vi.fn(), roomImageUrl: actual.adminApi.roomImageUrl } };
 });
 const mocked = vi.mocked(adminApi);
 
@@ -56,7 +56,7 @@ describe('Tra cứu phòng', () => {
     renderPage('/quan-tri/phong?id=abcdefgh');
     expect(await screen.findByText('Lan')).toBeInTheDocument();
     expect(mocked.tree).toHaveBeenCalledWith('abcdefgh');
-    expect(screen.getByRole('img', { name: /Ảnh phòng/ })).toHaveAttribute('src', '/api/trees/abcdefgh/image.png');
+    expect(screen.getByRole('img', { name: /Ảnh phòng/ })).toHaveAttribute('src', '/api/admin/trees/abcdefgh/room.png');
     expect(screen.getByText('1 đã mở · 4 chưa mở')).toBeInTheDocument();
     expect(screen.getByText('PIN, link riêng')).toBeInTheDocument();
     expect(screen.getByText(/PIN đang bị khoá đến/)).toBeInTheDocument();

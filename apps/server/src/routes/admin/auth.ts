@@ -6,7 +6,7 @@ import { HttpError } from '../../errors.js';
 import { clientIp } from '../../guards.js';
 import { ipHash, rateLimit, refundRate } from '../../security.js';
 import { audit } from '../../admin/audit.js';
-import { ADMIN_COOKIE, ADMIN_PATH, csrfFor, requireAdmin, setAdminCookie } from '../../admin/session.js';
+import { ADMIN_COOKIE, ADMIN_PATH, createAdminSession, csrfFor, requireAdmin, setAdminCookie } from '../../admin/session.js';
 
 const LoginBody = z.object({ idToken: z.string().min(1).max(4096) });
 const LOGIN_FAILS_PER_IP_HOUR = 10;
@@ -37,13 +37,16 @@ export async function adminAuthRoutes(app: FastifyInstance) {
       .limit(1);
     // Lần đầu gắn google_sub; về sau tài khoản Google khác cùng email bị từ chối.
     if (!u || u.disabled || (u.googleSub !== null && u.googleSub !== who.sub)) throw notAdmin;
-    await db.db.transaction(async (tx) => {
+    // Phiên + nhật ký login cùng một giao dịch: không có dòng login nào thiếu phiên.
+    const session = await db.db.transaction(async (tx) => {
       await tx.update(adminUsers).set({ googleSub: who.sub, lastLoginAt: at }).where(eq(adminUsers.id, u.id));
+      const s = await createAdminSession(app, tx, u.id);
       await audit(tx, u.id, 'login', 'admin', String(u.id));
+      return s;
     });
     await refundRate(db.db, bucket, at);
-    const { token } = await setAdminCookie(app, reply, u.id);
-    return { email: u.email, csrfToken: csrfFor(env, token) };
+    setAdminCookie(app, reply, session);
+    return { email: u.email, csrfToken: csrfFor(env, session.token) };
   });
 
   app.get('/api/admin/me', async (req) => {

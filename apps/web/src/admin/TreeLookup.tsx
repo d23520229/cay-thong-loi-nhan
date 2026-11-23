@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router';
-import { ApiError, api } from '../lib/api';
+import { ApiError } from '../lib/api';
 import { parseTreeRef } from '../lib/treeRef';
 import { Button } from '../ui/Button';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
@@ -105,7 +105,7 @@ export function TreeLookup() {
       {done ? <div className="notice" role="status">{done}</div> : null}
       {tree ? (
         <div className="adm-split">
-          <img className="adm-room" src={api.roomImageUrl(tree.id)} alt={`Ảnh phòng ${tree.id}`} />
+          <img className="adm-room" src={adminApi.roomImageUrl(tree.id)} alt={`Ảnh phòng ${tree.id}`} />
           <div className="adm-detail">
             <table className="adm-table">
               <tbody>

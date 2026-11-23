@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from 'vitest';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { catalog } from '@ctln/shared';
 import { adminLogin, makeTestApp, ADMIN_EMAIL, ADMIN_ENV } from './helpers.js';
 import { adminAudit, adminUsers } from '../src/db/schema.js';
@@ -120,5 +120,13 @@ describe('phiên quản trị', () => {
     const a = await adminLogin(t.app);
     await t.h.db.update(adminUsers).set({ disabled: true }).where(eq(adminUsers.email, ADMIN_EMAIL));
     expect((await me(a.cookie)).statusCode).toBe(401);
+  });
+
+  it('tạo phiên lỗi → không để lại dòng nhật ký login lẻ (cùng một giao dịch)', async () => {
+    t = await makeTestApp({ env: ADMIN_ENV });
+    await t.h.db.execute(sql`CREATE FUNCTION no_session() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'hỏng'; END $$`);
+    await t.h.db.execute(sql`CREATE TRIGGER no_session BEFORE INSERT ON admin_sessions FOR EACH ROW EXECUTE FUNCTION no_session()`);
+    expect((await login(`ok:admin-sub:${ADMIN_EMAIL}`)).statusCode).toBe(500);
+    expect(await actions()).toEqual([]);
   });
 });

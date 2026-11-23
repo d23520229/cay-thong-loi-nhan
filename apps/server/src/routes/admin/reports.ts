@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { z } from 'zod';
-import { adminAudit, messages, reports } from '../../db/schema.js';
+import { adminAudit, messages, reports, trees } from '../../db/schema.js';
 import { HttpError } from '../../errors.js';
 import { dropPhoto } from '../../photo.js';
 import { audit } from '../../admin/audit.js';
@@ -15,7 +15,8 @@ const ResolveBody = z.object({
 });
 const HANDLED_LIMIT = 50;
 
-const notFound = () => new HttpError(404, 'not_found', 'Không tìm thấy báo cáo.');
+// Báo cáo mất khi phòng bị xoá (CASCADE), kể cả do tab khác vừa xoá phòng.
+const notFound = () => new HttpError(404, 'not_found', 'Báo cáo không còn nữa (phòng có thể đã bị xoá).');
 const parseRid = (v: string) => {
   if (!/^\d{1,15}$/.test(v)) throw notFound();
   return Number(v);
@@ -105,6 +106,11 @@ export async function adminReportsRoutes(app: FastifyInstance) {
     }
 
     const dropKey = await db.db.transaction(async (tx) => {
+      // Khoá dòng cây trước báo cáo, cùng thứ tự với xoá cây (deleteTreeWithPhotos): tránh deadlock
+      // khi quản trị xoá lời nhắn đúng lúc chủ cây xoá cây.
+      const [pre] = await tx.select({ treeId: reports.treeId }).from(reports).where(eq(reports.id, rid)).limit(1);
+      if (!pre) throw notFound();
+      await tx.select({ id: trees.id }).from(trees).where(eq(trees.id, pre.treeId)).for('update');
       const r = await lockOpen(tx);
       let photoKey: string | null = null;
       if (action === 'delete_message') {

@@ -122,7 +122,9 @@ describe('POST /api/admin/reports/:rid/resolve', () => {
     const a = await adminLogin(t.app);
     expect((await resolve(a, s.guestReport, { action: 'dismiss', note: '   ' })).statusCode).toBe(400);
     expect((await resolve(a, s.guestReport, { action: 'dismiss', note: 'x' }, 'sai')).statusCode).toBe(403);
-    expect((await resolve(a, '999999', { action: 'dismiss', note: 'x' })).statusCode).toBe(404);
+    const gone = await resolve(a, '999999', { action: 'dismiss', note: 'x' });
+    expect(gone.statusCode).toBe(404);
+    expect(gone.json().error.message).toBe('Báo cáo không còn nữa (phòng có thể đã bị xoá).');
     expect((await resolve(a, s.guestReport, { action: 'dismiss', note: 'không sao' })).statusCode).toBe(200);
     const [r] = await t.h.db.select().from(reports).where(eq(reports.id, Number(s.guestReport)));
     expect(r).toMatchObject({ status: 'dismissed', resolution: 'no_action' });

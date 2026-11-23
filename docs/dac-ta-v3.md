@@ -669,7 +669,7 @@ Giữ mục 7.3 và `docs/schema.postgres.sql` khớp (17 bảng). Bảng này x
 
 - Ô nhập nhận **mã phòng** hoặc **link** (`…/c/{id}`, bỏ phần `#k=` nếu dán nhầm link riêng — không gửi phần đó lên server).
 - `GET /api/admin/trees/:id` → tên chủ cây (`owner_name`), tên cây, ngày tạo, lần chủ cây vào gần nhất, số món, số lời nhắn (đã mở / chưa mở), cách khôi phục (PIN có / không, Google có / không; link riêng luôn có), số phiên chủ cây còn hiệu lực, số báo cáo (đang chờ / tổng), **PIN đang bị khoá** (trần 50 lần sai / ngày đã chạm, kèm giờ hết khoá) và số lần sai trong ngày. **Không** có nội dung lời nhắn, tên người viết, ảnh kèm. Không tìm thấy → 404.
-- Ảnh phòng như khách thấy: dùng lại `GET /api/trees/:id/image.png` (đã công khai, không có nội dung lời nhắn).
+- Ảnh phòng như khách thấy: `GET /api/admin/trees/:id/room.png` (cần phiên quản trị; cùng bộ vẽ và bộ đệm với `image.png` nhưng **không** ghi event `image_downloaded` và vẫn chạy sau 01/01/2027). *(Sửa 24/11 sau lượt duyệt: trước định dùng lại `image.png` công khai.)*
 - Hành động (mỗi cái có hộp xác nhận, ghi `admin_audit`, ghi chú tuỳ chọn; xoá phòng **bắt buộc** ghi chú):
   - `POST /api/admin/trees/:id/unlock-pin` — xoá các bucket `pin:tree:{id}…` trong `rate_counters`.
   - `POST /api/admin/trees/:id/revoke-sessions` — đặt `revoked_at` cho mọi `owner_sessions` còn hiệu lực của cây.
@@ -1122,6 +1122,7 @@ JSON, UTF-8. Header `X-Device-Id` cho người viết. Quyền chủ cây qua co
 | GET | `/api/admin/reports?status=open` | cả hai | Hàng đợi báo cáo kèm bản chụp nội dung |
 | GET | `/api/admin/me` | cả hai | Email đang đăng nhập + token CSRF (6.8.2) |
 | GET | `/api/admin/reports/:rid/photo` | cả hai | Ảnh chụp trong báo cáo (đường duy nhất quản trị xem ảnh) |
+| GET | `/api/admin/trees/:id/room.png` | cả hai | Ảnh phòng như khách thấy, không tính lượt tải (6.8.5) |
 | POST | `/api/admin/reports/:rid/resolve` | cả hai | `{ action: 'delete_message' \| 'delete_tree' \| 'dismiss', note }` (M3b bỏ `block_device`, để cuối — 6.8) |
 | GET | `/api/admin/trees/:id` | cả hai | Thông tin tra cứu phòng (không có nội dung lời nhắn) |
 | DELETE | `/api/admin/trees/:id` | admin | Xoá phòng |

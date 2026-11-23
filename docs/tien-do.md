@@ -8,7 +8,7 @@
 - **Thiệp, ảnh kèm, tải ảnh (đặc tả 6.7):** xong, chủ dự án đã thử tay, đã gộp vào `main` (PR #5, #6). Nhánh `fix-luong-sau-m2` (rà soát luồng 22–23/11) đã gộp (PR #4). Số liệu lúc gộp: **413 test web + 207 test server + 42 test shared + 1 test art**, typecheck sạch, build JS + CSS ≈ 158 KB gzip (giới hạn 250 KB).
 - **Mốc đang ở:** **M3 xong và đã gộp vào `main`** (PR #3; M1, M2 là PR #1, #2), cùng phần 6.7 thiệp/ảnh. M3 gồm 3 phần (đặc tả 6.6): (1) khách treo lời nhắn, (2) chủ cây đọc & quản lý, (3) chia sẻ + OG.
 - **Số liệu lúc xong M3 (21/11):** 290 test web + 136 test server + 40 test shared, typecheck sạch, build JS + CSS ≈ 155 KB gzip (giới hạn 250 KB). Đã chạy thật (21/11): qua Vite + PostgreSQL khách treo → 201, `GET /api/trees/{id}` không có nội dung; server từ bản build (`WEB_DIST=apps/web/dist`, cổng 3001) trả `/c/{id}` có đủ thẻ OG, `/og/{id}.png` PNG 1200×630, `/tao` trả trang, file tĩnh và API chạy. Kế hoạch: `docs/superpowers/plans/2026-11-21-m3-p1-khach-treo-loi-nhan.md`, `docs/superpowers/plans/2026-11-21-m3-p2-p3-chu-cay-chia-se-og.md`.
-- **Việc tiếp theo:** **M3b xong trên nhánh `m3b`, chờ duyệt cả nhánh + chủ dự án thử tay** theo danh sách "M3b — thử tay" bên dưới → sửa lỗi nếu có → PR `m3b` vào `main` → M4. Số liệu (24/11): **247 test server + 460 test web + 42 test shared + 1 test art**, typecheck sạch, gói JS chính ≈ 158 KB gzip, gói quản trị tách riêng ≈ 5,7 KB gzip. Kế hoạch + quyết định khi làm: `docs/superpowers/plans/2026-11-24-m3b-quan-tri-google.md`.
+- **Việc tiếp theo:** **M3b xong trên nhánh `m3b`, chờ duyệt cả nhánh + chủ dự án thử tay** theo danh sách "M3b — thử tay" bên dưới → sửa lỗi nếu có → PR `m3b` vào `main` → M4. Số liệu (24/11): **249 test server + 465 test web + 42 test shared + 1 test art**, typecheck sạch, gói JS chính ≈ 158 KB gzip, gói quản trị tách riêng ≈ 5,7 KB gzip. Kế hoạch + quyết định khi làm: `docs/superpowers/plans/2026-11-24-m3b-quan-tri-google.md`.
 
 ### M3b — thử tay (chủ dự án, nhánh `m3b`)
 
@@ -23,13 +23,7 @@ Chuẩn bị: **tắt `pnpm dev` cũ rồi bật lại** (bản đang chạy đ�
 7. Email hỗ trợ: chân trang chủ có "Cần giúp? …"; bấm mở ứng dụng thư.
 8. Điện thoại: `/quan-tri` dùng được (thanh tab trên cùng, bảng thành thẻ).
 
-**Việc nhỏ còn lại từ lượt duyệt M3b (24/11, chưa sửa, không ảnh hưởng riêng tư):**
-- Xoá phòng (từ báo cáo) song song với "Bỏ qua" ở tab khác → tab sau nhận 404 thay vì 409 (web đã tự tải lại).
-- Hiếm: quản trị xoá lời nhắn đúng lúc chủ cây xoá cây có thể deadlock (500, thử lại được). Cách sửa: trong `delete_message` khoá dòng cây trước.
-- Phiên quản trị được tạo ngoài giao dịch ghi nhật ký `login`.
-- Ảnh phòng ở Tra cứu phòng dùng `/api/trees/:id/image.png` nên mỗi lần tra ghi một event `image_downloaded` và vỡ ảnh sau 01/01/2027.
-- Đổi tab Báo cáo rất nhanh có thể để phản hồi cũ ghi đè danh sách.
-- Đăng xuất quản trị khi mất mạng vẫn về màn đăng nhập nhưng phiên còn hiệu lực.
+**Lượt duyệt M3b (24/11):** không có lỗi nặng; đã sửa hết 10 điểm (4 điểm ngay sau duyệt, 6 điểm nhỏ theo yêu cầu chủ dự án): tải lại báo cáo sau xoá phòng / khi lời nhắn đã bị xoá / khi báo cáo không còn; `Cache-Control: no-store` cho API quản trị; Google hết hạn khi chọn cây; xoá lời nhắn từ báo cáo khoá dòng cây trước (tránh deadlock với chủ cây xoá cây — không viết được test vì PGlite một kết nối); phiên quản trị tạo cùng giao dịch với nhật ký login; ảnh phòng ở Tra cứu phòng dùng `/api/admin/trees/:id/room.png` (không tính lượt tải, chạy sau ENDED); đổi tab Báo cáo nhanh không bị phản hồi cũ ghi đè; đăng xuất lỗi mạng thì ở lại và báo lỗi.
 
 **Việc cho M4 (thêm từ M3b):** Google Cloud: thêm địa chỉ Azure vào *Authorized JavaScript origins* và bấm *Publish app*; App Service đặt `GOOGLE_CLIENT_ID`, `ADMIN_BOOTSTRAP_EMAIL`, `SUPPORT_EMAIL`, `ADMIN_AZURE_URL` (link resource group), `DB_QUOTA_GB` đúng dung lượng đã chọn; dọn `error_counts` cùng các bảng khác ngày 07/01/2027.
 **Để cuối, nếu chủ dự án muốn:** chặn thiết bị người viết từ báo cáo; đổi link riêng / PIN (O8) — đặc tả 6.8.

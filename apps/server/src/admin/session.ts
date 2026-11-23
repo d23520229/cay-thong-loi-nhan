@@ -3,6 +3,8 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { and, eq, gt, isNull } from 'drizzle-orm';
 import { adminSessions, adminUsers } from '../db/schema.js';
 import type { Env } from '../env.js';
+import type { Db } from '../db/client.js';
+import type { Tx } from './audit.js';
 import { HttpError } from '../errors.js';
 import { hmac, randomToken } from '../security.js';
 
@@ -21,13 +23,17 @@ const sameText = (a: string, b: string) => {
   return x.length === y.length && timingSafeEqual(x, y);
 };
 
-export async function setAdminCookie(app: FastifyInstance, reply: FastifyReply, adminId: number): Promise<{ token: string }> {
-  const { env, db, now } = app.deps;
+/** Tạo dòng phiên (trong `tx` của người gọi, cùng giao dịch với nhật ký login); đặt cookie bằng `setAdminCookie`. */
+export async function createAdminSession(app: FastifyInstance, tx: Db | Tx, adminId: number): Promise<{ token: string; expires: Date }> {
+  const { env, now } = app.deps;
   const token = randomToken(32);
   const expires = new Date(now().getTime() + SESSION_MS);
-  await db.db.insert(adminSessions).values({ adminId, tokenHash: hmac(env, 'admin', token), expiresAt: expires });
-  reply.setCookie(ADMIN_COOKIE, token, { httpOnly: true, sameSite: 'strict', path: ADMIN_PATH, secure: env.production, expires });
-  return { token };
+  await tx.insert(adminSessions).values({ adminId, tokenHash: hmac(env, 'admin', token), expiresAt: expires });
+  return { token, expires };
+}
+
+export function setAdminCookie(app: FastifyInstance, reply: FastifyReply, s: { token: string; expires: Date }): void {
+  reply.setCookie(ADMIN_COOKIE, s.token, { httpOnly: true, sameSite: 'strict', path: ADMIN_PATH, secure: app.deps.env.production, expires: s.expires });
 }
 
 /** Phiên quản trị còn hiệu lực + (với lệnh ghi) header X-CSRF-Token đúng. */

@@ -91,4 +91,17 @@ describe('AdminApp', () => {
     unmount();
     expect(document.querySelector('meta[name="robots"]')).toBeNull();
   });
+
+  it('đăng xuất lỗi mạng → vẫn ở trang quản trị, báo lỗi; 401 thì coi như đã đăng xuất', async () => {
+    mocked.me.mockResolvedValue(ME);
+    mocked.overview.mockResolvedValue(overview());
+    mocked.logout.mockRejectedValueOnce(new ApiError(0, 'network', 'Không kết nối được, kiểm tra mạng rồi thử lại nhé.'));
+    renderAdmin();
+    await userEvent.click(await screen.findByRole('button', { name: 'Đăng xuất' }));
+    expect(await screen.findByText('Chưa đăng xuất được, thử lại nhé.')).toBeInTheDocument();
+    expect(screen.getByText('admin@test.vn')).toBeInTheDocument();
+    mocked.logout.mockRejectedValueOnce(new ApiError(401, 'admin_required', 'x'));
+    await userEvent.click(screen.getByRole('button', { name: 'Đăng xuất' }));
+    expect(await screen.findByRole('button', { name: 'Google giả' })).toBeInTheDocument();
+  });
 });

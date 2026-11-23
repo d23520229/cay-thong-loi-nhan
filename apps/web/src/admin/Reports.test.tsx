@@ -137,4 +137,20 @@ describe('Báo cáo', () => {
     expect(await within(detail()).findByText('Lời nhắn đã bị xoá')).toBeInTheDocument();
     expect(within(detail()).getByRole('button', { name: 'Xoá lời nhắn' })).toBeDisabled();
   });
+
+  it('đổi tab nhanh: phản hồi cũ của tab trước không ghi đè danh sách tab đang xem', async () => {
+    let releaseOpen!: (v: { items: AdminReport[] }) => void;
+    mocked.reports.mockImplementation((s) =>
+      s === 'open'
+        ? new Promise((r) => { releaseOpen = r; })
+        : Promise.resolve({ items: [rep({ id: '7', status: 'dismissed', snapshot: 'đã xử lý xong' })] }),
+    );
+    renderPage();
+    await userEvent.click(screen.getByRole('button', { name: 'Đã xử lý' }));
+    expect(await screen.findByRole('button', { name: /đã xử lý xong/ })).toBeInTheDocument();
+    releaseOpen({ items: [OWNER] });
+    await new Promise((r) => setTimeout(r, 20));
+    expect(screen.queryByRole('button', { name: /lời nhắn xấu/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /đã xử lý xong/ })).toBeInTheDocument();
+  });
 });

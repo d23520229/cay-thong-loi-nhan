@@ -15,6 +15,7 @@ export function AdminApp() {
   // undefined = đang hỏi phiên; null = chưa đăng nhập.
   const [me, setMe] = useState<Me | null | undefined>(undefined);
   const [openReports, setOpenReports] = useState<number | null>(null);
+  const [logoutError, setLogoutError] = useState('');
 
   // Trang quản trị không cho máy tìm kiếm lập chỉ mục.
   useEffect(() => {
@@ -53,10 +54,12 @@ export function AdminApp() {
   const ctx = useMemo<AdminCtx | null>(() => (me ? { email: me.email, onError, refreshCount } : null), [me, onError, refreshCount]);
 
   const logout = async () => {
+    setLogoutError('');
     try {
       await adminApi.logout();
-    } catch {
-      /* phiên đã hết thì cũng coi như đã đăng xuất */
+    } catch (e) {
+      // Phiên đã hết (401) thì coi như đã đăng xuất; lỗi khác thì phiên còn hiệu lực → ở lại, báo lỗi.
+      if (!(e instanceof ApiError && e.status === 401)) return setLogoutError('Chưa đăng xuất được, thử lại nhé.');
     }
     setMe(null);
   };
@@ -80,6 +83,7 @@ export function AdminApp() {
           </div>
         </nav>
         <main className="adm-main">
+          {logoutError ? <div className="notice" role="alert">{logoutError}</div> : null}
           <Routes>
             <Route index element={<Overview />} />
             <Route path="bao-cao" element={<Reports />} />

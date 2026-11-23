@@ -6,6 +6,7 @@ import { HttpError } from '../errors.js';
 import { renderOg as defaultRender, renderRoomImage as defaultRoomImage } from '../og/render.js';
 import { logEvent } from '../events.js';
 import { buildPublicRoom } from './trees.js';
+import { requireAdmin } from '../admin/session.js';
 
 const TREE_ID = /^[a-z2-9]{8}$/;
 const CACHE_MAX = 200;
@@ -93,6 +94,17 @@ export async function ogRoutes(app: FastifyInstance) {
       .header('content-disposition', `attachment; filename="cay-thong-${id}.png"`)
       .header('cache-control', 'public, max-age=300')
       .send(png);
+  });
+
+  // Ảnh phòng cho trang Tra cứu phòng (đặc tả 6.8.5): như khách thấy, nhưng không tính là lượt tải
+  // ảnh và vẫn chạy sau 01/01/2027 (API quản trị không bị 410).
+  app.get<{ Params: { id: string } }>('/api/admin/trees/:id/room.png', async (req, reply) => {
+    await requireAdmin(app, req);
+    const id = req.params.id;
+    const room = TREE_ID.test(id) ? await buildPublicRoom(db.db, id) : null;
+    if (!room) throw new HttpError(404, 'not_found', 'Không tìm thấy cây này.');
+    const png = await cached('img:', id, room, renderImage, imageCache, IMAGE_CACHE_MAX);
+    return reply.header('content-type', 'image/png').header('cache-control', 'private, no-store').send(png);
   });
 
   // Bản build web: file tĩnh + trang (các đường dẫn khác rơi vào setNotFoundHandler ở app.ts → index.html).

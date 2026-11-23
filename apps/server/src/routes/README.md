@@ -16,6 +16,7 @@ Các file đánh dấu **có rồi** đã làm xong. Mọi thao tác quản tr�
 | `admin/auth.ts` | `POST /api/admin/auth/google`, `GET /api/admin/me`, `POST /api/admin/auth/logout` (phiên `ctln_admin`, CSRF ở `../admin/session.ts`) | 6.8.2, 8.7 | có rồi (M3b) |
 | `admin/overview.ts` | `GET /api/admin/overview` (người dùng + máy chủ; đếm lỗi / p95 ở `../metrics.ts`) | 6.8.3 | có rồi (M3b) |
 | `admin/reports.ts` | `GET /api/admin/reports`, `GET …/:rid/photo`, `POST …/:rid/resolve` | 6.8.4 | có rồi (M3b) |
+| `og.ts` (quản trị) | `GET /api/admin/trees/:id/room.png` (ảnh phòng cho Tra cứu phòng, không ghi event, dùng chung bộ đệm ảnh) | 6.8.5 | có rồi (M3b) |
 | `admin/trees.ts` | `GET /api/admin/trees/:id`, `POST …/unlock-pin`, `POST …/revoke-sessions`, `DELETE /api/admin/trees/:id` | 6.8.5 | có rồi (M3b) |
 | `admin/audit.ts` | `GET /api/admin/audit?before=` | 6.8.6 | có rồi (M3b) |
 

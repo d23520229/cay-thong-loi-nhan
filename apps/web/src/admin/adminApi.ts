@@ -95,6 +95,8 @@ export const adminApi = {
   resolve: (rid: string, action: ResolveAction, note: string) =>
     write<{ ok: true }>('POST', `${BASE}/reports/${enc(rid)}/resolve`, { action, note }),
   tree: (id: string) => request<AdminTree>('GET', `${BASE}/trees/${enc(id)}`),
+  /** Ảnh phòng cho quản trị: không tính lượt tải ảnh, vẫn xem được sau khi dịch vụ kết thúc. */
+  roomImageUrl: (id: string) => `${BASE}/trees/${enc(id)}/room.png`,
   unlockPin: (id: string, note?: string) => write<void>('POST', `${BASE}/trees/${enc(id)}/unlock-pin`, note ? { note } : {}),
   revokeSessions: (id: string, note?: string) =>
     write<{ revoked: number }>('POST', `${BASE}/trees/${enc(id)}/revoke-sessions`, note ? { note } : {}),

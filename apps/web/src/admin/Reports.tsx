@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router';
 import { ApiError } from '../lib/api';
 import { Button } from '../ui/Button';
@@ -35,12 +35,16 @@ export function Reports() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState('');
 
+  // Chỉ nhận phản hồi của lần tải mới nhất: đổi tab nhanh thì phản hồi cũ không ghi đè.
+  const seq = useRef(0);
   const load = useCallback(
-    (t: Tab) =>
-      adminApi.reports(t).then(
-        (r) => setItems(r.items),
-        (e: unknown) => setError(onError(e)),
-      ),
+    (t: Tab) => {
+      const mine = ++seq.current;
+      return adminApi.reports(t).then(
+        (r) => { if (mine === seq.current) setItems(r.items); },
+        (e: unknown) => { if (mine === seq.current) setError(onError(e)); },
+      );
+    },
     [onError],
   );
   useEffect(() => {

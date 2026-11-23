@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import { eq, like } from 'drizzle-orm';
 import { catalog } from '@ctln/shared';
 import { adminLogin, makeTestApp, ADMIN_ENV } from './helpers.js';
-import { adminAudit, messages, ownerSessions, rateCounters, reports } from '../src/db/schema.js';
+import { adminAudit, events, messages, ownerSessions, rateCounters, reports } from '../src/db/schema.js';
 import { windowEnd, windowStart } from '../src/security.js';
 
 type T = Awaited<ReturnType<typeof makeTestApp>>;
@@ -129,5 +129,21 @@ describe('GET /api/admin/audit', () => {
     expect(p2.items).toHaveLength(6);
     expect(p2.items[5].action).toBe('login');
     expect(p2.nextBefore).toBeNull();
+  });
+});
+
+describe('GET /api/admin/trees/:id/room.png', () => {
+  it('ảnh phòng cho quản trị: không ghi event tải ảnh, vẫn chạy sau ENDED, cần phiên quản trị', async () => {
+    t = await makeTestApp({ env: ADMIN_ENV, renderRoomImage: async () => Buffer.from('PNG') });
+    const { id } = await seed();
+    expect((await t.app.inject(`/api/admin/trees/${id}/room.png`)).statusCode).toBe(401);
+    t.clock.set('2027-01-02T00:00:00+07:00');
+    const a = await adminLogin(t.app);
+    const r = await t.app.inject({ url: `/api/admin/trees/${id}/room.png`, headers: { cookie: a.cookie } });
+    expect(r.statusCode).toBe(200);
+    expect(r.headers['content-type']).toBe('image/png');
+    expect(r.headers['content-disposition']).toBeUndefined();
+    expect(await t.h.db.select().from(events).where(eq(events.type, 'image_downloaded'))).toHaveLength(0);
+    expect((await t.app.inject({ url: '/api/admin/trees/zzzzzzzz/room.png', headers: { cookie: a.cookie } })).statusCode).toBe(404);
   });
 });
