@@ -4,6 +4,7 @@ import helmet from '@fastify/helmet';
 import { ZodError } from 'zod';
 import type { DbHandle } from './db/client.js';
 import type { Env } from './env.js';
+import type { PhotoStore } from './storage/index.js';
 import { HttpError } from './errors.js';
 import { phaseOf } from './guards.js';
 import { authRoutes } from './routes/auth.js';
@@ -21,8 +22,12 @@ export type AppDeps = {
   env: Env;
   now: () => Date;
   google: GoogleVerifier | null;
+  /** Nơi lưu ảnh đính kèm. */
+  photos: PhotoStore;
   /** Thay hàm vẽ ảnh OG (chỉ dùng trong test). */
   renderOg?: (room: OgRoom, assetDir: string) => Promise<Buffer>;
+  /** Thay hàm vẽ ảnh phòng tải về (chỉ dùng trong test). */
+  renderRoomImage?: (room: OgRoom, assetDir: string) => Promise<Buffer>;
 };
 
 declare module 'fastify' {
@@ -59,6 +64,8 @@ export async function buildApp(deps: AppDeps, opts: { logStream?: { write(msg: s
         'frame-src': ["'self'", GOOGLE],
         'connect-src': ["'self'", GOOGLE],
         'style-src': ["'self'", "'unsafe-inline'", GOOGLE],
+        // blob: để xem trước ảnh chọn từ máy (URL.createObjectURL) và tải thiệp.
+        'img-src': ["'self'", 'data:', 'blob:'],
         // Chưa production: bỏ upgrade-insecure-requests để mở bản build qua http trong mạng LAN (thử trên điện thoại).
         upgradeInsecureRequests: deps.env.production ? [] : null,
       },

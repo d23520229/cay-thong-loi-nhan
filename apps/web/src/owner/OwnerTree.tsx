@@ -256,9 +256,7 @@ export function OwnerTree({ treeId, meta, room, toast, onUnauthorized, onChange 
           overlay={
             <>
               <TreeBubble room={room} hidden={zoomed} text={canRead ? 'Chạm vào cây để mở quà' : 'Chạm vào cây để xem lời nhắn'} />
-              {zoomed ? (
-                <SlotsLayer rects={slotRects(room)} views={views} fx={ring} onTap={(i) => void openAt(i)} hideEmpty states={states} />
-              ) : null}
+              <SlotsLayer rects={slotRects(room)} views={views} fx={ring} onTap={(i) => void openAt(i)} hideEmpty states={states} interactive={zoomed} />
             </>
           }
         />
@@ -285,7 +283,10 @@ export function OwnerTree({ treeId, meta, room, toast, onUnauthorized, onChange 
       </div>
       {card && sheet !== 'report' ? (
         <MessageCard
+          treeId={treeId}
           message={card.message}
+          slotIndex={card.index}
+          onNotice={toast}
           hasPrev={pos > 0}
           hasNext={pos >= 0 && pos < order.length - 1}
           busy={busy}
@@ -300,6 +301,7 @@ export function OwnerTree({ treeId, meta, room, toast, onUnauthorized, onChange 
       {sheet === 'report' ? <ReportSheet busy={busy} onSubmit={(r) => void sendReport(r)} onClose={() => setSheet(null)} /> : null}
       {sheet === 'share' ? (
         <ShareSheet
+          treeId={treeId}
           url={`${window.location.origin}/c/${treeId}`}
           title={meta.title || `Cây thông của ${meta.ownerName}`}
           toast={toast}

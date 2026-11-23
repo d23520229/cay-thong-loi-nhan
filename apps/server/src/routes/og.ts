@@ -3,11 +3,14 @@ import { join } from 'node:path';
 import type { FastifyInstance } from 'fastify';
 import fastifyStatic from '@fastify/static';
 import { HttpError } from '../errors.js';
-import { renderOg as defaultRender } from '../og/render.js';
+import { renderOg as defaultRender, renderRoomImage as defaultRoomImage } from '../og/render.js';
+import { logEvent } from '../events.js';
 import { buildPublicRoom } from './trees.js';
 
 const TREE_ID = /^[a-z2-9]{8}$/;
 const CACHE_MAX = 200;
+/** Ảnh tải về cỡ MB: giữ ít thôi để không ngốn bộ nhớ App Service B1. */
+const IMAGE_CACHE_MAX = 8;
 
 const ESC: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
 export const escapeHtml = (s: string): string => s.replace(/[&<>"']/g, (c) => ESC[c]!);
@@ -42,25 +45,54 @@ const indexCache = new Map<string, string>();
 export async function ogRoutes(app: FastifyInstance) {
   const { db, env } = app.deps;
   const render = app.deps.renderOg ?? defaultRender;
-  const cache = new Map<string, Promise<Buffer>>(); // giữ thứ tự chèn: phần tử đầu là lâu chưa dùng nhất
+  const renderImage = app.deps.renderRoomImage ?? defaultRoomImage;
+  // Giữ thứ tự chèn: phần tử đầu là lâu chưa dùng nhất. Ảnh tải về có bộ đệm riêng, nhỏ hơn.
+  const ogCache = new Map<string, Promise<Buffer>>();
+  const imageCache = new Map<string, Promise<Buffer>>();
+
+  /** Vẽ (hoặc lấy từ bộ đệm) ảnh của một phòng; `prefix` tách khoá ảnh tải về khỏi ảnh OG. */
+  const cached = (prefix: string, id: string, room: NonNullable<Awaited<ReturnType<typeof buildPublicRoom>>>, draw: typeof render, cache: Map<string, Promise<Buffer>>, max: number) => {
+    const key = `${prefix}${id}:${room.roomVersion}:${room.slots.filter((s) => s.occupied).map((s) => `${s.index}=${s.ornament}`).join(',')}`;
+    // Đệm cả lời hứa đang vẽ: nhiều trình đọc link cùng lúc chỉ vẽ một lần. Dùng lại thì dời xuống cuối (LRU).
+    let job = cache.get(key);
+    if (job) cache.delete(key);
+    else {
+      job = draw(room, env.assetDir);
+      job.catch(() => cache.delete(key));
+    }
+    cache.set(key, job);
+    if (cache.size > max) cache.delete(cache.keys().next().value!);
+    return job;
+  };
 
   app.get<{ Params: { file: string } }>('/og/:file', async (req, reply) => {
     const m = /^([a-z2-9]{8})\.png$/.exec(req.params.file);
     const id = m?.[1];
     const room = id && TREE_ID.test(id) ? await buildPublicRoom(db.db, id) : null;
     if (!id || !room) throw new HttpError(404, 'not_found', 'Không tìm thấy cây này.');
-    const key = `${id}:${room.roomVersion}:${room.slots.filter((s) => s.occupied).map((s) => `${s.index}=${s.ornament}`).join(',')}`;
-    // Đệm cả lời hứa đang vẽ: nhiều trình đọc link cùng lúc chỉ vẽ một lần. Dùng lại thì dời xuống cuối (LRU).
-    let job = cache.get(key);
-    if (job) cache.delete(key);
-    else {
-      job = render(room, env.assetDir);
-      job.catch(() => cache.delete(key));
-    }
-    cache.set(key, job);
-    if (cache.size > CACHE_MAX) cache.delete(cache.keys().next().value!);
-    const png = await job;
+    const png = await cached('', id, room, render, ogCache, CACHE_MAX);
     return reply.header('content-type', 'image/png').header('cache-control', 'public, max-age=300').send(png);
+  });
+
+  // Ảnh phòng tải về (đặc tả 6.7.4): công khai như GET /api/trees/:id, không có nội dung lời nhắn.
+  app.get<{ Params: { id: string } }>('/api/trees/:id/image.png', async (req, reply) => {
+    const id = req.params.id;
+    const room = TREE_ID.test(id) ? await buildPublicRoom(db.db, id) : null;
+    if (!room) throw new HttpError(404, 'not_found', 'Không tìm thấy cây này.');
+    const png = await cached('img:', id, room, renderImage, imageCache, IMAGE_CACHE_MAX);
+    // HEAD (Fastify tự sinh) không phải một lượt tải; ghi nhận lỗi không được làm hỏng lượt tải.
+    if (req.method === 'GET') {
+      try {
+        await logEvent(db.db, 'image_downloaded', id);
+      } catch (err) {
+        req.log.warn({ err }, 'không ghi được event image_downloaded');
+      }
+    }
+    return reply
+      .header('content-type', 'image/png')
+      .header('content-disposition', `attachment; filename="cay-thong-${id}.png"`)
+      .header('cache-control', 'public, max-age=300')
+      .send(png);
   });
 
   // Bản build web: file tĩnh + trang (các đường dẫn khác rơi vào setNotFoundHandler ở app.ts → index.html).

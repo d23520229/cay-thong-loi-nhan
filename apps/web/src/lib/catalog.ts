@@ -46,6 +46,16 @@ export type Catalog = {
     slotCounts: number[];
     assets: { canopy: string; trunk: string };
   };
+  card: {
+    w: number;
+    h: number;
+    lines: number[];
+    text: { left: number; width: number; fontSize: number; color: string; firstLine: number; maxLines: number };
+    date: { left: number; top: number; width: number; height: number; fontSize: number; color: string };
+    photo: { left: number; top: number; width: number; height: number; angle: number };
+    frameEdge: { x1: number; y1: number; x2: number; y2: number; gap: number };
+    assets: Record<string, string>;
+  };
   items: Record<string, ItemDef>;
   ornaments: Record<string, Named>;
   defaultRoom: {

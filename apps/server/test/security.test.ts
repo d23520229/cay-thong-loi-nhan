@@ -14,9 +14,14 @@ describe('env', () => {
     expect(() => loadEnv({ NODE_ENV: 'production', PEPPER: 'short' })).toThrow();
     expect(() => loadEnv({ NODE_ENV: 'production', PEPPER: 'x'.repeat(32) })).toThrow();
     expect(() => loadEnv({ NODE_ENV: 'production', PEPPER: 'x'.repeat(32), BLOCK_IP_KEY: 'short' })).toThrow();
-    const ok = loadEnv({ NODE_ENV: 'production', PEPPER: 'x'.repeat(32), BLOCK_IP_KEY: 'y'.repeat(32) });
+    const ok = loadEnv({ NODE_ENV: 'production', PEPPER: 'x'.repeat(32), BLOCK_IP_KEY: 'y'.repeat(32), AZURE_STORAGE_CONNECTION_STRING: 'cs' });
     expect(ok.pepper).toBe('x'.repeat(32));
     expect(ok.blockIpKey).toBe('y'.repeat(32));
+  });
+  it('production thiếu AZURE_STORAGE_CONNECTION_STRING thì ném lỗi (không lặng lẽ ghi đĩa)', () => {
+    const base = { NODE_ENV: 'production', PEPPER: 'x'.repeat(32), BLOCK_IP_KEY: 'y'.repeat(32) };
+    expect(() => loadEnv(base)).toThrow(/AZURE_STORAGE_CONNECTION_STRING/);
+    expect(() => loadEnv({ ...base, AZURE_STORAGE_CONNECTION_STRING: 'cs' })).not.toThrow();
   });
   it('TRUST_PROXY_HOPS mặc định 1, đọc từ env, từ chối giá trị sai', () => {
     expect(loadEnv({}).trustProxyHops).toBe(1);
@@ -24,7 +29,7 @@ describe('env', () => {
     expect(() => loadEnv({ TRUST_PROXY_HOPS: 'abc' })).toThrow();
   });
   it('production không cho đặt FAKE_NOW', () => {
-    const base = { NODE_ENV: 'production', PEPPER: 'x'.repeat(32), BLOCK_IP_KEY: 'y'.repeat(32) };
+    const base = { NODE_ENV: 'production', PEPPER: 'x'.repeat(32), BLOCK_IP_KEY: 'y'.repeat(32), AZURE_STORAGE_CONNECTION_STRING: 'cs' };
     expect(() => loadEnv({ ...base, FAKE_NOW: '2026-12-24T00:00:00+07:00' })).toThrow(/FAKE_NOW/);
     expect(() => loadEnv(base)).not.toThrow();
     expect(() => loadEnv({ FAKE_NOW: '2026-12-24T00:00:00+07:00' })).not.toThrow();

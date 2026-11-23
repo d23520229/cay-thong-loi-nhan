@@ -1,4 +1,5 @@
-import { describe, it, expect, afterEach } from 'vitest';
+import { describe, it, expect, afterEach, beforeAll } from 'vitest';
+import sharp from 'sharp';
 import { eq } from 'drizzle-orm';
 import { catalog } from '@ctln/shared';
 import { makeTestApp, deviceHeaders } from './helpers.js';
@@ -262,5 +263,152 @@ describe('reports', () => {
     const { id } = await setup();
     t.clock.set('2026-12-28T10:00:00+07:00');
     expect((await report(id, { reason: 'x' }, deviceHeaders())).statusCode).toBe(201);
+  });
+});
+
+// Ảnh thật nhỏ (JPEG 8×8) để server giải mã bằng sharp.
+let JPEG = '';
+beforeAll(async () => {
+  JPEG = (await sharp({ create: { width: 8, height: 8, channels: 3, background: '#f00' } }).jpeg().toBuffer()).toString('base64');
+});
+const photo = (id: string, mid: string, cookies?: Record<string, string>) =>
+  t.app.inject({ method: 'GET', url: `/api/trees/${id}/messages/${mid}/photo`, cookies });
+const keyOf = async (mid: string) =>
+  (await t.h.db.select({ k: messages.photoKey }).from(messages).where(eq(messages.id, Number(mid))))[0]!.k!;
+
+describe('ảnh: chủ cây đọc', () => {
+  it('khách không có đường đọc ảnh: GET /api/trees/:id và /owner không có trường nào lộ ảnh', async () => {
+    const { id, cookies } = await setup();
+    expect((await post(id, 1, undefined, { photo: JPEG })).statusCode).toBe(201);
+    const pub = await t.app.inject({ method: 'GET', url: `/api/trees/${id}` });
+    expect(pub.statusCode).toBe(200);
+    expect(pub.body.toLowerCase()).not.toContain('photo');
+    t.clock.set('2026-12-24T08:00:00+07:00');
+    const own = await t.app.inject({ method: 'GET', url: `/api/trees/${id}/owner`, cookies });
+    expect(own.statusCode).toBe(200);
+    expect(own.body.toLowerCase()).not.toContain('photo');
+  });
+
+  it('trước 24/12 → 423; sau 24/12 chưa mở → 403 not_opened; mở rồi → 200 image/webp, no-store', async () => {
+    const a = await setup();
+    const b = await mkTree();
+    const p = (await post(a.id, 1, undefined, { photo: JPEG })).json();
+    const early = await photo(a.id, p.messageId, a.cookies);
+    expect(early.statusCode).toBe(423);
+    expect(early.json().error.code).toBe('locked');
+    t.clock.set('2026-12-24T08:00:00+07:00');
+    expect((await photo(a.id, p.messageId)).statusCode).toBe(401);
+    expect((await photo(b.id, p.messageId, b.cookies)).statusCode).toBe(404);
+    const closed = await photo(a.id, p.messageId, a.cookies);
+    expect(closed.statusCode).toBe(403);
+    expect(closed.json().error.code).toBe('not_opened');
+    expect((await open(a.id, p.messageId, a.cookies)).statusCode).toBe(200);
+    const r = await photo(a.id, p.messageId, a.cookies);
+    expect(r.statusCode).toBe(200);
+    expect(r.headers['content-type']).toBe('image/webp');
+    expect(r.headers['cache-control']).toBe('private, no-store');
+    expect(r.rawPayload.subarray(8, 12).toString()).toBe('WEBP');
+  });
+
+  it('423 cùng dạng với open (có unlockAt)', async () => {
+    const { id, cookies } = await setup();
+    const p = (await post(id, 1, undefined, { photo: JPEG })).json();
+    const a = (await photo(id, p.messageId, cookies)).json();
+    const b = (await open(id, p.messageId, cookies)).json();
+    expect(a).toEqual(b);
+  });
+
+  it('lời nhắn không ảnh đã mở → 404; mid lạ → 404', async () => {
+    const { id, cookies } = await setup();
+    const p = (await post(id, 1)).json();
+    t.clock.set('2026-12-24T08:00:00+07:00');
+    await open(id, p.messageId, cookies);
+    expect((await photo(id, p.messageId, cookies)).statusCode).toBe(404);
+    expect((await photo(id, '999999', cookies)).statusCode).toBe(404);
+  });
+
+  it('open trả hasPhoto đúng, không trả khoá', async () => {
+    const { id, cookies } = await setup();
+    const a = (await post(id, 1, undefined, { photo: JPEG })).json();
+    const b = (await post(id, 2)).json();
+    t.clock.set('2026-12-24T08:00:00+07:00');
+    const ra = await open(id, a.messageId, cookies);
+    expect(ra.json().hasPhoto).toBe(true);
+    expect(ra.body).not.toContain('.webp');
+    expect((await open(id, b.messageId, cookies)).json().hasPhoto).toBe(false);
+  });
+});
+
+describe('ảnh: dọn khi xoá, báo cáo chép ảnh', () => {
+  it('chủ cây xoá → không còn khoá ảnh', async () => {
+    const { id, cookies } = await setup();
+    const p = (await post(id, 1, undefined, { photo: JPEG })).json();
+    expect(t.photos.keys()).toHaveLength(1);
+    expect((await delMsg(id, p.messageId, cookies)).statusCode).toBe(204);
+    expect(t.photos.keys()).toEqual([]);
+  });
+
+  it('chặn → không còn khoá ảnh', async () => {
+    const { id, cookies } = await setup();
+    const p = (await post(id, 1, undefined, { photo: JPEG })).json();
+    expect((await block(id, { messageId: p.messageId }, cookies)).statusCode).toBe(204);
+    expect(t.photos.keys()).toEqual([]);
+  });
+
+  it('store.delete ném lỗi → xoá và chặn vẫn 204', async () => {
+    const { id, cookies } = await setup();
+    const p1 = (await post(id, 1, undefined, { photo: JPEG })).json();
+    const p2 = (await post(id, 2, undefined, { photo: JPEG })).json();
+    t.photos.delete = async () => { throw Object.assign(new Error('blob hỏng'), { code: 'EIO' }); };
+    expect((await delMsg(id, p1.messageId, cookies)).statusCode).toBe(204);
+    expect((await block(id, { messageId: p2.messageId }, cookies)).statusCode).toBe(204);
+    expect(await t.h.db.select().from(messages)).toHaveLength(0);
+  });
+
+  it('báo cáo lời nhắn có ảnh → photo_snapshot_key = r/{id}.webp, khoá tồn tại; xoá lời nhắn sau đó bản chụp còn', async () => {
+    const { id, cookies } = await setup();
+    const p = (await post(id, 1, undefined, { photo: JPEG })).json();
+    const key = await keyOf(p.messageId);
+    t.clock.set('2026-12-24T08:00:00+07:00');
+    await open(id, p.messageId, cookies);
+    const r = await report(id, { messageId: p.messageId }, {}, cookies);
+    expect(r.statusCode).toBe(201);
+    const snap = `r/${r.json().reportId}.webp`;
+    const [row] = await t.h.db.select().from(reports);
+    expect(row!.photoSnapshotKey).toBe(snap);
+    expect(t.photos.keys().sort()).toEqual([key, snap].sort());
+    expect((await delMsg(id, p.messageId, cookies)).statusCode).toBe(204);
+    expect(t.photos.keys()).toEqual([snap]);
+  });
+
+  it('báo cáo bị xoá giữa chừng (cây vừa bị xoá) → bản chụp ảnh vừa chép bị dọn, không mồ côi', async () => {
+    const { id, cookies } = await setup();
+    const p = (await post(id, 1, undefined, { photo: JPEG })).json();
+    const key = await keyOf(p.messageId);
+    t.clock.set('2026-12-24T08:00:00+07:00');
+    await open(id, p.messageId, cookies);
+    const copy = t.photos.copy.bind(t.photos);
+    t.photos.copy = async (from: string, to: string) => {
+      await copy(from, to);
+      await t.h.db.delete(reports); // cây bị xoá đúng lúc đang chép
+    };
+    expect((await report(id, { messageId: p.messageId }, {}, cookies)).statusCode).toBe(201);
+    expect(t.photos.keys()).toEqual([key]);
+  });
+
+  it('báo cáo lời nhắn không ảnh → photo_snapshot_key NULL; chép ảnh lỗi → vẫn 201, giữ bản chụp chữ', async () => {
+    const { id, cookies } = await setup();
+    const a = (await post(id, 1)).json();
+    const b = (await post(id, 2, undefined, { photo: JPEG })).json();
+    t.clock.set('2026-12-24T08:00:00+07:00');
+    await open(id, a.messageId, cookies);
+    await open(id, b.messageId, cookies);
+    expect((await report(id, { messageId: a.messageId }, {}, cookies)).statusCode).toBe(201);
+    t.photos.copy = async () => { throw Object.assign(new Error('blob hỏng'), { code: 'EIO' }); };
+    expect((await report(id, { messageId: b.messageId }, {}, cookies)).statusCode).toBe(201);
+    const rows = await t.h.db.select().from(reports);
+    expect(rows).toHaveLength(2);
+    expect(rows.map((x) => x.photoSnapshotKey)).toEqual([null, null]);
+    expect(rows.map((x) => x.messageSnapshot)).toEqual(['Chúc mừng Giáng sinh', 'Chúc mừng Giáng sinh']);
   });
 });

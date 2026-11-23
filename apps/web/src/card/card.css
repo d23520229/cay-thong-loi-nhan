@@ -1,0 +1,24 @@
+/* Xem thiệp toàn màn hình (tiền tố cd-). */
+.cd-fail { padding: 24px 16px; text-align: center; color: var(--ink, inherit); }
+.cd-canvas { display: block; width: 100%; height: auto; aspect-ratio: 2100 / 1500; }
+.cd-viewer {
+  position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center;
+  background: rgba(0, 0, 0, 0.88); touch-action: pinch-zoom; outline: none; overflow: hidden;
+}
+.cd-close {
+  position: absolute; top: 12px; right: 12px; z-index: 1; width: 44px; height: 44px; border: 0; border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15); color: #fff; font-size: 20px; cursor: pointer;
+}
+.cd-stage { width: 96vw; max-height: 96vh; }
+/* Màn dọc: xoay 90° rồi giới hạn bề rộng theo cả chiều cao lẫn bề rộng màn hình (2100/1500 = 1.4). */
+.cd-stage.cd-rotated { width: min(96vh, calc(96vw * 1.4)); max-height: none; transform: rotate(90deg); flex: none; }
+/* Ảnh kèm trong bảng viết. */
+.cd-photo { align-items: center; }
+.cd-pick { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
+.cd-pick.is-disabled { opacity: .5; cursor: not-allowed; }
+.cd-pick:focus-within { outline: 3px solid var(--gold); outline-offset: 2px; }
+/* Ô chọn tệp ẩn đi nhưng vẫn bấm được qua nhãn và vẫn nhận bàn phím. */
+.cd-file { position: absolute; width: 1px; height: 1px; opacity: 0; overflow: hidden; }
+.cd-thumb { flex: none; width: 72px; height: 72px; border-radius: 10px; border: 2px solid var(--line); background: var(--chip); }
+.cd-sending { padding: 6px 14px; border-radius: 14px; background: var(--chip); color: var(--cream); font-size: 17px; }
+.cd-loading { background: rgba(255, 255, 255, 0.06); border-radius: 12px; }

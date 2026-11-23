@@ -9,7 +9,7 @@
     "maxItems": 25,
     "scaleMin": 0.5,
     "scaleMax": 1.6,
-    "messageMax": 300,
+    "messageMax": 400,
     "nameMax": 30,
     "titleMax": 40,
     "perDeviceMessages": 3,
@@ -530,6 +530,58 @@
           "ay": 251.99999999999997
         }
       }
+    }
+  },
+  "card": {
+    "w": 2100,
+    "h": 1500,
+    "assets": {
+      "plain": "card/card-plain.webp",
+      "photoBg": "card/card-photo-bg.webp",
+      "photoFrame": "card/card-photo-frame.webp"
+    },
+    "lines": [
+      26.95,
+      31.95,
+      37.05,
+      41.95,
+      47.03,
+      52.01,
+      57.13,
+      62.03,
+      67.1,
+      72.09,
+      77.17
+    ],
+    "text": {
+      "left": 29.8,
+      "width": 52,
+      "fontSize": 2.3,
+      "color": "#7a1f2a",
+      "firstLine": 1,
+      "maxLines": 9
+    },
+    "date": {
+      "left": 79.3,
+      "top": 20.1,
+      "width": 8.8,
+      "height": 5,
+      "fontSize": 1.45,
+      "color": "#fff6e5"
+    },
+    "photo": {
+      "left": 0.64,
+      "top": 54.66,
+      "width": 27.75,
+      "height": 37.42,
+      "angle": -12.19
+    },
+    "frameEdge": {
+      "x1": 28.52,
+      "y1": 38,
+      "x2": 37.12,
+      "y2": 93.71,
+      "gap": 0.4
     }
   },
   "ornaments": {

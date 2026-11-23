@@ -66,12 +66,12 @@ async function itemImage(it: Item, room: OgRoom, assetDir: string, w: number, h:
 }
 
 /** Phụ kiện đã treo trên cây (vị trí như slotRects ở web). */
-function ornaments(room: OgRoom, tree: Item): OverlayOptions[] {
+function ornaments(room: OgRoom, tree: Item, sc: number): OverlayOptions[] {
   const L = layoutSlots(room.tree.shape, room.tree.slotCount) as { scale: number; slots: { x: number; y: number }[] };
   const k = FRAME.scaleInRoom * tree.scale;
   const tl = tree.x - (FRAME.w / 2) * k;
   const tt = tree.y - FRAME.baseY * k;
-  const size = 60 * L.scale * k;
+  const size = 60 * L.scale * k * sc;
   const byIndex = new Map(room.slots.map((s) => [s.index, s]));
   const out: OverlayOptions[] = [];
   L.slots.forEach((p, index) => {
@@ -80,34 +80,47 @@ function ornaments(room: OgRoom, tree: Item): OverlayOptions[] {
     const x = tree.flip ? FRAME.w - p.x : p.x;
     out.push({
       input: svg('-30 -6 60 60', size, size, ornamentSVGSoft(s.ornament, 'filled', null)),
-      left: Math.round(PAD + tl + x * k - size / 2),
-      top: Math.round(PAD + tt + p.y * k - 6 * L.scale * k),
+      left: Math.round(sc * (PAD + tl + x * k) - size / 2),
+      top: Math.round(sc * (PAD + tt + p.y * k - 6 * L.scale * k)),
     });
   });
   return out;
 }
 
-export async function renderOg(room: OgRoom, assetDir: string): Promise<Buffer> {
+/**
+ * Ghép căn phòng thành PNG (720·scale × 1080·scale), không chữ. Dùng chung cho ảnh OG (scale 1) và ảnh tải về (scale 1.5).
+ * Mọi toạ độ và cỡ nhân với `scale` ngay lúc ghép; ảnh WebP được xuất sẵn ở 1,5× nên 1,5 là cỡ gốc, không phóng to mờ.
+ */
+export async function renderRoomLayer(room: OgRoom, assetDir: string, scale: number): Promise<Buffer> {
   const bgPath = join(assetDir, 'assets', catalog.backgrounds[room.background]!.asset);
   // Món không có trong danh mục (dữ liệu cũ/lạ) bị bỏ qua, không làm hỏng cả ảnh.
   const known = room.items.filter((it) => items[it.type]?.variants[it.variant]);
   const order = known.map((it, i) => ({ it, i })).sort((a, b) => rank(a.it) - rank(b.it) || a.i - b.i).map((x) => x.it);
+  const pad = Math.round(PAD * scale), outW = Math.round(RW * scale), outH = Math.round(RH * scale);
 
-  const overlays: OverlayOptions[] = [{ input: await layer(bgPath, RW, RH), left: PAD, top: PAD }];
+  const overlays: OverlayOptions[] = [{ input: await layer(bgPath, outW, outH), left: pad, top: pad }];
   for (const it of order) {
     const v = items[it.type]!.variants[it.variant]!;
-    const w = v.w * it.scale, h = v.h * it.scale;
-    overlays.push({ input: await itemImage(it, room, assetDir, w, h), left: Math.round(PAD + it.x - v.ax * it.scale), top: Math.round(PAD + it.y - v.ay * it.scale) });
-    if (it.type === 'tree') overlays.push(...ornaments(room, it));
+    const w = v.w * it.scale * scale, h = v.h * it.scale * scale;
+    overlays.push({ input: await itemImage(it, room, assetDir, w, h), left: Math.round(scale * (PAD + it.x - v.ax * it.scale)), top: Math.round(scale * (PAD + it.y - v.ay * it.scale)) });
+    if (it.type === 'tree') overlays.push(...ornaments(room, it, scale));
   }
   // Ghép ra buffer trước rồi mới cắt (sharp: extract sau composite trong cùng chuỗi sẽ lỗi).
-  const canvas = await sharp({ create: { width: RW + 2 * PAD, height: RH + 2 * PAD, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
+  const canvas = await sharp({ create: { width: outW + 2 * pad, height: outH + 2 * pad, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } } })
     .composite(overlays)
     .png()
     .toBuffer();
+  return sharp(canvas).extract({ left: pad, top: pad, width: outW, height: outH }).png().toBuffer();
+}
+
+/** Ảnh phòng tải về: 1080×1620, không chữ (đặc tả 6.7.4). */
+export const renderRoomImage = (room: OgRoom, assetDir: string): Promise<Buffer> => renderRoomLayer(room, assetDir, 1.5);
+
+export async function renderOg(room: OgRoom, assetDir: string): Promise<Buffer> {
+  const bgPath = join(assetDir, 'assets', catalog.backgrounds[room.background]!.asset);
   const roomH = H;
   const roomW = Math.round((RW * H) / RH); // 420
-  const roomImg = await sharp(await sharp(canvas).extract({ left: PAD, top: PAD, width: RW, height: RH }).png().toBuffer())
+  const roomImg = await sharp(await renderRoomLayer(room, assetDir, 1))
     .resize(roomW, roomH)
     .png()
     .toBuffer();

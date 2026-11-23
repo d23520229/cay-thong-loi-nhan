@@ -103,13 +103,14 @@ Ký hiệu: **P0** bắt buộc khi ra mắt · **P1** nên có · **P2** nếu 
 |---|---|---|
 | G1 | Xem phòng, lời nhắc "Chạm vào cây thông để treo lời nhắn", nút "Tạo cây của bạn" | P0 |
 | G2 | Chạm cây → zoom mượt vào giữa cây (ở bất kỳ vị trí/kích thước nào), hiện bong bóng "+" và phụ kiện đã treo | P0 |
-| G3 | Chạm bong bóng → bảng viết: chọn 1/20 phụ kiện, để tên hoặc ẩn danh, lời nhắn ≤ 300 ký tự | P0 |
+| G3 | Chạm bong bóng → bảng viết: chọn 1/20 phụ kiện, để tên hoặc ẩn danh, lời nhắn ≤ 400 ký tự và không quá 9 dòng khi xếp lên thiệp (nâng từ 300, chốt 23/11, mục 6.7); xem trước thiệp trước khi treo | P0 |
 | G4 | Treo xong: phụ kiện rơi vào chỗ, thông báo "còn 15 phút để sửa" | P0 |
 | G5 | Sửa / xoá lời nhắn của mình trong 15 phút trên cùng thiết bị | P0 |
 | G6 | Chạm lò sưởi, quà, thú cưng → hiệu ứng (mỗi lần một hiệu ứng khác) | P0 |
 | G7 | Hai người cùng chọn một bong bóng: người sau được báo và chọn chỗ khác | P0 |
 | G8 | Báo cáo phòng vi phạm | P1 |
-| G9 | Ảnh / ghi âm kèm lời nhắn | P2 |
+| G9 | **Ảnh** kèm lời nhắn: tối đa 1 ảnh, tệp chọn ≤ 20 MB (nâng lên P0 ngày 23/11, mục 6.7) | P0 |
+| G10 | Ghi âm kèm lời nhắn | P2 |
 
 ### 3.3 Chủ cây đọc & quản lý
 
@@ -121,7 +122,7 @@ Ký hiệu: **P0** bắt buộc khi ra mắt · **P1** nên có · **P2** nếu 
 | O4 | Xoá lời nhắn, chặn thiết bị người gửi, báo cáo | P0 |
 | O5 | Xoá phòng và toàn bộ dữ liệu | P0 |
 | O6 | Danh sách lời nhắn dạng thẻ (ngoài cách chạm từng phụ kiện) | P1 |
-| O7 | Tải ảnh phòng (PNG) và ảnh thẻ lời nhắn | P1 |
+| O7 | Tải ảnh phòng (PNG) và ảnh thiệp lời nhắn (nâng lên P0 ngày 23/11 để biểu ngữ L3 "tải ảnh sớm" có cái để tải; mục 6.7) | P0 |
 | O8 | Đổi mã PIN, liên kết thêm Google sau khi tạo | P1 |
 | O9 | Trả lời cảm ơn | P2 |
 | O10 | Hiện số lời nhắn đang có (và số mới kể từ lần vào trước); chủ cây bật/tắt được, **mặc định hiện**, lưu theo phòng | P0 |
@@ -399,7 +400,7 @@ M3 chia **3 phần làm nối tiếp**, mỗi phần một kế hoạch, xong ph
 - Điểm trống → bong bóng "+" (`slotBubbleSVG`); điểm có lời nhắn → phụ kiện `ornamentSVGSoft(kind, 'filled')` đung đưa; điểm của chính máy này (có `msg:{treeId}:{slot}` còn hạn) → phụ kiện trông như mọi phụ kiện khác, chỉ có nhãn đọc màn hình "Lời nhắn của bạn: …" (chủ dự án bỏ vòng viền vàng 21/11).
 
 **Bảng viết (G3)** — Sheet trượt lên, giữ `aria-modal`, Escape, giữ tiêu điểm như M2:
-- 20 phụ kiện (`catalog.ornaments`, thứ tự catalog), mặc định chọn `ball` như canvas; "Người gửi": **Để tên** / **Ẩn danh**, mặc định Để tên (như canvas); ô tên ≤ 30 (bắt buộc khi Để tên), điền sẵn `lastName`; lời nhắn ≤ 300 ký tự có bộ đếm, bắt buộc, cắt khoảng trắng hai đầu.
+- 20 phụ kiện (`catalog.ornaments`, thứ tự catalog), mặc định chọn `ball` như canvas; "Người gửi": **Để tên** / **Ẩn danh**, mặc định Để tên (như canvas); ô tên ≤ 30 (bắt buộc khi Để tên), điền sẵn `lastName`; lời nhắn ≤ 400 ký tự (và không quá 9 dòng khi xếp lên thiệp, mục 6.7.2) có bộ đếm, bắt buộc, cắt khoảng trắng hai đầu.
 - Ô ẩn `website` (honeypot) không hiện với người, gửi kèm.
 - Nút "Treo lên cây" → `POST /api/trees/:id/messages` với `X-Device-Id`. Đang gửi thì khoá nút.
 - Thành công (G4): lưu `msg:{treeId}:{slot}` = `{ messageId, editToken, editUntil }`, lưu `lastName` (nếu Để tên), đóng bảng, phụ kiện rơi vào chỗ (`drop-in`), thông báo "Đã treo! Còn 15 phút để sửa".
@@ -433,7 +434,7 @@ M3 chia **3 phần làm nối tiếp**, mỗi phần một kế hoạch, xong ph
 
 **Trên trình duyệt** (7.6, đã có): `deviceId`, `msg:{treeId}:{slot}`, `lastName`. Không thêm khoá mới.
 
-**Kiểm thử (Vitest + RTL).** Module thuần: đổi toạ độ điểm theo cây (lật, cỡ, vị trí), tâm/hệ số zoom, đếm vòng hiệu ứng theo món, `parts()` ổn định theo hạt giống, chọn trạng thái điểm (trống / của người khác / của mình còn hạn / hết hạn). Màn: chạm cây → hiện điểm; bảng viết (bắt buộc lời nhắn, ≤ 300, tên khi Ghi tên, điền `lastName`, honeypot có trong body); treo thành công lưu `msg:` và hiện thông báo; từng mã lỗi ở trên (đặc biệt `slot_taken` giữ chữ); sửa/xoá trong hạn, hết hạn; giai đoạn `NOTICE` không có bong bóng; cây đầy; khách không có đường nào gọi API đọc nội dung người khác. Server: không thêm API; thêm test nếu phải sửa server.
+**Kiểm thử (Vitest + RTL).** Module thuần: đổi toạ độ điểm theo cây (lật, cỡ, vị trí), tâm/hệ số zoom, đếm vòng hiệu ứng theo món, `parts()` ổn định theo hạt giống, chọn trạng thái điểm (trống / của người khác / của mình còn hạn / hết hạn). Màn: chạm cây → hiện điểm; bảng viết (bắt buộc lời nhắn, ≤ 400, ≤ 9 dòng thiệp, tên khi Ghi tên, điền `lastName`, honeypot có trong body); treo thành công lưu `msg:` và hiện thông báo; từng mã lỗi ở trên (đặc biệt `slot_taken` giữ chữ); sửa/xoá trong hạn, hết hạn; giai đoạn `NOTICE` không có bong bóng; cây đầy; khách không có đường nào gọi API đọc nội dung người khác. Server: không thêm API; thêm test nếu phải sửa server.
 
 **Danh sách thử tay khi xong phần 1** (chủ dự án, `pnpm dev`): mở link khách ở tab ẩn danh → chạm cây zoom mượt (thử cây đã kéo lệch, thu nhỏ, lật) → treo 1 lời nhắn → thấy rơi vào chỗ → chạm lại sửa và xoá → treo đủ 3 lời nhắn, cái thứ 4 bị chặn → hai tab ẩn danh khác nhau cùng chọn một bong bóng → tab sau được báo, chữ còn nguyên → chạm quà/thú cưng/lò sưởi nhiều lần thấy hiệu ứng đổi → `FAKE_NOW` sang 26/12 không còn bong bóng → thử ở 360×640 và 390×844.
 
@@ -477,6 +478,107 @@ M3 chia **3 phần làm nối tiếp**, mỗi phần một kế hoạch, xong ph
 **Kiểm thử (server, Vitest + PGlite):** `/og/:id.png` trả PNG 1200×630, 404 khi không có cây, đổi phòng (room_version) thì ảnh đổi, gọi lại trả bản đệm; `/c/:id` có đủ thẻ OG và thoát HTML (`ownerName` chứa `"<>&`), 404 vẫn trả HTML; `/tao` trả `index.html`; `/api/...` không bị ảnh hưởng; không có `WEB_DIST` thì không đăng ký phục vụ tĩnh. Web: Sheet chia sẻ (sao chép, ẩn "Chia sẻ…" khi không có Web Share, Messenger trên điện thoại/máy tính, Zalo).
 
 **Danh sách thử tay gộp khi xong cả M3** ghi ở `docs/tien-do.md`.
+
+### 6.7 Thiệp lời nhắn, ảnh kèm và tải ảnh (chốt 23/11)
+
+**Mục đích.** Lời nhắn hiện thành một **tấm thiệp** do chủ dự án thiết kế. Người viết được kèm một ảnh của mình. Từ 26/12 biểu ngữ L3 nhắc "tải ảnh sớm", nên phải có cái để tải: ảnh căn phòng và ảnh từng tấm thiệp, giữ làm kỷ niệm trước khi dữ liệu bị xoá ngày 07/01/2027.
+
+**Mục tiêu:** O7 (P0), G9 phần ảnh (P0), G3 nâng lên 400 ký tự, và sửa chỗ sót: phụ kiện đã treo phải hiện trên cây cả khi xem toàn phòng.
+**Không làm:** ghi âm (G10); "tải tất cả" gộp nhiều thiệp (cần thêm thư viện nén zip); lọc ảnh tự động (Azure AI Content Safety); vẽ thiệp ở server; cho người viết chọn mẫu thiệp (có ảnh dùng mẫu 2, không ảnh dùng mẫu 1); biểu ngữ L3 (vẫn ở M4).
+**Không được xảy ra:** khách thấy ảnh hay chữ trong lời nhắn của người khác; chủ cây thấy ảnh trước 0h 24/12; ảnh có link công khai (vùng chứa Blob là riêng tư, mọi lượt đọc đi qua server có kiểm tra quyền); ảnh còn giữ thông tin vị trí (EXIF); thiệp bị cắt mất chữ; ảnh còn lại sau khi lời nhắn, cây bị xoá hoặc sau 07/01/2027; quản trị viên xem được ảnh không bị báo cáo.
+
+**Các cách đã cân nhắc (chủ dự án chọn III):**
+- I. Thiệp vẽ trên trình duyệt, ảnh lưu trong PostgreSQL (`bytea`). Ít dịch vụ nhất, nhưng CSDL và bản sao lưu nặng thêm.
+- II. Thiệp vẽ ở server bằng `sharp`. Một nơi vẽ, nhưng phải cài phông Mynerve vào App Service, tốn CPU gói B1, và bảng viết không kiểm tra chính xác được 9 dòng.
+- **III. Thiệp vẽ trên trình duyệt (canvas), ảnh lưu ở Azure Blob, vùng chứa riêng tư.** CSDL nhẹ; đổi lại phải tự làm phần đọc ảnh có kiểm quyền và việc xoá Blob.
+
+#### 6.7.1 Phụ kiện hiện trên cây khi xem toàn phòng
+
+Lớp phụ kiện (`SlotsLayer`) hiện chỉ vẽ khi đã zoom vào cây. Sửa: khi xem toàn phòng cũng vẽ các phụ kiện đã treo (khách: `filled`; chủ cây: như 6.6.2, quà còn gói vẽ như phụ kiện thường). Ở toàn phòng phụ kiện chỉ để nhìn, không chạm được và không có bong bóng "+"; chạm vào cây vẫn zoom như cũ. Ảnh OG (6.6.3) vốn đã vẽ phụ kiện, nên hai nơi khớp nhau.
+
+#### 6.7.2 Lời nhắn 400 ký tự, không quá 9 dòng
+
+- `catalog.limits.messageMax` = 400 (sinh từ `packages/art`, không sửa tay); migration `0004` đổi ràng buộc `messages.content` thành `BETWEEN 1 AND 400`. Đếm theo ký tự Unicode như `text()` trong `schemas.mjs`.
+- **Luật 9 dòng** đo bằng chính bộ xếp chữ của thiệp (6.7.3): bảng viết hiện "Lời nhắn dài quá khung thiệp, bớt vài dòng nhé" và khoá nút gửi khi vượt. Server không đo được phông, nên chỉ chặn thô: **không quá 8 lần xuống dòng** (`invalid_body`). *(Người làm chốt.)*
+- Phòng hờ phông thay thế làm chữ rộng hơn khi hiển thị: bộ vẽ tự giảm cỡ chữ từng bước (tối thiểu 80%) cho tới khi vừa, không bao giờ cắt chữ.
+- Với khoảng cách dòng của thiệp, 9 dòng chữ chứa khoảng 450 ký tự văn bản liền (đo bằng phông Mynerve thật, 23/11), nên 400 ký tự viết liền luôn vừa; chỉ xuống dòng nhiều hoặc emoji mới chạm luật 9 dòng.
+
+#### 6.7.3 Tấm thiệp
+
+**Mẫu (chủ dự án vẽ, 23/11):** `christmas_card.svg` (không ảnh) và `christmas_card_2.svg` (có ảnh: khung polaroid có băng dính, nghiêng trái ~12,2°, che chỗ sticker chiếc tất), khổ 1574,88 × 1125 (xuất 2100 × 1500). Cả hai là ảnh raster bọc trong SVG (~7,6 MB). Nguồn đặt ở `packages/art/src/card/`; `pnpm art:export` xuất ra `apps/web/public/assets/card/`:
+- `card-plain.webp`: mẫu 1 nguyên tấm;
+- `card-photo-bg.webp`: mẫu 2 bỏ nhóm khung ảnh;
+- `card-photo-frame.webp`: riêng nhóm khung ảnh, nền trong suốt.
+
+Ảnh của người gửi kẹp **giữa** nền và khung, nên viền polaroid và băng dính luôn đè lên ảnh. Toạ độ của thiệp ghi vào `catalog.json` (mục `card`, do script xuất sinh ra, đo từ file mẫu):
+
+| Thông số | Giá trị (% bề ngang W / bề cao H của thiệp) |
+|---|---|
+| Dòng kẻ 1…11 | y = 27,0 · 32,0 · 37,1 · 42,0 · 47,0 · 52,0 · 57,1 · 62,1 · 67,1 · 72,1 · 77,2 %H (cách ~5,02 %H = 3,586 %W) |
+| Vùng chữ | trái 29,8 %W, rộng 52 %W; dòng chữ đầu nằm trên **dòng kẻ 2** (dòng 1 để trống dưới chữ "merry Christmas"); tối đa 9 dòng chữ + 1 dòng ký tên (hết dòng kẻ 11) |
+| Chữ | Mynerve, cỡ 2,3 %W, màu `#7a1f2a` |
+| Ký tên | dòng **ngay dưới dòng chữ cuối**, căn phải: "— {tên}"; ẩn danh thì "— Một người bạn" *(người làm chốt)* |
+| Giờ treo | trong ô hồng góc trên phải: trái 79,3 %W, trên 20,1 %H, rộng 8,8 %W, cao 5 %H; Grape Nuts, màu kem; dạng "24/12 · 20:05" giờ Việt Nam |
+| Ô ảnh (mẫu 2) | góc trên trái (0,64 %W; 54,66 %H), rộng 27,75 %W, cao 37,42 %H, xoay −12,19° quanh góc trên trái; ảnh cắt cho vừa ô (cover), không méo |
+| Tránh khung (mẫu 2) | mép phải khung đi từ (28,52 %W; 38,0 %H) tới (37,12 %W; 93,71 %H). Mỗi dòng chữ lùi đúng phần khung lấn vào, cách mép 0,4 %W: **dòng chữ 1–3 sát lề**, từ dòng 4 lùi dần theo đường chéo |
+
+**Một bộ vẽ cho mọi nơi** (`apps/web/src/card/`):
+- `layoutCard(text, sign, hasPhoto, measure)` là hàm thuần (có test): ngắt dòng theo từ, áp lề tránh khung, trả về các dòng, vị trí ký tên, và cờ `fits` (≤ 9 dòng). `measure` là `CanvasRenderingContext2D.measureText` sau khi phông Mynerve đã nạp (`document.fonts.load`).
+- `drawCard(canvas, message, photo?)`: vẽ nền, ảnh, khung, chữ, giờ, ký tên. Cùng một bản vẽ dùng cho: xem trước trong bảng viết, thẻ lời nhắn của chủ cây, xem toàn màn hình, nút tải ảnh. Canvas có `role="img"` và `aria-label` chứa nguyên lời nhắn (trình đọc màn hình vẫn đọc được).
+
+**Xem trước trong bảng viết (khách):** viết xong (và chọn ảnh nếu muốn), nút chính "Xem trước thiệp" mở thiệp đúng như chủ cây sẽ thấy (giờ = lúc này), kèm hai nút "‹ Sửa lại" và "Treo lên cây". Quá 9 dòng thì không qua được bước xem trước. *(Bước xem trước theo yêu cầu chủ dự án; chữ trên nút do người làm chốt.)*
+
+**Thẻ lời nhắn của chủ cây** (thay nội dung `MessageCard`, giữ tiêu đề, "‹ Trước" / "Sau ›", Xoá / Chặn / Báo cáo): hiện tấm thiệp, thêm nút **"⬇ Tải ảnh"**. **Chạm thiệp → xem toàn màn hình:** trên điện thoại dọc thiệp xoay 90° cho lấp màn hình, chụm hai ngón để phóng to; chạm lần nữa hoặc nút ✕ để đóng (Escape trên máy tính). *(Phương án A, chủ dự án chọn 23/11.)*
+
+#### 6.7.4 Tải ảnh (O7)
+
+- **Ảnh phòng:** `GET /api/trees/:id/image.png` (công khai như `GET /api/trees/:id`). Ghép bằng bộ vẽ OG (`og/render.ts`, tách phần vẽ phòng 720 × 1080 dùng chung) ở tỉ lệ 1,5 (1080 × 1620), có phụ kiện đã treo (`filled`), không có chữ hay nội dung lời nhắn. `Content-Disposition: attachment; filename="cay-thong-{id}.png"`, lưu đệm như ảnh OG, ghi `events` loại `image_downloaded`. Nút: chủ cây trong Sheet "Chia sẻ" ("⬇ Tải ảnh phòng"); khách thêm một nút chữ trong khối nút dưới (tính lại `GUEST_BOTTOM_RESERVE`).
+- **Ảnh thiệp:** chỉ chủ cây, chỉ thiệp đã mở. `drawCard` trên canvas 2100 × 1500 → PNG → tải về `loi-nhan-{số điểm + 1}.png`. Trên iPhone (Safari không tải được blob) dùng `navigator.share({ files })` nếu có, không thì mở ảnh ở tab mới để giữ lâu và lưu. Không có API server riêng.
+
+#### 6.7.5 Ảnh kèm lời nhắn (G9)
+
+**Lưu trữ:** module `apps/server/src/storage/` với `put / get / delete / copy`. Có ba nơi chứa:
+- **Azure Blob** (`@azure/storage-blob`), vùng chứa riêng tư `photos`, chuỗi kết nối `AZURE_STORAGE_CONNECTION_STRING`; tạo tài nguyên ở M4, dưới 1 USD.
+- **Thư mục trên máy** khi phát triển (`PHOTO_DIR`, mặc định `.data/photos`, đã gitignore).
+- **Bộ nhớ** khi chạy test.
+
+Khoá: `m/{treeId}/{messageId}-{ngẫu nhiên}.webp`; ảnh chụp trong báo cáo: `r/{reportId}.webp`. *(Người làm chốt dùng thư mục trên máy thay vì Azurite khi phát triển.)*
+
+**Gửi ảnh — cùng lúc với lời nhắn** (chủ dự án chốt 23/11):
+1. Trình duyệt kiểm tệp là ảnh và **≤ 20 MB** (chủ dự án chốt), giải mã rồi thu cạnh dài về tối đa 1600 px, mã hoá lại thành WebP/JPEG chất lượng ~0,85. Bước mã hoá lại bỏ luôn EXIF. Ảnh trình duyệt không đọc được (ví dụ HEIC trên Chrome) → "Ảnh này chưa đọc được, chọn ảnh JPG hoặc PNG nhé".
+2. Ảnh đi **trong chính yêu cầu treo lời nhắn**: `POST /api/trees/:id/messages` thêm trường `photo` (tuỳ chọn) = chuỗi base64 của ảnh WebP/JPEG đã thu nhỏ, ≤ 3 MB sau giải mã. Route này đặt `bodyLimit` 4,5 MB; các route khác giữ 64 KB. API vẫn chỉ nhận JSON.
+3. Server giải mã bằng `sharp` (ảnh hỏng hoặc sai loại → 400 `bad_photo`), xoay theo EXIF, thu cạnh dài ≤ 1600, **bỏ toàn bộ metadata**, mã hoá WebP q80, **lưu Blob trước**, rồi mới ghi lời nhắn kèm `photo_key` trong giao dịch như cũ. Giao dịch lỗi (`slot_taken`, `device_limit`…) → xoá Blob vừa lưu. Kết quả: lời nhắn và ảnh cùng có hoặc cùng không. Honeypot (`website`) trả giả như cũ, không lưu ảnh.
+4. **Sửa trong 15 phút:** `PUT /api/messages/:mid` thêm `photo`: chuỗi base64 = thay ảnh, `null` = gỡ ảnh, không có trường = giữ nguyên. Cùng luật sửa chữ (cùng thiết bị, chưa bị mở, giai đoạn cho ghi). Ảnh mới lưu trước; cập nhật dòng thành công thì xoá ảnh cũ, thất bại thì xoá ảnh mới.
+5. Giới hạn thêm `photo:ip:` 30 ảnh/giờ (chỉ đếm khi có ảnh), bên cạnh `msg:ip:` sẵn có.
+6. Bảng viết hiện thanh "Đang gửi…" khi có ảnh (yêu cầu lớn hơn); lỗi mạng thì giữ nguyên chữ **và ảnh** để gửi lại.
+7. **Bị người khác treo trước (`slot_taken`)**: giữ cách của M3 (6.6.1). Bảng viết đóng, báo "Chỗ này vừa có người treo, chọn chỗ khác nhé", tải lại các điểm; chạm bong bóng trống khác thì mở lại bảng viết với nguyên lời nhắn. Bản nháp giữ lại (`held`) **gồm cả ảnh đã thu nhỏ**, người viết không phải chọn lại ảnh.
+
+**Đọc ảnh** (luôn `Cache-Control: private, no-store`):
+- **Người viết:** `GET /api/messages/:mid/photo` với `X-Edit-Token` (để bảng sửa hiện lại ảnh).
+- **Chủ cây:** `GET /api/trees/:id/messages/:mid/photo` cần phiên chủ cây, `canRead` (từ 0h 24/12) và lời nhắn đã mở (`read_at` khác NULL); ngược lại 423 / 403.
+- **Khách khác:** không có đường đọc. `GET /api/trees/:id` và `/owner` **không** cho biết lời nhắn nào có ảnh. `POST …/open` trả thêm `hasPhoto`.
+
+**Xoá ảnh:** lời nhắn bị xoá (người viết, chủ cây, chặn) → xoá Blob cùng lúc; xoá cây → lấy danh sách `photo_key` trước khi xoá dòng, rồi xoá các Blob. Lỗi xoá Blob chỉ ghi log, không làm hỏng thao tác chính. Ngày 07/01/2027 xoá cả tài khoản lưu trữ cùng resource group (M10).
+
+**Báo cáo:** chủ cây báo cáo lời nhắn có ảnh → server chép Blob sang `r/{reportId}.webp`, ghi `reports.photo_snapshot_key`. Quản trị viên (M3b) chỉ xem được bản chụp này. Bản chụp còn lại kể cả khi lời nhắn bị xoá, giống `message_snapshot`.
+
+**Lưu ý với server hiện có:**
+- `bodyLimit` chung (64 KB) giữ nguyên; chỉ `POST /api/trees/:id/messages` và `PUT /api/messages/:mid` đặt 4,5 MB (base64 làm ảnh 3 MB thành ~4 MB). Lỗi quá cỡ vẫn trả 413 `body_too_large` như hiện có.
+- `MessageBodySchema` / `MessageEditSchema` trong `packages/shared` thêm `photo` (chuỗi base64, giới hạn độ dài); kiểm tra ảnh thật ở server bằng `sharp`.
+- CSP của helmet: thêm `blob:` vào `img-src` (xem trước ảnh bằng `URL.createObjectURL` và tải thiệp).
+
+**Migration `0004`:** `messages.content` ≤ 400; thêm `messages.photo_key text NULL`; thêm `reports.photo_snapshot_key text NULL`. Giữ `docs/schema.postgres.sql` và mục 7.3 khớp.
+
+#### 6.7.6 Thứ tự làm và kiểm thử
+
+Làm lần lượt: (1) phụ kiện ở toàn phòng → (2) 400 ký tự + luật 9 dòng → (3) bộ vẽ thiệp + xem trước + thẻ chủ cây + xem toàn màn hình → (4) tải ảnh phòng và thiệp → (5) ảnh kèm lời nhắn.
+
+**Kiểm thử:**
+- **Thuần (Vitest):** `layoutCard` (dòng đầu ở dòng kẻ 2; ký tên ngay dưới dòng cuối; dòng 1–3 sát lề và từ dòng 4 lùi theo khung ở mẫu có ảnh; quá 9 dòng → `fits: false`; xuống dòng giữ nguyên; từ quá dài bị bẻ); tỉ lệ xoay toàn màn hình.
+- **Màn (RTL):** phụ kiện hiện ở toàn phòng và không chạm được; bảng viết đếm 0/400 và khoá khi quá 9 dòng; xem trước → sửa lại / treo; chọn ảnh > 20 MB hoặc không phải ảnh bị báo; thẻ chủ cây có "Tải ảnh"; xem toàn màn hình mở/đóng.
+- **Server (Vitest + PGlite, nơi chứa trong bộ nhớ):** 401 chữ → 400, 9 lần xuống dòng → 400; treo kèm ảnh → có `photo_key` và Blob; treo kèm ảnh mà `slot_taken` / `device_limit` → không còn Blob nào; ảnh hỏng / sai loại → 400 `bad_photo`; quá cỡ → 413; honeypot kèm ảnh → không lưu; sửa: thay ảnh (ảnh cũ bị xoá), `null` gỡ ảnh, không gửi trường giữ ảnh, sai token / hết 15 phút / đã mở → ảnh mới không còn lại; ảnh lưu ra không còn EXIF (kiểm bằng `sharp().metadata()`); khách và chủ cây trước 24/12 không đọc được ảnh, chủ cây sau khi mở thì đọc được; xoá lời nhắn, chặn, xoá cây đều xoá Blob; báo cáo chép ảnh; `image.png` trả PNG 1080 × 1620, có `Content-Disposition`, 404 khi không có cây.
+
+**Để người làm tự quyết:** chia component; cách tách bộ vẽ phòng khỏi `og/render.ts`; chữ thông báo phụ; hiệu ứng mở thiệp; chỗ đặt nút tải ảnh phòng của khách.
 
 ---
 
@@ -603,13 +705,14 @@ CREATE TABLE messages (
                     'snowflake','mitten','minigift','pinecone','bow','snowman','moon','lantern','stripeball','cookie','reindeer','cocoa')),
   is_anonymous    boolean NOT NULL DEFAULT false,
   author_name     text CHECK (author_name IS NULL OR char_length(author_name) BETWEEN 1 AND 30),
-  content         text NOT NULL CHECK (char_length(content) BETWEEN 1 AND 300),
+  content         text NOT NULL CHECK (char_length(content) BETWEEN 1 AND 400),
   edit_token_hash text NOT NULL,                                      -- HMAC token sửa lưu trên thiết bị người viết
   edit_until      timestamptz NOT NULL,                               -- created_at + 15 phút, không kéo dài khi sửa
   device_hash     text NOT NULL,
   ip_hash         text,
   created_at      timestamptz NOT NULL DEFAULT now(),
   updated_at      timestamptz NOT NULL DEFAULT now(),
+  photo_key       text,                                               -- ảnh kèm (migration 0004), NULL nếu không có
   read_at         timestamptz,                                        -- NULL = chưa mở
   UNIQUE (tree_id, slot_index),
   CONSTRAINT messages_anon_name CHECK ((is_anonymous AND author_name IS NULL) OR (NOT is_anonymous AND author_name IS NOT NULL))
@@ -670,6 +773,7 @@ CREATE TABLE reports (
   tree_id          text NOT NULL REFERENCES trees(id) ON DELETE CASCADE,
   message_id       bigint,                                            -- NULL nếu báo cáo cả phòng
   message_snapshot text,                                              -- chép nội dung lúc báo cáo
+  photo_snapshot_key text,                                            -- chép khoá ảnh kèm lúc báo cáo (migration 0004)
   reason           text CHECK (reason IS NULL OR char_length(reason) <= 200),
   reporter         text NOT NULL CHECK (reporter IN ('owner','guest')),
   reporter_hash    text,
@@ -841,7 +945,7 @@ JSON, UTF-8. Header `X-Device-Id` cho người viết. Quyền chủ cây qua co
 |---|---|---|---|
 | GET | `/api/trees/:id` | Công khai | Phòng: phông, cấu hình cây, món đồ, trạng thái từng điểm nhắn `{ index, occupied, ornament? }` — không có nội dung, tên |
 | PUT | `/api/trees/:id/room` | Chủ cây | Lưu toàn bộ phòng kèm `roomVersion` (xem 7.5) |
-| DELETE | `/api/trees/:id` | Chủ cây | Xoá phòng và mọi dữ liệu |
+| DELETE | `/api/trees/:id` | Chủ cây | Xoá phòng và mọi dữ liệu, kể cả ảnh của các lời nhắn |
 | GET | `/api/trees/:id/owner` | Chủ cây | Như GET công khai + `{ messageId, unread, locked }` cho từng điểm + `{ messageCount, newSinceLastVisit, showMessageCount }`. **Chỉ đọc**, không ghi gì (sửa 22/11) |
 | POST | `/api/trees/:id/owner/visit` | Chủ cây | Ghi `last_owner_visit_at = now` → 204. Web gọi một lần khi hiện chế độ Xem của chủ cây; "Bạn đã có cây?" không gọi (sửa 22/11: trước đây GET tự ghi nên số mới luôn về 0) |
 | PUT | `/api/trees/:id/settings` | Chủ cây | `{ showMessageCount }` — bật/tắt hiện số lời nhắn (O10) |
@@ -849,25 +953,28 @@ JSON, UTF-8. Header `X-Device-Id` cho người viết. Quyền chủ cây qua co
 ### 8.4 Lời nhắn (người viết)
 | Phương thức | Đường dẫn | Mô tả |
 |---|---|---|
-| POST | `/api/trees/:id/messages` | Body `{ slotIndex, ornament, anonymous, authorName?, content, website }` → `{ messageId, editToken, editUntil }` |
-| GET | `/api/messages/:mid/mine` | Header `X-Edit-Token` → nội dung của chính người viết (để mở bảng sửa). Không có lời nhắn → 404, sai token → 403 (như `PUT`/`DELETE`) |
-| PUT | `/api/messages/:mid` | Sửa `ornament, anonymous, authorName, content`; điều kiện ở 7.4 |
-| DELETE | `/api/messages/:mid` | Người viết gỡ lời nhắn; cùng điều kiện |
+| POST | `/api/trees/:id/messages` | Body `{ slotIndex, ornament, anonymous, authorName?, content, website, photo? }` → `{ messageId, editToken, editUntil }`. `photo` = base64 ảnh WebP/JPEG ≤ 3 MB (6.7.5); route đặt `bodyLimit` 4,5 MB; ảnh hỏng → 400 `bad_photo`; `photo:ip:` 30 ảnh/giờ → 429 |
+| GET | `/api/messages/:mid/mine` | Header `X-Edit-Token` → nội dung của chính người viết (để mở bảng sửa), thêm `hasPhoto`. Không có lời nhắn → 404, sai token → 403 (như `PUT`/`DELETE`) |
+| GET | `/api/messages/:mid/photo` | Header `X-Edit-Token` → ảnh WebP của chính người viết, `Cache-Control: private, no-store`. Không có lời nhắn hoặc không có ảnh → 404, sai token → 403 |
+| PUT | `/api/messages/:mid` | Sửa `ornament, anonymous, authorName, content, photo?` (chuỗi = thay ảnh, `null` = gỡ ảnh, không có = giữ); `bodyLimit` 4,5 MB; điều kiện ở 7.4 |
+| DELETE | `/api/messages/:mid` | Người viết gỡ lời nhắn (xoá cả ảnh); cùng điều kiện |
 
 ### 8.5 Chủ cây đọc & quản lý
 | Phương thức | Đường dẫn | Mô tả |
 |---|---|---|
-| POST | `/api/trees/:id/messages/:mid/open` | Trả nội dung, đặt `read_at`; 423 nếu chưa tới `UNLOCK_AT` |
+| POST | `/api/trees/:id/messages/:mid/open` | Trả nội dung và `hasPhoto` (không trả khoá ảnh), đặt `read_at`; 423 `locked` kèm `unlockAt` nếu chưa tới `UNLOCK_AT` |
+| GET | `/api/trees/:id/messages/:mid/photo` | Ảnh WebP của lời nhắn, `Cache-Control: private, no-store`. Chưa tới `UNLOCK_AT` → 423 `locked` (như `open`); lời nhắn không thuộc cây → 404; chưa mở (`read_at` NULL) → 403 `not_opened`; không có ảnh → 404 (6.7.5) |
 | GET | `/api/trees/:id/messages` | Danh sách lời nhắn đã mở được (P1) |
-| DELETE | `/api/trees/:id/messages/:mid` | Chủ cây xoá |
-| POST | `/api/trees/:id/block` | `{ messageId }` → chặn thiết bị người gửi, xoá lời nhắn |
-| POST | `/api/trees/:id/reports` | Báo cáo (chủ cây hoặc khách). Chủ cây kèm `messageId` chỉ được với lời nhắn đã mở (`read_at` khác NULL), ngược lại 403 `not_opened` — không để báo cáo làm lộ nội dung còn khoá |
+| DELETE | `/api/trees/:id/messages/:mid` | Chủ cây xoá; xoá cả ảnh (lỗi xoá ảnh chỉ ghi log) |
+| POST | `/api/trees/:id/block` | `{ messageId }` → chặn thiết bị người gửi, xoá lời nhắn và ảnh |
+| POST | `/api/trees/:id/reports` | Báo cáo (chủ cây hoặc khách). Chủ cây kèm `messageId` chỉ được với lời nhắn đã mở (`read_at` khác NULL), ngược lại 403 `not_opened` — không để báo cáo làm lộ nội dung còn khoá. Lời nhắn có ảnh → chép sang `r/{reportId}.webp`, ghi `photo_snapshot_key`; chép lỗi vẫn giữ báo cáo (đã có bản chụp chữ) |
 
 ### 8.6 Trang & ảnh
 | Phương thức | Đường dẫn | Mô tả |
 |---|---|---|
 | GET | `/c/:id` | HTML có sẵn thẻ OG |
 | GET | `/og/:id.png` | Ảnh xem trước 1200×630, lưu đệm theo `room_version` |
+| GET | `/api/trees/:id/image.png` | Ảnh phòng tải về 1080×1620 (6.7.4), công khai, `Content-Disposition: attachment`, dùng chung bộ đệm với ảnh OG, ghi event `image_downloaded` |
 | GET | `/da-ket-thuc` | Trang kết thúc |
 
 ### 8.7 Quản trị (`/api/admin/*`, cookie phiên quản trị riêng)

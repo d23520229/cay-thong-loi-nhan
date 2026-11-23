@@ -4,6 +4,7 @@ import type { Room } from '@ctln/shared';
 import { ApiError, api, type MessageInput, type PublicRoom } from '../lib/api';
 import { serverNow, syncClock } from '../lib/clock';
 import { storage, type MineEntry } from '../lib/storage';
+import { bitmapFromBlob, type PreparedPhoto } from '../card/photo';
 import { RoomStage } from '../room/RoomStage';
 import { useItemFx } from '../room/useItemFx';
 import { Compose, newDraft, type ComposeDraft } from './Compose';
@@ -26,12 +27,13 @@ type Open =
   | { mode: 'edit'; slot: number; messageId: string; token: string; editUntil: string };
 
 const TOP_RESERVE = 56;
-// Khối nút của khách: 8 + 44 ("Tạo cây của bạn") + 4 + 44 ("Tôi là chủ cây") + 16 — đo bằng Chrome.
-const GUEST_BOTTOM_RESERVE = 116;
+// Khối nút của khách: 8 + 44 ("Tạo cây của bạn") + 4 + 44 ("Tôi là chủ cây") + 28 ("Tải ảnh phòng") + 16 — ước tính, cần đo lại bằng Chrome.
+const GUEST_BOTTOM_RESERVE = 144;
 const SLOT_FX_MS = 950;
 const NOT_EDITABLE = 'Lời nhắn này không sửa được nữa';
 const SEND_FAILED = 'Chưa gửi được, thử lại nhé';
 const LOAD_FAILED = 'Chưa tải được, thử lại nhé';
+const PHOTO_LOAD_FAILED = 'Chưa tải được ảnh cũ — ảnh vẫn giữ nguyên nếu bạn không đổi';
 
 /** Lỗi không tới được server hoặc server hỏng (trừ tạm dừng khẩn cấp có thông báo riêng). */
 const isTransport = (e: ApiError) => e.status === 0 || (e.status >= 500 && e.code !== 'paused');
@@ -48,7 +50,7 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [slotFx, setSlotFx] = useState<Record<number, 'ring' | 'drop-in'>>({});
-  const held = useRef<ComposeDraft | null>(null); // chữ giữ lại sau slot_taken
+  const held = useRef<ComposeDraft | null>(null); // chữ (và ảnh) giữ lại sau slot_taken
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const { fx, tap } = useItemFx(room);
 
@@ -116,7 +118,12 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
     });
   };
 
-  const close = () => {
+  /** Đóng bảng; trừ khi giữ bản nháp (`keep`, sau slot_taken), bỏ luôn ảnh đã thu nhỏ. */
+  const close = (keep = false) => {
+    if (!keep) {
+      if (open?.mode === 'new') held.current = null;
+      draft.photo?.bitmap.close?.();
+    }
     setOpen(null);
     setError(null);
   };
@@ -140,7 +147,18 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
     const m = v.mine!;
     try {
       const msg = await api.getMine(m.messageId, m.editToken);
-      setDraft({ ornament: msg.ornament, anonymous: msg.anonymous, authorName: msg.authorName ?? '', content: msg.content });
+      // Ảnh đang có chỉ để xem; không đổi ảnh thì không gửi lại (base64 rỗng).
+      let photo: PreparedPhoto | null = null;
+      if (msg.hasPhoto) {
+        // Tải ảnh cũ lỗi vẫn mở bảng sửa: không đổi ảnh thì server giữ nguyên (không gửi trường photo).
+        try {
+          const b = await api.getMyPhoto(m.messageId, m.editToken);
+          if (b) photo = { bitmap: await bitmapFromBlob(b), base64: '' };
+        } catch {
+          toast(PHOTO_LOAD_FAILED);
+        }
+      }
+      setDraft({ ornament: msg.ornament, anonymous: msg.anonymous, authorName: msg.authorName ?? '', content: msg.content, photo, photoChanged: false });
       setError(null);
       setOpen({ mode: 'edit', slot, messageId: m.messageId, token: m.editToken, editUntil: msg.editUntil });
     } catch (e) {
@@ -193,7 +211,7 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
       if (writeClosed(err)) return;
       if (open.mode === 'new' && err.code === 'slot_taken') {
         held.current = draft;
-        close();
+        close(true);
         toast(err.message);
         void refresh();
       } else if (open.mode === 'edit' && (err.status === 403 || err.status === 404)) {
@@ -255,9 +273,7 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
                 hidden={zoomed}
                 text={writable ? 'Chạm vào cây thông để treo lời nhắn' : 'Chạm vào cây thông để xem các lời nhắn đã treo'}
               />
-              {zoomed ? (
-                <SlotsLayer rects={slotRects(room)} views={views} fx={slotFx} onTap={(i) => void onSlotTap(i)} hideEmpty={!writable} />
-              ) : null}
+              <SlotsLayer rects={slotRects(room)} views={views} fx={slotFx} onTap={(i) => void onSlotTap(i)} hideEmpty={!writable} interactive={zoomed} />
             </>
           }
         />
@@ -278,6 +294,7 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
         <div className="room-bottom">
           <Link to={`/?ref=${treeId}`} className="btn btn-primary">Tạo cây của bạn</Link>
           <button type="button" className="linkbtn" onClick={onOwnerLogin}>Tôi là chủ cây</button>
+          <a className="linkbtn" href={api.roomImageUrl(treeId)} download>⬇ Tải ảnh phòng</a>
         </div>
       )}
       {open ? (

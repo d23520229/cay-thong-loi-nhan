@@ -12,6 +12,7 @@
     "db:migrate": "tsx --env-file-if-exists=../../.env src/db/migrate.ts"
   },
   "dependencies": {
+    "@azure/storage-blob": "^12.34.0",
     "@ctln/art": "workspace:*",
     "@ctln/shared": "workspace:*",
     "@fastify/cookie": "^11.0.0",

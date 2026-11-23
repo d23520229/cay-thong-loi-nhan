@@ -53,8 +53,13 @@ const messageFields = {
   ornament: z.enum(keys(catalog.ornaments)),
   anonymous: z.boolean(),
   authorName: text(1, limits.nameMax).optional(),
-  content: text(1, limits.messageMax),
+  content: text(1, limits.messageMax).refine((s) => (s.match(/\n/g)?.length ?? 0) <= 8, {
+    message: 'Lời nhắn dài quá khung thiệp, bớt vài dòng nhé',
+  }),
 };
+
+/** Ảnh ≤ 3 MB sau giải mã → base64 ~4 MB. */
+const photoField = z.string().max(4_200_000);
 
 const checkAuthor = (v, ctx) => {
   if (v.anonymous && v.authorName !== undefined) {
@@ -70,10 +75,14 @@ export const MessageBodySchema = z
     slotIndex: z.number().int().min(0).max(Math.max(...catalog.tree.slotCounts) - 1),
     ...messageFields,
     website: z.string().optional(), // ô bẫy bot (honeypot)
+    photo: photoField.optional(), // base64 ảnh WebP/JPEG đã thu nhỏ; server kiểm thật bằng sharp
   })
   .superRefine(checkAuthor);
 
-export const MessageEditSchema = z.object(messageFields).superRefine(checkAuthor);
+// photo: chuỗi = thay ảnh, null = gỡ ảnh, không có trường = giữ nguyên.
+export const MessageEditSchema = z
+  .object({ ...messageFields, photo: photoField.nullable().optional() })
+  .superRefine(checkAuthor);
 
 /**
  * Kiểm tra ràng buộc cấp phòng mà schema từng món không diễn tả được.

@@ -68,9 +68,19 @@ test('RoomItemSchema: biên toạ độ và scale', () => {
 const msg = (over) => ({ slotIndex: 0, ornament: 'star', anonymous: true, content: 'Chúc mừng', ...over });
 
 test('MessageBodySchema: độ dài tính theo ký tự Unicode', () => {
-  assert.equal(MessageBodySchema.safeParse(msg({ content: '🎄'.repeat(300) })).success, true);
-  assert.equal(MessageBodySchema.safeParse(msg({ content: '🎄'.repeat(301) })).success, false);
+  assert.equal(MessageBodySchema.safeParse(msg({ content: '🎄'.repeat(400) })).success, true);
+  assert.equal(MessageBodySchema.safeParse(msg({ content: '🎄'.repeat(401) })).success, false);
   assert.equal(MessageBodySchema.safeParse(msg({ content: '   ' })).success, false);
+});
+
+test('MessageBodySchema/MessageEditSchema: tối đa 8 lần xuống dòng', () => {
+  const ok = 'a\n'.repeat(8) + 'b';
+  const bad = 'a\n'.repeat(9) + 'b';
+  assert.equal(MessageBodySchema.safeParse(msg({ content: ok })).success, true);
+  assert.equal(MessageBodySchema.safeParse(msg({ content: bad })).success, false);
+  const { slotIndex, ...edit } = msg({ content: ok });
+  assert.equal(MessageEditSchema.safeParse(edit).success, true);
+  assert.equal(MessageEditSchema.safeParse({ ...edit, content: bad }).success, false);
 });
 
 test('MessageBodySchema: tên theo anonymous, ornament hợp lệ', () => {

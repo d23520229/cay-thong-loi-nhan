@@ -15,7 +15,8 @@
     "export": "node scripts/export.mjs && node scripts/export-pet-thumbs.mjs",
     "export:tree": "node scripts/export.mjs --only=tree",
     "export:room": "node scripts/export.mjs --only=room",
-    "export:catalog": "node scripts/export.mjs --only=catalog"
+    "export:catalog": "node scripts/export.mjs --only=catalog",
+    "test": "node --test \"test/*.test.mjs\""
   },
   "dependencies": {
     "@ctln/shared": "workspace:*"

@@ -14,7 +14,7 @@ vi.mock('../lib/api', async (orig) => {
     ...actual,
     api: {
       getConfig: vi.fn(), getOwnerTree: vi.fn(), openMessage: vi.fn(), ownerDeleteMessage: vi.fn(), blockSender: vi.fn(),
-      report: vi.fn(), setShowCount: vi.fn(), deleteTree: vi.fn(),
+      report: vi.fn(), setShowCount: vi.fn(), deleteTree: vi.fn(), roomImageUrl: actual.api.roomImageUrl,
     },
   };
 });
@@ -37,7 +37,7 @@ const meta = (over: Partial<OwnerRoom> = {}): OwnerRoom => ({
 });
 const opened = (index: number, over: Partial<OpenedMessage> = {}): OpenedMessage => ({
   messageId: String(100 + index), slotIndex: index, ornament: 'bell', anonymous: false, authorName: `Bạn ${index}`,
-  content: `Nội dung ${index}`, createdAt: '2026-12-01T01:00:00Z', ...over,
+  content: `Nội dung ${index}`, createdAt: '2026-12-01T01:00:00Z', hasPhoto: false, ...over,
 });
 
 beforeEach(() => {
@@ -102,6 +102,14 @@ describe('OwnerTree', () => {
     expect(mocked.openMessage).not.toHaveBeenCalled();
   });
 
+  it('toàn phòng: quà hiện trước khi zoom, không mở được', async () => {
+    const { container } = show(meta({ phase: 'OPEN', slots: slots(false) }));
+    const gifts = container.querySelectorAll('.gs-slot');
+    expect(gifts).toHaveLength(3);
+    fireEvent.click(gifts[0]!);
+    expect(mocked.openMessage).not.toHaveBeenCalled();
+  });
+
   const openedRoom = () => meta({ phase: 'OPEN', slots: slots(false) });
 
   it('OPEN: "Quà đã mở!", chạm phụ kiện → thẻ lời nhắn, chuyển sang đã đọc', async () => {
@@ -112,7 +120,8 @@ describe('OwnerTree', () => {
     await zoom(container);
     await userEvent.click(screen.getAllByRole('button', { name: 'Lời nhắn chưa đọc: Chuông' })[0]!);
     expect(mocked.openMessage).toHaveBeenCalledWith(ID, '101');
-    expect(await screen.findByRole('dialog', { name: 'Lời nhắn từ Bạn 1' })).toHaveTextContent('Nội dung 1');
+    const dlg = await screen.findByRole('dialog', { name: 'Lời nhắn từ Bạn 1' });
+    expect(within(dlg).getByRole('img', { name: /Nội dung 1/ })).toBeInTheDocument();
     expect(screen.getAllByRole('button', { name: 'Lời nhắn đã đọc: Chuông' })).toHaveLength(2);
   });
 

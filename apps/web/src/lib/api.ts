@@ -47,7 +47,8 @@ export type AppConfig = {
   googleClientId: string | null;
 };
 
-export type MessageInput = { ornament: string; anonymous: boolean; authorName?: string; content: string };
+/** `photo`: base64 trơn của ảnh WebP/JPEG đã thu nhỏ; khi sửa `null` = gỡ ảnh, không có trường = giữ nguyên. */
+export type MessageInput = { ornament: string; anonymous: boolean; authorName?: string; content: string; photo?: string | null };
 
 export type MyMessage = {
   messageId: string;
@@ -57,6 +58,7 @@ export type MyMessage = {
   authorName: string | null;
   content: string;
   editUntil: string;
+  hasPhoto: boolean;
 };
 
 export type OpenedMessage = {
@@ -67,9 +69,10 @@ export type OpenedMessage = {
   authorName: string | null;
   content: string;
   createdAt: string;
+  hasPhoto: boolean;
 };
 
-type RequestOpts = { keepalive?: boolean; headers?: Record<string, string> };
+type RequestOpts = { keepalive?: boolean; headers?: Record<string, string>; as?: 'blob' };
 
 async function request<T>(method: string, path: string, body?: unknown, opts?: RequestOpts): Promise<T> {
   const headers: Record<string, string> = { 'x-device-id': storage.deviceId(), ...opts?.headers };
@@ -97,14 +100,23 @@ async function request<T>(method: string, path: string, body?: unknown, opts?: R
     throw new ApiError(res.status, code ?? 'unknown', message ?? 'Có lỗi xảy ra, thử lại sau nhé.', extra);
   }
   if (res.status === 204) return undefined as T;
+  if (opts?.as === 'blob') return (await res.blob()) as T;
   return (await res.json()) as T;
 }
 
 const tree = (id: string) => `/api/trees/${encodeURIComponent(id)}`;
 const message = (mid: string) => `/api/messages/${encodeURIComponent(mid)}`;
 const token = (t: string): RequestOpts => ({ headers: { 'x-edit-token': t } });
+/** Ảnh lời nhắn: 404 (không có ảnh) → null. */
+const photo = (path: string, opts?: RequestOpts) =>
+  request<Blob>('GET', path, undefined, { ...opts, as: 'blob' }).catch((e: unknown) => {
+    if (e instanceof ApiError && e.status === 404) return null;
+    throw e;
+  });
 
 export const api = {
+  /** Đường dẫn tải ảnh phòng (PNG; server gửi kèm content-disposition attachment). */
+  roomImageUrl: (id: string) => `${tree(id)}/image.png`,
   getConfig: () => request<AppConfig>('GET', '/api/config'),
   getTree: (id: string) => request<PublicRoom>('GET', tree(id)),
   getOwnerTree: (id: string) => request<OwnerRoom>('GET', `${tree(id)}/owner`),
@@ -121,10 +133,12 @@ export const api = {
   postMessage: (id: string, body: MessageInput & { slotIndex: number; website: string }) =>
     request<{ messageId: string; editToken: string; editUntil: string }>('POST', `${tree(id)}/messages`, body),
   getMine: (mid: string, t: string) => request<MyMessage>('GET', `${message(mid)}/mine`, undefined, token(t)),
+  getMyPhoto: (mid: string, t: string): Promise<Blob | null> => photo(`${message(mid)}/photo`, token(t)),
   editMessage: (mid: string, t: string, body: MessageInput) => request<{ ok: true }>('PUT', message(mid), body, token(t)),
   deleteMessage: (mid: string, t: string) => request<void>('DELETE', message(mid), undefined, token(t)),
   // Chủ cây (đặc tả 8.5)
   openMessage: (id: string, mid: string) => request<OpenedMessage>('POST', `${tree(id)}/messages/${encodeURIComponent(mid)}/open`),
+  getOwnerPhoto: (id: string, mid: string): Promise<Blob | null> => photo(`${tree(id)}/messages/${encodeURIComponent(mid)}/photo`),
   ownerDeleteMessage: (id: string, mid: string) => request<void>('DELETE', `${tree(id)}/messages/${encodeURIComponent(mid)}`),
   blockSender: (id: string, mid: string) => request<void>('POST', `${tree(id)}/block`, { messageId: mid }),
   report: (id: string, body: { messageId?: string; reason?: string }) =>

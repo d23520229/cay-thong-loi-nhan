@@ -8,10 +8,13 @@ Mọi đồ hoạ được **vẽ bằng code** (SVG có bộ lọc màu nước
 | `src/room.mjs` | 9 phông nền, 3 cửa sổ, thảm, hộp quà lẻ, chồng quà, lửa lò sưởi (SVG động), tuyết ngoài cửa sổ |
 | `src/fireplaces.mjs` | 8 dáng lò sưởi + vị trí lửa cho từng dáng |
 | `src/animated/pets.mjs` | 6 thú cưng SVG động (bản màu nước mềm: `petSVGSoft`) + CSS |
+| `src/card/*.svg` | Hai mẫu thiệp lời nhắn của chủ dự án (xuất từ công cụ thiết kế, ảnh nhúng base64): không ảnh / có khung polaroid |
+| `src/card.mjs` | Tách mẫu có ảnh thành nền + khung, đo dòng kẻ, ô ảnh, mép khung |
 | `src/animated/ornaments.mjs` | 20 phụ kiện treo (bản mềm: `ornamentSVGSoft`), bong bóng điểm nhắn + CSS |
-| `scripts/export.mjs` | Xuất WebP vào `apps/web/public/assets/{tree,room}` và sinh `packages/shared/src/catalog.json` |
+| `scripts/export.mjs` | Xuất WebP vào `apps/web/public/assets/{tree,room,card}` và sinh `packages/shared/src/catalog.json` |
 | `scripts/export-pet-thumbs.mjs` | Ảnh thu nhỏ thú cưng cho khay "Thêm đồ" |
 | `room-meta.json` | Kích thước + điểm neo của từng ảnh đồ trong phòng (do script sinh) |
+| `card-meta.json` | Số đo thiệp: dòng kẻ, ô ảnh, mép khung (do script sinh, `--only=card`) |
 
 ## Thêm một kiểu đồ mới
 

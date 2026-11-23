@@ -6,6 +6,12 @@ import { ApiError, api, type PublicRoom } from '../lib/api';
 import { resetClock } from '../lib/clock';
 import { storage } from '../lib/storage';
 import { defaultRoom } from '../room/model';
+vi.mock('../card/measure', () => ({ cardMeasure: async () => null }));
+vi.mock('../card/CardCanvas', () => ({
+  CardCanvas: ({ data }: { data: { photo?: { id?: string } | null } }) => <div data-testid="thiep" data-photo={data.photo?.id ?? ''} />,
+}));
+const { preparePhoto, bitmapFromBlob } = vi.hoisted(() => ({ preparePhoto: vi.fn(), bitmapFromBlob: vi.fn() }));
+vi.mock('../card/photo', async (orig) => ({ ...(await orig<typeof import('../card/photo')>()), preparePhoto, bitmapFromBlob }));
 import { GuestTree } from './GuestTree';
 
 vi.mock('../lib/api', async (orig) => {
@@ -13,8 +19,8 @@ vi.mock('../lib/api', async (orig) => {
   return {
     ...actual,
     api: {
-      getConfig: vi.fn(), getTree: vi.fn(), postMessage: vi.fn(), getMine: vi.fn(), editMessage: vi.fn(), deleteMessage: vi.fn(),
-      getOwnerTree: vi.fn(), saveRoom: vi.fn(), authPin: vi.fn(), authLink: vi.fn(), authGoogle: vi.fn(), createTree: vi.fn(), logout: vi.fn(),
+      getConfig: vi.fn(), getTree: vi.fn(), postMessage: vi.fn(), getMine: vi.fn(), getMyPhoto: vi.fn(), editMessage: vi.fn(), deleteMessage: vi.fn(),
+      getOwnerTree: vi.fn(), saveRoom: vi.fn(), authPin: vi.fn(), authLink: vi.fn(), authGoogle: vi.fn(), createTree: vi.fn(), logout: vi.fn(), roomImageUrl: actual.api.roomImageUrl,
     },
   };
 });
@@ -37,6 +43,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   resetClock();
   vi.stubGlobal('ResizeObserver', class { observe() {} disconnect() {} });
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(null); // ảnh nhỏ xem trước: jsdom không có canvas
   vi.stubGlobal('matchMedia', (q: string) => ({ matches: false, media: q, addEventListener: () => {}, removeEventListener: () => {} }));
   mocked.getConfig.mockResolvedValue({ now: new Date(NOW).toISOString() } as never);
 });
@@ -65,10 +72,11 @@ const writeAndSend = async (text = 'Giáng sinh vui') => {
     await userEvent.click(screen.getByRole('button', { name: 'Ẩn danh' }));
   }
   await userEvent.type(screen.getByRole('textbox', { name: /Lời nhắn/ }), text);
-  await userEvent.click(screen.getByRole('button', { name: 'Treo lên cây' }));
+  await userEvent.click(screen.getByRole('button', { name: 'Xem trước thiệp' }));
+  await userEvent.click(await screen.findByRole('button', { name: 'Treo lên cây' }));
 };
 const posted = { messageId: '9', editToken: 'tok', editUntil: new Date(NOW + 15 * 60_000).toISOString() };
-const mineMsg = (until: string) => ({ messageId: '9', slotIndex: 2, ornament: 'bell', anonymous: true, authorName: null, content: 'Cũ', editUntil: until });
+const mineMsg = (until: string) => ({ messageId: '9', slotIndex: 2, ornament: 'bell', anonymous: true, authorName: null, content: 'Cũ', editUntil: until, hasPhoto: false });
 /** Điểm 2 là lời nhắn của máy này, còn `minutes` phút. */
 const withMine = (minutes: number) => {
   const until = new Date(NOW + minutes * 60_000).toISOString();
@@ -88,6 +96,12 @@ describe('GuestTree', () => {
     expect(container.querySelector('[data-room-world]')!.contains(bubble)).toBe(true);
     await zoom(container);
     expect(screen.getByText('Chạm vào cây thông để treo lời nhắn')).not.toBeVisible();
+  });
+
+  it('toàn phòng: phụ kiện đã treo hiện trên cây trước khi zoom', () => {
+    const { container } = show(meta({ slots: slotsWith(0) }));
+    expect(container.querySelectorAll('.gs-slot')).toHaveLength(1);
+    expect(bubbles()).toHaveLength(0);
   });
 
   it('lời nhắc chạm cây; chạm cây → 12 điểm, nút Về căn phòng, gọi lại getTree', async () => {
@@ -119,7 +133,7 @@ describe('GuestTree', () => {
     expect(screen.getByRole('button', { name: 'Lời nhắn của bạn: Quả châu' })).toHaveClass('gs-drop');
   });
 
-  it('slot_taken: toast, tải lại slots, chạm bong bóng khác thấy chữ cũ', async () => {
+  it('slot_taken từ bước xem trước: bảng đóng, chữ giữ, mở bong bóng khác thấy chữ cũ; toast, tải lại slots, chạm bong bóng khác thấy chữ cũ', async () => {
     mocked.postMessage.mockRejectedValue(new ApiError(409, 'slot_taken', 'Chỗ này vừa có người treo, chọn chỗ khác nhé'));
     const { container } = show();
     await zoom(container);
@@ -133,6 +147,25 @@ describe('GuestTree', () => {
     await userEvent.click(bubbles()[0]!);
     expect(screen.getByRole('textbox', { name: /Lời nhắn/ })).toHaveValue('Chữ của tôi');
     expect(screen.getByRole('button', { name: 'Ẩn danh' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('slot_taken giữ cả ảnh: mở bong bóng khác, xem trước vẫn có ảnh', async () => {
+    const bitmap = { id: 'p1', width: 4, height: 3, close: vi.fn() };
+    preparePhoto.mockResolvedValue({ bitmap, base64: 'b64' });
+    mocked.postMessage.mockRejectedValue(new ApiError(409, 'slot_taken', 'Chỗ này vừa có người treo, chọn chỗ khác nhé'));
+    const { container } = show();
+    await zoom(container);
+    mocked.getTree.mockResolvedValue(meta({ slots: slotsWith(0) }));
+    await userEvent.click(bubbles()[0]!);
+    await userEvent.upload(screen.getByLabelText('Kèm ảnh'), new File(['x'], 'a.jpg', { type: 'image/jpeg' }));
+    await screen.findByRole('button', { name: 'Gỡ ảnh' });
+    await writeAndSend('Chữ của tôi');
+    expect(mocked.postMessage).toHaveBeenCalledWith(ID, expect.objectContaining({ photo: 'b64' }));
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Chuông đã treo' })).toBeInTheDocument());
+    expect(bitmap.close).not.toHaveBeenCalled();
+    await userEvent.click(bubbles()[0]!);
+    await userEvent.click(screen.getByRole('button', { name: 'Xem trước thiệp' }));
+    expect(await screen.findByTestId('thiep')).toHaveAttribute('data-photo', 'p1');
   });
 
   it.each([
@@ -150,8 +183,9 @@ describe('GuestTree', () => {
     await writeAndSend('Còn đây');
     const dialog = screen.getByRole('dialog');
     expect(within(dialog).getByRole('alert')).toHaveTextContent(msg);
+    expect(screen.getByRole('button', { name: 'Treo lên cây' })).toBeEnabled(); // vẫn ở bước xem trước, bấm lại được
+    await userEvent.click(screen.getByRole('button', { name: '‹ Sửa lại' }));
     expect(within(dialog).getByRole('textbox', { name: /Lời nhắn/ })).toHaveValue('Còn đây');
-    expect(screen.getByRole('button', { name: 'Treo lên cây' })).toBeEnabled();
   });
 
   it('write_closed: bảng đóng, không còn bong bóng', async () => {
@@ -194,12 +228,57 @@ describe('GuestTree', () => {
     expect(screen.getByRole('textbox', { name: /Lời nhắn/ })).toHaveValue('Cũ');
   });
 
+  it('sửa lời nhắn có ảnh → gọi getMyPhoto, xem trước có ảnh; lưu không gửi trường photo', async () => {
+    const blob = new Blob(['w'], { type: 'image/webp' });
+    const bitmap = { id: 'mine', width: 4, height: 3, close: vi.fn() };
+    const m = withMine(7);
+    mocked.getMine.mockResolvedValue({ ...mineMsg(new Date(NOW + 7 * 60_000).toISOString()), hasPhoto: true });
+    mocked.getMyPhoto.mockResolvedValue(blob);
+    bitmapFromBlob.mockResolvedValue(bitmap);
+    mocked.editMessage.mockResolvedValue({ ok: true });
+    const { container } = show(m);
+    await zoom(container);
+    await openMine();
+    await screen.findByRole('button', { name: 'Gỡ ảnh' });
+    expect(mocked.getMyPhoto).toHaveBeenCalledWith('9', 'tok');
+    expect(bitmapFromBlob).toHaveBeenCalledWith(blob);
+    await userEvent.click(screen.getByRole('button', { name: 'Xem trước thiệp' }));
+    expect(await screen.findByTestId('thiep')).toHaveAttribute('data-photo', 'mine');
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }));
+    expect(mocked.editMessage).toHaveBeenCalledWith('9', 'tok', { ornament: 'bell', anonymous: true, content: 'Cũ' });
+    expect(bitmap.close).toHaveBeenCalled();
+  });
+
+  it('tải ảnh cũ lỗi mạng → vẫn mở bảng sửa, có toast, lưu không gửi trường photo', async () => {
+    const m = withMine(7);
+    mocked.getMine.mockResolvedValue({ ...mineMsg(new Date(NOW + 7 * 60_000).toISOString()), hasPhoto: true });
+    mocked.getMyPhoto.mockRejectedValue(new Error('mạng đứt'));
+    mocked.editMessage.mockResolvedValue({ ok: true });
+    const { container } = show(m);
+    await zoom(container);
+    await openMine();
+    expect(await screen.findByRole('textbox', { name: /Lời nhắn/ })).toHaveValue('Cũ');
+    expect(toast).toHaveBeenCalledWith('Chưa tải được ảnh cũ — ảnh vẫn giữ nguyên nếu bạn không đổi');
+    await userEvent.click(screen.getByRole('button', { name: 'Xem trước thiệp' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }));
+    expect(mocked.editMessage).toHaveBeenCalledWith('9', 'tok', { ornament: 'bell', anonymous: true, content: 'Cũ' });
+  });
+
+  it('sửa lời nhắn không có ảnh → không gọi getMyPhoto', async () => {
+    const { container } = show(withMine(7));
+    await zoom(container);
+    await openMine();
+    await screen.findByRole('textbox', { name: /Lời nhắn/ });
+    expect(mocked.getMyPhoto).not.toHaveBeenCalled();
+  });
+
   it('sửa: lưu thành công gọi editMessage và đóng bảng', async () => {
     mocked.editMessage.mockResolvedValue({ ok: true });
     const { container } = show(withMine(7));
     await zoom(container);
     await openMine();
     await userEvent.type(await screen.findByRole('textbox', { name: /Lời nhắn/ }), ' mới');
+    await userEvent.click(screen.getByRole('button', { name: 'Xem trước thiệp' }));
     await userEvent.click(screen.getByRole('button', { name: 'Lưu thay đổi' }));
     expect(mocked.editMessage).toHaveBeenCalledWith('9', 'tok', { ornament: 'bell', anonymous: true, content: 'Cũ mới' });
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -210,6 +289,7 @@ describe('GuestTree', () => {
     const { container } = show(withMine(7));
     await zoom(container);
     await openMine();
+    await userEvent.click(await screen.findByRole('button', { name: 'Xem trước thiệp' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Lưu thay đổi' }));
     expect(toast).toHaveBeenCalledWith('Chủ cây đã mở lời nhắn này, không sửa được nữa.');
     expect(storage.getMine(ID, 2)).toBeNull();
@@ -221,6 +301,7 @@ describe('GuestTree', () => {
     const { container } = show(withMine(7));
     await zoom(container);
     await openMine();
+    await userEvent.click(await screen.findByRole('button', { name: 'Xem trước thiệp' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Lưu thay đổi' }));
     expect(screen.getByRole('alert')).toHaveTextContent('Lời nhắn vừa thay đổi, thử lại nhé.');
     expect(storage.getMine(ID, 2)).not.toBeNull();
@@ -324,6 +405,13 @@ describe('GuestTree — việc nhỏ', () => {
     await openMine();
     await waitFor(() => expect(toast).toHaveBeenCalledWith('Chưa tải được, thử lại nhé'));
     expect(storage.getMine(ID, 2)).not.toBeNull();
+  });
+
+  it('khối dưới của khách có nút ⬇ Tải ảnh phòng', () => {
+    show();
+    const a = screen.getByRole('link', { name: '⬇ Tải ảnh phòng' });
+    expect(a).toHaveAttribute('href', `/api/trees/${ID}/image.png`);
+    expect(a).toHaveAttribute('download');
   });
 
   it('chạm cây là nhấn-thả (click), không zoom khi chỉ vừa chạm xuống', () => {

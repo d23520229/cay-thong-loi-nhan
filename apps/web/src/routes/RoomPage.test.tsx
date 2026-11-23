@@ -12,7 +12,7 @@ vi.mock('../lib/api', async (orig) => {
   const actual = await orig<typeof import('../lib/api')>();
   return {
     ...actual,
-    api: { getOwnerTree: vi.fn(), getTree: vi.fn(), authLink: vi.fn(), authPin: vi.fn(), saveRoom: vi.fn(), ownerVisit: vi.fn(), getConfig: vi.fn(), setShowCount: vi.fn() },
+    api: { getOwnerTree: vi.fn(), getTree: vi.fn(), authLink: vi.fn(), authPin: vi.fn(), saveRoom: vi.fn(), ownerVisit: vi.fn(), getConfig: vi.fn(), setShowCount: vi.fn(), roomImageUrl: actual.api.roomImageUrl },
   };
 });
 

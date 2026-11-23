@@ -12,6 +12,8 @@ type Props = {
   hideEmpty?: boolean;
   /** Chủ cây: trạng thái quà của từng điểm có lời nhắn (đặc tả 6.6.2). */
   states?: Record<number, OwnerState>;
+  /** Mặc định true. false (xem toàn phòng): chỉ vẽ phụ kiện, không nút, không bắt chạm — chạm cây vẫn do cây xử lý. */
+  interactive?: boolean;
 };
 
 export type OwnerState = 'locked' | 'unread' | 'read';
@@ -31,27 +33,38 @@ function label(v: SlotView, st?: OwnerState): string {
 }
 
 /** Bong bóng "+" và phụ kiện đã treo, trong toạ độ phòng (đặc tả 6.6.1). Chuỗi SVG tĩnh từ @ctln/art. */
-export function SlotsLayer({ rects, views, fx, onTap, hideEmpty, states }: Props) {
+export function SlotsLayer({ rects, views, fx, onTap, hideEmpty, states, interactive = true }: Props) {
   return (
-    <div className="gs-slots">
+    <div className="gs-slots" style={interactive ? undefined : { pointerEvents: 'none' }}>
       {rects.map((r) => {
         const v = views[r.index];
-        if (!v || (hideEmpty && v.kind === 'empty')) return null;
+        if (!v || ((hideEmpty || !interactive) && v.kind === 'empty')) return null;
         const st = v.kind === 'empty' ? undefined : states?.[r.index];
         // Quà còn gói vẽ như phụ kiện bình thường (không nhạt, không nơ); nhãn và lời nhắc khi chạm vẫn báo còn gói.
         const look = !st || st === 'locked' ? 'filled' : st;
         const svg = v.kind === 'empty' ? slotBubbleSVG() : ornamentSVGSoft(v.ornament ?? 'ball', look, null);
         const cls = ['gs-slot', v.kind === 'mine' || v.kind === 'mineExpired' ? 'is-mine' : '', fx[r.index] ? FX_CLASS[fx[r.index]!] : ''].filter(Boolean).join(' ');
+        const pos = { left: r.left, top: r.top, width: r.size, height: r.size };
+        // .gs-slot đặt pointer-events: auto trong app.css; span tĩnh phải ghi đè để chạm xuyên xuống cây.
+        const posStatic = { ...pos, pointerEvents: 'none' as const };
+        const art = <svg viewBox="-30 -6 60 60" width="100%" height="100%" aria-hidden="true" dangerouslySetInnerHTML={{ __html: svg }} />;
+        if (!interactive) {
+          return (
+            <span key={r.index} className={cls} aria-hidden="true" style={posStatic}>
+              {art}
+            </span>
+          );
+        }
         return (
           <button
             key={r.index}
             type="button"
             className={cls}
             aria-label={label(v, st)}
-            style={{ left: r.left, top: r.top, width: r.size, height: r.size }}
+            style={pos}
             onClick={() => onTap(r.index)}
           >
-            <svg viewBox="-30 -6 60 60" width="100%" height="100%" aria-hidden="true" dangerouslySetInnerHTML={{ __html: svg }} />
+            {art}
           </button>
         );
       })}
