@@ -10,6 +10,21 @@
 
 **Spec:** `docs/dac-ta-v3.md` mục **6.8** (đã duyệt 24/11); tham chiếu 3.7, 8.7, 10.
 
+## Trạng thái (cập nhật 24/11/2026)
+
+**Đã xong Task 0–6** trên nhánh `m3b` (toàn bộ phía server + nút Google cho chủ cây): 247 test server, 431 test web, typecheck sạch. **Dừng trước Task 7** theo yêu cầu chủ dự án. Phiên sau: đọc mục này, `git switch m3b`, làm tiếp **Task 7** (khung trang quản trị web), rồi 8–12, rồi duyệt cả nhánh.
+
+Sổ tiến độ chi tiết (bị git bỏ qua, chỉ có trên máy này): `.superpowers/sdd/2026-11-24-m3b-quan-tri-google/progress.md`.
+
+**Quyết định khi làm (lệch nhẹ so với kế hoạch):**
+- Task 2: bỏ 2 kiểm tra cũ "nút Google sắp có bị khoá" (`ReopenDialog.test`, `RoomPage.test`) vì nút đã làm thật.
+- Task 4: `schema.test.ts` vẫn 16 bảng (test này chỉ chạy `0000_init.sql`); `migrate.test.ts`, `room.test.ts` cập nhật 17 bảng / thêm `0005`.
+- Task 4: số lỗi 24 giờ đếm theo ô giờ từ giờ chứa (now − 24h), có thể dư tối đa 1 giờ.
+- Task 5: ghi chú khi xử lý báo cáo giới hạn 1–450 ký tự (không phải 500), vì nhật ký thêm tiền tố (`delete_message: `, `báo cáo #id: `) mà cột `admin_audit.note` ≤ 500.
+- Task 5: `deleteTreeWithPhotos(app, req, treeId, inTx?)` ở `apps/server/src/trees/delete.ts` gọi `inTx` ngay sau khi khoá dòng cây, trước khi xoá; `inTx` ném lỗi thì huỷ cả giao dịch.
+
+**Cho Task 7–10 (web) — API đã có, đúng kiểu như Interfaces Task 3–6:** `POST /api/admin/auth/google` → `{ email, csrfToken }`; `GET /api/admin/me`; `POST /api/admin/auth/logout`; `GET /api/admin/overview`; `GET /api/admin/reports?status=open|handled` → `{ items: AdminReport[] }`; `GET /api/admin/reports/:rid/photo`; `POST /api/admin/reports/:rid/resolve { action, note }` (note 1–450); `GET /api/admin/trees/:id`; `POST …/unlock-pin { note? }` → 204; `POST …/revoke-sessions { note? }` → `{ revoked }`; `DELETE /api/admin/trees/:id { note }` → 204; `GET /api/admin/audit?before=` → `{ items, nextBefore }`. Lệnh ghi cần header `x-csrf-token`. Mã lỗi: `admin_required` (401), `csrf` (403), `not_admin` (403), `already_handled` / `message_gone` (409), `no_message` (400). Web đã có `useConfig()` (`apps/web/src/lib/config.ts`) và `GoogleButton` (`apps/web/src/ui/GoogleButton.tsx`).
+
 ## Global Constraints
 
 - Không thêm thư viện mới (server và web).
@@ -34,8 +49,8 @@
 
 ### Task 0: Nhánh và tài liệu thiết kế
 
-- [ ] **Step 1:** `git switch -c m3b` từ `main`.
-- [ ] **Step 2:** Commit thay đổi tài liệu đang có:
+- [x] **Step 1:** `git switch -c m3b` từ `main`.
+- [x] **Step 2:** Commit thay đổi tài liệu đang có:
 ```bash
 git add docs/dac-ta-v3.md docs/tien-do.md docs/superpowers/plans/2026-11-24-m3b-quan-tri-google.md
 git commit -m "docs: thiết kế M3b (đặc tả 6.8) + kế hoạch"
@@ -53,11 +68,11 @@ git commit -m "docs: thiết kế M3b (đặc tả 6.8) + kế hoạch"
 - `FakeGoogle` trong test: `ok:SUB` → `{ sub }`; `ok:SUB:EMAIL` → `{ sub, email, emailVerified: true }`; `unverified:SUB:EMAIL` → `{ sub, email, emailVerified: false }`; khác → throw.
 - `GET /api/config` thêm `supportEmail: string | null`.
 
-- [ ] **Step 1:** Test: `loadEnv({ DB_QUOTA_GB: '10' }).dbQuotaBytes === 10 * 1024 ** 3`; mặc định = `32 * 1024 ** 3`; `DB_QUOTA_GB: 'abc'` → throw; `ADMIN_BOOTSTRAP_EMAIL: ' A@B.com '` → `'a@b.com'`. Test `/api/config` trả `supportEmail` khi đặt env và `null` khi không.
-- [ ] **Step 2:** Chạy `pnpm --filter @ctln/server test -- app` → FAIL.
-- [ ] **Step 3:** Làm: các trường env; `google.ts` trả thêm `email: p.email`, `emailVerified: p.email_verified === true` khi có; config trả `supportEmail`; `.env.example` thêm `SUPPORT_EMAIL=`, `DB_QUOTA_GB=32`, `ADMIN_AZURE_URL=` có chú thích; cập nhật `FakeGoogle`.
-- [ ] **Step 4:** Chạy lại test server → PASS (toàn bộ, vì `FakeGoogle` đổi).
-- [ ] **Step 5:** Commit `feat(server): env quản trị, supportEmail trong config, Google trả email`.
+- [x] **Step 1:** Test: `loadEnv({ DB_QUOTA_GB: '10' }).dbQuotaBytes === 10 * 1024 ** 3`; mặc định = `32 * 1024 ** 3`; `DB_QUOTA_GB: 'abc'` → throw; `ADMIN_BOOTSTRAP_EMAIL: ' A@B.com '` → `'a@b.com'`. Test `/api/config` trả `supportEmail` khi đặt env và `null` khi không.
+- [x] **Step 2:** Chạy `pnpm --filter @ctln/server test -- app` → FAIL.
+- [x] **Step 3:** Làm: các trường env; `google.ts` trả thêm `email: p.email`, `emailVerified: p.email_verified === true` khi có; config trả `supportEmail`; `.env.example` thêm `SUPPORT_EMAIL=`, `DB_QUOTA_GB=32`, `ADMIN_AZURE_URL=` có chú thích; cập nhật `FakeGoogle`.
+- [x] **Step 4:** Chạy lại test server → PASS (toàn bộ, vì `FakeGoogle` đổi).
+- [x] **Step 5:** Commit `feat(server): env quản trị, supportEmail trong config, Google trả email`.
 
 ### Task 2: GoogleButton + Google cho chủ cây (web)
 
@@ -73,15 +88,15 @@ git commit -m "docs: thiết kế M3b (đặc tả 6.8) + kế hoạch"
 - `googleName(idToken: string): string | null` (giải mã phần payload base64url, lấy `name`) — đặt trong `lib/gis.ts`.
 - `authErrorMessage` thêm: `not_owner` → "Tài khoản này không phải chủ cây.", `google_invalid` → "Đăng nhập Google chưa thành công, thử lại nhé.", `google_unavailable` → giữ message server.
 
-- [ ] **Step 1:** Test `GoogleButton`: config `googleClientId: null` → nút bị khoá với chữ trên; có clientId và `window.google` giả → gọi `initialize` với `client_id` đúng, gọi callback giả `{ credential: 'tok' }` → `onToken('tok')`.
-- [ ] **Step 2:** Test màn (mock `GoogleButton` thành nút bấm trả `'tok'`):
+- [x] **Step 1:** Test `GoogleButton`: config `googleClientId: null` → nút bị khoá với chữ trên; có clientId và `window.google` giả → gọi `initialize` với `client_id` đúng, gọi callback giả `{ credential: 'tok' }` → `onToken('tok')`.
+- [x] **Step 2:** Test màn (mock `GoogleButton` thành nút bấm trả `'tok'`):
   - `CreatePage`: chọn chip "Google" → hiện `GoogleButton`, ẩn `PinInput`; sau token hiện "Đã chọn Google: {tên}" và `createTree` được gọi với `recovery: { type: 'google', idToken: 'tok' }`; lỗi 400 `google_invalid` → hiện lỗi và hiện lại nút Google.
   - `ReopenDialog`: `authGoogle` trả `{ trees: [] }` → "Tài khoản Google này chưa có cây nào"; `{ trees: [{ id: 'abc12345', title: null }] }` → gọi `authGoogle('tok', 'abc12345')` rồi điều hướng `/c/abc12345` và `storage.addMyTree`; 2 cây → hiện 2 chip, bấm một chip → `authGoogle('tok', id)` → điều hướng.
   - `OwnerLogin`: token → `authGoogle('tok', treeId)` → `onSuccess`; 403 `not_owner` → "Tài khoản này không phải chủ cây."
-- [ ] **Step 3:** Chạy `pnpm --filter @ctln/web test` → FAIL.
-- [ ] **Step 4:** Làm theo Interfaces; thay ba nút "sắp có". Trang xong của `/tao` khi chọn Google đổi gợi ý thành "Mở cây trên máy khác bằng Google hoặc link riêng".
-- [ ] **Step 5:** Chạy test web → PASS; `pnpm typecheck` sạch.
-- [ ] **Step 6:** Commit `feat(web): nút Google thật cho chủ cây (tạo cây, mở lại, chào chủ cây)`.
+- [x] **Step 3:** Chạy `pnpm --filter @ctln/web test` → FAIL.
+- [x] **Step 4:** Làm theo Interfaces; thay ba nút "sắp có". Trang xong của `/tao` khi chọn Google đổi gợi ý thành "Mở cây trên máy khác bằng Google hoặc link riêng".
+- [x] **Step 5:** Chạy test web → PASS; `pnpm typecheck` sạch.
+- [x] **Step 6:** Commit `feat(web): nút Google thật cho chủ cây (tạo cây, mở lại, chào chủ cây)`.
 
 ### Task 3: Đăng nhập quản trị, phiên, CSRF, audit
 
@@ -101,7 +116,7 @@ git commit -m "docs: thiết kế M3b (đặc tả 6.8) + kế hoạch"
 - `makeTestApp` nhận `env.ADMIN_BOOTSTRAP_EMAIL`; thêm helper test `adminLogin(app): Promise<{ cookie: string; csrf: string }>` dùng token `ok:admin-sub:admin@test.vn`.
 - Hook trong `app.ts`: `onRequest` bỏ qua 410 khi path bắt đầu `/api/admin/`; `onSend` đặt `X-Robots-Tag: noindex` cho path bắt đầu `/api/admin` hoặc `/quan-tri`.
 
-- [ ] **Step 1:** Test (`admin-auth.test.ts`, bootstrap `admin@test.vn`):
+- [x] **Step 1:** Test (`admin-auth.test.ts`, bootstrap `admin@test.vn`):
   - đăng nhập đúng → 200, có `set-cookie` `ctln_admin` chứa `Path=/api/admin`, `HttpOnly`, `SameSite=Strict`; `admin_users.google_sub` = `admin-sub`; có dòng audit `login`.
   - email lạ / `unverified:` / admin `disabled` / cùng email nhưng sub khác sau lần đầu → 403 `not_admin`; token hỏng → 400 `google_invalid`; `google: null` → 503.
   - lần sai thứ 11 trong giờ từ cùng IP → 429 `rate_limited`.
@@ -112,10 +127,10 @@ git commit -m "docs: thiết kế M3b (đặc tả 6.8) + kế hoạch"
   - `POST /api/admin/auth/logout` thiếu `x-csrf-token` → 403 `csrf`; đúng → 204, sau đó `me` → 401, audit có `logout`.
   - `clock.set('2027-01-02T00:00:00+07:00')`: `/api/admin/me` → 200, `/api/trees/x` → 410.
   - phản hồi `/api/admin/me` có `x-robots-tag: noindex`.
-- [ ] **Step 2:** Chạy `pnpm --filter @ctln/server test -- admin-auth` → FAIL.
-- [ ] **Step 3:** Làm theo Interfaces. Giới hạn đăng nhập: bucket `admin-login:ip:{ipHash}`, `rateLimit(..., 10, at)` **chỉ khi thất bại** (dùng `refundRate` khi thành công, như PIN).
-- [ ] **Step 4:** Chạy test server → PASS.
-- [ ] **Step 5:** Commit `feat(server): đăng nhập quản trị Google, phiên 12 giờ, CSRF, nhật ký`.
+- [x] **Step 2:** Chạy `pnpm --filter @ctln/server test -- admin-auth` → FAIL.
+- [x] **Step 3:** Làm theo Interfaces. Giới hạn đăng nhập: bucket `admin-login:ip:{ipHash}`, `rateLimit(..., 10, at)` **chỉ khi thất bại** (dùng `refundRate` khi thành công, như PIN).
+- [x] **Step 4:** Chạy test server → PASS.
+- [x] **Step 5:** Commit `feat(server): đăng nhập quản trị Google, phiên 12 giờ, CSRF, nhật ký`.
 
 ### Task 4: Migration 0005, đếm lỗi, p95, photo_bytes, Tổng quan
 
@@ -146,12 +161,12 @@ type Overview = {
 ```
   `views` = `events.type = 'tree_viewed_guest'`; `viral` = phòng có `ref_tree_id` / tổng phòng (0 phòng → `null`); `dbBytes` = `pg_database_size(current_database())`.
 
-- [ ] **Step 1:** Test `metrics.test.ts`: 100 lần `record(i)` (i = 1..100) → `p95Ms === 95`; bản ghi 61 phút trước bị bỏ; chưa có gì → `null`.
-- [ ] **Step 2:** Test overview: seed 3 cây (1 có `refTreeId`, 1 tạo 2 ngày trước), 2 lời nhắn, 1 event view, 1 báo cáo open → số đúng, `viral ≈ 1/3`; route test ném lỗi (đăng ký tạm route `/api/__boom` trong test) → `errors24h === 1`, `lastError.route === '/api/__boom'`, `status === 500`; `dbBytes > 0`; `dbQuotaBytes` theo env; treo lời nhắn kèm ảnh → `photos.count 1`, `bytes` = kích thước Blob trong `memoryStore`; sửa gỡ ảnh → `photo_bytes` null; không có phiên quản trị → 401.
-- [ ] **Step 3:** Chạy → FAIL.
-- [ ] **Step 4:** Làm theo Interfaces; cập nhật `docs/schema.postgres.sql`, đặc tả 7.3.
-- [ ] **Step 5:** Chạy test server → PASS (gồm `migrate.test.ts`, `schema.test.ts`).
-- [ ] **Step 6:** Commit `feat(server): tổng quan quản trị, đếm lỗi 5xx, p95, photo_bytes (migration 0005)`.
+- [x] **Step 1:** Test `metrics.test.ts`: 100 lần `record(i)` (i = 1..100) → `p95Ms === 95`; bản ghi 61 phút trước bị bỏ; chưa có gì → `null`.
+- [x] **Step 2:** Test overview: seed 3 cây (1 có `refTreeId`, 1 tạo 2 ngày trước), 2 lời nhắn, 1 event view, 1 báo cáo open → số đúng, `viral ≈ 1/3`; route test ném lỗi (đăng ký tạm route `/api/__boom` trong test) → `errors24h === 1`, `lastError.route === '/api/__boom'`, `status === 500`; `dbBytes > 0`; `dbQuotaBytes` theo env; treo lời nhắn kèm ảnh → `photos.count 1`, `bytes` = kích thước Blob trong `memoryStore`; sửa gỡ ảnh → `photo_bytes` null; không có phiên quản trị → 401.
+- [x] **Step 3:** Chạy → FAIL.
+- [x] **Step 4:** Làm theo Interfaces; cập nhật `docs/schema.postgres.sql`, đặc tả 7.3.
+- [x] **Step 5:** Chạy test server → PASS (gồm `migrate.test.ts`, `schema.test.ts`).
+- [x] **Step 6:** Commit `feat(server): tổng quan quản trị, đếm lỗi 5xx, p95, photo_bytes (migration 0005)`.
 
 ### Task 5: Báo cáo (server)
 
@@ -177,11 +192,11 @@ type AdminReport = {
   - `delete_tree`: `deleteTreeWithPhotos(..., inTx: audit 'tree_delete' target 'tree' note = "báo cáo #{rid}: " + note)`.
   - `dismiss`: `dismissed/no_action`, audit `report_resolve` note `"dismiss: " + note`.
 
-- [ ] **Step 1:** Test: danh sách `open` chỉ có báo cáo mở, có `snapshot`, **không** có trường nội dung nào khác của lời nhắn (so khoá JSON với danh sách cho phép); `hasPhoto` đúng; ảnh báo cáo đọc được bằng phiên quản trị, 401 khi không phiên; ba hành động đổi đúng trạng thái và có audit; `delete_message` xoá Blob ảnh lời nhắn nhưng **giữ** bản chụp `r/{id}.webp`; `delete_tree` xoá mọi Blob của cây gồm bản chụp, có audit `tree_delete`; resolve lần 2 → 409 `already_handled` và số dòng audit không đổi; lời nhắn đã xoá → 409 `message_gone`; `note` rỗng → 400; thiếu CSRF → 403; `DELETE /api/trees/:id` của chủ cây vẫn qua test cũ.
-- [ ] **Step 2:** Chạy → FAIL.
-- [ ] **Step 3:** Làm theo Interfaces.
-- [ ] **Step 4:** Chạy test server → PASS.
-- [ ] **Step 5:** Commit `feat(server): hàng đợi báo cáo quản trị (xoá lời nhắn, xoá phòng, bỏ qua)`.
+- [x] **Step 1:** Test: danh sách `open` chỉ có báo cáo mở, có `snapshot`, **không** có trường nội dung nào khác của lời nhắn (so khoá JSON với danh sách cho phép); `hasPhoto` đúng; ảnh báo cáo đọc được bằng phiên quản trị, 401 khi không phiên; ba hành động đổi đúng trạng thái và có audit; `delete_message` xoá Blob ảnh lời nhắn nhưng **giữ** bản chụp `r/{id}.webp`; `delete_tree` xoá mọi Blob của cây gồm bản chụp, có audit `tree_delete`; resolve lần 2 → 409 `already_handled` và số dòng audit không đổi; lời nhắn đã xoá → 409 `message_gone`; `note` rỗng → 400; thiếu CSRF → 403; `DELETE /api/trees/:id` của chủ cây vẫn qua test cũ.
+- [x] **Step 2:** Chạy → FAIL.
+- [x] **Step 3:** Làm theo Interfaces.
+- [x] **Step 4:** Chạy test server → PASS.
+- [x] **Step 5:** Commit `feat(server): hàng đợi báo cáo quản trị (xoá lời nhắn, xoá phòng, bỏ qua)`.
 
 ### Task 6: Tra cứu phòng + Nhật ký (server)
 
@@ -206,11 +221,11 @@ type AdminTree = {
 - `DELETE /api/admin/trees/:id` body `{ note }` (bắt buộc 1–500) → 204 qua `deleteTreeWithPhotos`, audit `tree_delete`. Cây không có → 404.
 - `GET /api/admin/audit?before=` → `{ items: { id: string; at: string; email: string | null; action: string; targetType: string | null; targetId: string | null; note: string | null }[]; nextBefore: string | null }` — 50 dòng, `id < before`, mới nhất trước.
 
-- [ ] **Step 1:** Test: JSON tra cứu chỉ có đúng các khoá trong `AdminTree` (không có `content`, `authorName`, `photoKey`); số đếm đúng với dữ liệu seed (2 lời nhắn, 1 đã mở; 1 phiên còn, 1 đã thu hồi); 50 lần PIN sai (ghi thẳng `rate_counters` hits = 50) → `lockedUntil` = cuối ngày UTC; `unlock-pin` → bucket của cây này mất, bucket `pin:tree:khac` còn, sau đó `POST /auth/pin` đúng PIN → 204; `revoke-sessions` → cookie chủ cây cũ gọi `/owner` → 401; `DELETE` không `note` → 400, có → 204 và Blob mất; audit trả mới nhất trước, `nextBefore` phân trang đúng với 55 dòng.
-- [ ] **Step 2:** Chạy → FAIL.
-- [ ] **Step 3:** Làm theo Interfaces.
-- [ ] **Step 4:** Chạy test server → PASS; cập nhật `apps/server/src/routes/README.md` (thêm nhóm `/api/admin`).
-- [ ] **Step 5:** Commit `feat(server): tra cứu phòng, mở khoá PIN, thu hồi phiên, xoá phòng, nhật ký quản trị`.
+- [x] **Step 1:** Test: JSON tra cứu chỉ có đúng các khoá trong `AdminTree` (không có `content`, `authorName`, `photoKey`); số đếm đúng với dữ liệu seed (2 lời nhắn, 1 đã mở; 1 phiên còn, 1 đã thu hồi); 50 lần PIN sai (ghi thẳng `rate_counters` hits = 50) → `lockedUntil` = cuối ngày UTC; `unlock-pin` → bucket của cây này mất, bucket `pin:tree:khac` còn, sau đó `POST /auth/pin` đúng PIN → 204; `revoke-sessions` → cookie chủ cây cũ gọi `/owner` → 401; `DELETE` không `note` → 400, có → 204 và Blob mất; audit trả mới nhất trước, `nextBefore` phân trang đúng với 55 dòng.
+- [x] **Step 2:** Chạy → FAIL.
+- [x] **Step 3:** Làm theo Interfaces.
+- [x] **Step 4:** Chạy test server → PASS; cập nhật `apps/server/src/routes/README.md` (thêm nhóm `/api/admin`).
+- [x] **Step 5:** Commit `feat(server): tra cứu phòng, mở khoá PIN, thu hồi phiên, xoá phòng, nhật ký quản trị`.
 
 ### Task 7: Khung trang quản trị (web)
 

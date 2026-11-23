@@ -8,7 +8,7 @@
 - **Thiệp, ảnh kèm, tải ảnh (đặc tả 6.7):** xong, chủ dự án đã thử tay, đã gộp vào `main` (PR #5, #6). Nhánh `fix-luong-sau-m2` (rà soát luồng 22–23/11) đã gộp (PR #4). Số liệu lúc gộp: **413 test web + 207 test server + 42 test shared + 1 test art**, typecheck sạch, build JS + CSS ≈ 158 KB gzip (giới hạn 250 KB).
 - **Mốc đang ở:** **M3 xong và đã gộp vào `main`** (PR #3; M1, M2 là PR #1, #2), cùng phần 6.7 thiệp/ảnh. M3 gồm 3 phần (đặc tả 6.6): (1) khách treo lời nhắn, (2) chủ cây đọc & quản lý, (3) chia sẻ + OG.
 - **Số liệu lúc xong M3 (21/11):** 290 test web + 136 test server + 40 test shared, typecheck sạch, build JS + CSS ≈ 155 KB gzip (giới hạn 250 KB). Đã chạy thật (21/11): qua Vite + PostgreSQL khách treo → 201, `GET /api/trees/{id}` không có nội dung; server từ bản build (`WEB_DIST=apps/web/dist`, cổng 3001) trả `/c/{id}` có đủ thẻ OG, `/og/{id}.png` PNG 1200×630, `/tao` trả trang, file tĩnh và API chạy. Kế hoạch: `docs/superpowers/plans/2026-11-21-m3-p1-khach-treo-loi-nhan.md`, `docs/superpowers/plans/2026-11-21-m3-p2-p3-chu-cay-chia-se-og.md`.
-- **Việc tiếp theo:** **M3b** — thiết kế đã viết ở đặc tả **6.8** (24/11), chờ chủ dự án duyệt → lập kế hoạch → làm. Google Cloud đã tạo (OAuth Client ID trong `.env`, ứng dụng ở trạng thái Testing). Cần thêm khi làm: `ADMIN_BOOTSTRAP_EMAIL`, `SUPPORT_EMAIL` trong `.env`.
+- **Việc tiếp theo:** **M3b đang làm trên nhánh `m3b`** — xong Task 0–6 (server quản trị đầy đủ + nút Google cho chủ cây; 247 test server, 431 test web). **Làm tiếp từ Task 7** (khung trang quản trị web) theo `docs/superpowers/plans/2026-11-24-m3b-quan-tri-google.md` — mục "Trạng thái" đầu kế hoạch ghi các quyết định đã chốt khi làm. Đặc tả: 6.8. `.env` đã có `GOOGLE_CLIENT_ID`, `ADMIN_BOOTSTRAP_EMAIL`, `SUPPORT_EMAIL`.
 
 ### Thiệp, ảnh kèm, tải ảnh — thử tay và việc còn lại (đã gộp vào `main`)
 
@@ -144,7 +144,7 @@ Chưa làm ở M1: giao diện web (M2–M3), trang quản trị (M3b), OG ảnh
 | M1 | 18–25/11 | Backend: migration, giai đoạn, xác thực, API phòng + lời nhắn, test | **Xong** (17/11) |
 | M2 | 25/11–02/12 | Frontend phòng tự do: kéo thả, xếp lớp, mũi tên ‹ ›, dải chọn, tự lưu | **Xong** (18/11, nhánh `m2-frontend`) |
 | M3 | 02–07/12 | Bạn bè treo lời nhắn; chủ cây đọc, khoá, đếm ngược; chia sẻ, OG | **Xong** (21/11, PR #3; thiệp/ảnh PR #5, #6 ngày 24/11) |
-| M3b | 05–08/12 | Trang quản trị P0 + Google cho chủ cây | **Thiết kế xong, chờ duyệt** (24/11, đặc tả 6.8) |
+| M3b | 05–08/12 | Trang quản trị P0 + Google cho chủ cây | **Đang làm** (nhánh `m3b`, xong Task 0–6 ngày 24/11) |
 | M4 | 07–10/12 | Hoàn thiện, triển khai Azure (kèm Blob cho ảnh, câu trung thực về riêng tư trong chính sách; bật IPv6 inbound cho App Service nếu gói B1 cho phép — kiểm chi phí) | |
 | M5 | 10–12/12 | Chạy thử kín | |
 | M6 | 15/12 | Ra mắt công khai | |
@@ -227,6 +227,7 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 
 ## Nhật ký
 
+- **24/11/2026 (lượt 2)** — M3b (nhánh `m3b`): xong server quản trị (đăng nhập Google + phiên 12 giờ + CSRF + nhật ký, Tổng quan có khối máy chủ, migration 0005 `photo_bytes` + `error_counts`, báo cáo, tra cứu phòng, nhật ký) và nút Google thật cho chủ cây. Dừng trước Task 7 (web quản trị) để chủ dự án kiểm tra.
 - **24/11/2026** — Chủ dự án thử tay xong phần thiệp, ảnh kèm, tải ảnh; đã gộp vào `main` (PR #4 `fix-luong-sau-m2`, PR #5, #6 `thiep-anh-kem`). Chốt: tải ảnh cũ lỗi vẫn mở bảng sửa (không ảnh, có thông báo). Tiếp theo: M3b.
 - **23/11/2026** — Xong thiệp lời nhắn, ảnh kèm, tải ảnh (đặc tả 6.7, nhánh `thiep-anh-kem`): lời nhắn 400 ký tự / ≤ 9 dòng (migration 0004), thiệp canvas + xem trước + xem toàn màn hình, ảnh kèm qua `PhotoStore` (fs/Azure/bộ nhớ, EXIF bị bỏ, giới hạn điểm ảnh), chủ cây đọc ảnh sau 0h 24/12, dọn ảnh khi xoá lời nhắn/cây (báo cáo giữ bản chụp), `GET /api/trees/:id/image.png`, phụ kiện hiện khi xem toàn phòng. 413 test web, 207 test server, 42 test shared, 1 test art; build ≈ 158 KB gzip. Chạy thật (Postgres Docker, cổng 3098): treo lời nhắn kèm ảnh → `.data/photos/m/{cây}/{id}-….webp` xuất hiện, xoá lời nhắn → file mất; `curl -I image.png` → 200, `image/png`, `content-disposition: attachment`.
 - **22/11/2026** — Rà soát toàn bộ luồng (`docs/luong-hoat-dong.md`) và sửa (nhánh `fix-luong-sau-m2`): `GET /owner` chỉ đọc + `POST /owner/visit` (số lời nhắn mới không còn về 0); giới hạn tạo phòng 20/giờ/IP, lời nhắn 100/giờ/IP, chỉ đếm khi dữ liệu hợp lệ (chủ dự án chấp nhận rủi ro bot, đặc tả 10); "Xong" gặp 409 ở lại chế độ Sửa và hỏi; `pagehide` gửi lưu bằng `keepalive` (nhận version mới nếu thành công, tránh xung đột giả khi quay lại bằng Back); "Bạn đã có cây?" chỉ tự thử khi nhớ đúng 1 cây; bấm lại lựa chọn đang có không lưu; `fitRoom` không ra tỉ lệ âm; `pnpm install` cho typecheck web. 187 test web, 125 test server, 40 test shared.
