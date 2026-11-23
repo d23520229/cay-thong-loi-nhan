@@ -8,6 +8,8 @@ import { storage } from '../lib/storage';
 import { defaultRoom } from '../room/model';
 import { RoomPage } from './RoomPage';
 
+vi.mock('../ui/SupportHint', () => ({ SupportHint: () => <p>HỖ TRỢ</p> }));
+
 vi.mock('../lib/api', async (orig) => {
   const actual = await orig<typeof import('../lib/api')>();
   return {
@@ -108,7 +110,6 @@ describe('RoomPage', () => {
     expect(screen.getByRole('dialog', { name: 'Chào chủ cây 👋' })).toBeInTheDocument();
     expect(screen.getByText('Nhập mã PIN bạn đã đặt khi tạo cây.')).toBeInTheDocument();
     expect(screen.getByText('Có link riêng? Mở link đó là vào được ngay.')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Google/ })).toBeDisabled();
 
     mocked.authPin.mockResolvedValue(undefined);
     mocked.getOwnerTree.mockResolvedValue(ownerRoom());
@@ -225,6 +226,7 @@ describe('RoomPage', () => {
     await editBackground();
     await passDebounce();
     expect(await screen.findByText('Không mở được cây này.')).toBeInTheDocument();
+    expect(screen.getByText('HỖ TRỢ')).toBeInTheDocument();
   });
 
   it('lưu bị 401 → "Chào chủ cây" → đăng nhập → tải lại và gửi lại thay đổi', async () => {

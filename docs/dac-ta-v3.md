@@ -155,6 +155,8 @@ Ký hiệu: **P0** bắt buộc khi ra mắt · **P1** nên có · **P2** nếu 
 
 Chỉ dành cho bạn (và người bạn cấp quyền). Đăng nhập bằng Google, chỉ tài khoản có trong danh sách cho phép mới vào được. Mọi thao tác đều ghi nhật ký.
 
+**M3b (chốt 24/11, mục 6.8):** chỉ chủ dự án dùng, không phân quyền; làm A1–A5; hàng đợi báo cáo bỏ hành động chặn thiết bị (để cuối); Tổng quan có thêm khối "Máy chủ".
+
 **Nguyên tắc riêng tư:** quản trị viên **không đọc được lời nhắn tuỳ ý**. Chỉ thấy nội dung của lời nhắn **đã bị báo cáo** (bản chụp lúc báo cáo). Trang tra cứu phòng chỉ hiện số liệu, không hiện nội dung.
 
 | Mã | Màn hình / chức năng | Ưu tiên |
@@ -582,6 +584,126 @@ Làm lần lượt: (1) phụ kiện ở toàn phòng → (2) 400 ký tự + lu�
 
 **Để người làm tự quyết:** chia component; cách tách bộ vẽ phòng khỏi `og/render.ts`; chữ thông báo phụ; hiệu ứng mở thiệp; chỗ đặt nút tải ảnh phòng của khách.
 
+### 6.8 Thiết kế M3b — trang quản trị và đăng nhập Google (chốt 24/11)
+
+**Mục đích.** Trong tháng 12, chủ dự án mở `/quan-tri` để (1) biết dịch vụ đang chạy ra sao, cả phía người dùng lẫn phía máy chủ; (2) xử lý lời nhắn bị báo cáo; (3) giúp chủ cây gặp sự cố qua email hỗ trợ. **Chỉ một người dùng trang này** (chủ dự án). Cùng lượt: gắn nút đăng nhập Google cho chủ cây trên web (server đã có từ M1).
+
+**Mục tiêu:** A1–A5 (mục 3.7) theo các quyết định dưới đây; khối "Máy chủ" trên Tổng quan; nút Google thật cho chủ cây (tạo cây, "Bạn đã có cây?", bảng "Chào chủ cây"); email hỗ trợ `SUPPORT_EMAIL`.
+**Không làm:** phân quyền admin / moderator (cột `role` giữ nguyên, mọi API quản trị kiểm tra như nhau); A6–A13 (biểu đồ, quản lý chặn, từ cấm, biểu ngữ, tạm dừng, quản lý quản trị viên, sao lưu, xuất CSV); biểu đồ nhỏ 24 giờ ở Tổng quan (thuộc A6); cảnh báo tự động qua email; liên kết Google sau khi tạo (O8); lối đăng nhập quản trị không qua Google.
+**Không được xảy ra:** API quản trị trả nội dung lời nhắn hay ảnh nào **ngoài bản chụp của báo cáo**; tra cứu phòng lộ nội dung; người không có trong `admin_users` vào được bất kỳ API quản trị nào; phiên chủ cây dùng được cho API quản trị hoặc ngược lại; thao tác quản trị thay đổi dữ liệu mà không có dòng `admin_audit` trong cùng giao dịch; mã trang quản trị lọt vào gói JS chính của khách / chủ cây; khối "Máy chủ" ghi URL có mã phòng, body hay IP.
+
+**Để cuối, làm nếu chủ dự án muốn** (không thuộc M3b):
+- **Chặn thiết bị người viết từ báo cáo** (hành động `block_device` ở 8.7). Cách làm khi cần: migration thêm `reports.author_device_hash` (và `author_ip_hash` nếu muốn), chép từ `messages` lúc chủ cây báo cáo; nút "Chặn" ghi `global_blocks` kind `device`, hết hạn hết mùa. Chưa làm vì chủ dự án thấy chưa cần (24/11).
+- **Đổi link riêng / đổi PIN khi bị lộ** (O8, `PUT /api/trees/:id/recovery`). Hiện "thu hồi mọi phiên" không chặn được người đang giữ link riêng.
+
+**Các cách đã cân nhắc (chủ dự án chọn 1):**
+- **1. Trang quản trị nằm trong `apps/web`, tải riêng khi cần** (`React.lazy` cho `/quan-tri/*`, mã ở `apps/web/src/admin/`). Dùng lại lớp API, nút Google, `Button`, `Sheet`, bảng màu; một bản build; khách không tải thêm gì.
+- 2. App riêng `apps/admin`. Tách bạch nhưng thêm bản build, đường phục vụ và phải tách phần dùng chung — quá nhiều cho trang một người dùng.
+- 3. Server tự dựng HTML. Gọn phía web nhưng làm lại nút Google, hộp xác nhận, CSRF theo kiểu khác cả dự án.
+
+**Cách xem máy chủ (chủ dự án chọn C):** A — chỉ đặt đường dẫn sang Azure Portal; B — tự đo hết trong app; **C — app tự hiện những gì nó biết rẻ và chính xác, còn CPU / bộ nhớ / chi phí thì mở Azure.**
+
+#### 6.8.1 Đăng nhập Google cho chủ cây (web)
+
+Server không đổi (`POST /api/trees` với `recovery: { type: 'google', idToken }`, `POST /api/auth/google` có / không `treeId`).
+- Component dùng chung `GoogleButton` ở `apps/web/src/ui/`: tải `https://accounts.google.com/gsi/client` **khi cần** (không tải ở mọi trang), vẽ nút Google bằng Google Identity Services với `googleClientId` từ `/api/config`, trả `idToken` qua callback. `googleClientId` là `null` → giữ nút khoá, chữ "Đăng nhập Google tạm thời chưa dùng được".
+- **Tạo cây (`/tao`):** chọn ô "Google" thay cho PIN → hiện nút Google; đăng nhập xong hiện "Đã chọn Google: {tên}" và cho bấm tạo. `idToken` hết hạn (400 `google_invalid`) → báo và hiện lại nút.
+- **"Bạn đã có cây?" (`ReopenDialog`):** `POST /api/auth/google` không `treeId` → 0 cây: "Tài khoản Google này chưa có cây nào"; 1 cây: mở cây đó và đăng nhập bằng `treeId`; nhiều cây: danh sách tên cây để chọn.
+- **Bảng "Chào chủ cây" (`OwnerLogin`):** `POST /api/auth/google` có `treeId` → 204 thì vào; 403 `not_owner` → "Tài khoản này không phải chủ cây."
+- Google Cloud (đã tạo 24/11): dự án `cay-thong-loi-nhan`, ứng dụng ở trạng thái Testing (chỉ tài khoản trong *Test users* đăng nhập được), nguồn được phép `http://localhost:5173`, `http://localhost`, `http://localhost:3001`. **M4:** thêm địa chỉ Azure vào nguồn được phép và bấm *Publish app*.
+
+#### 6.8.2 Đăng nhập quản trị (A1)
+
+- Trang `/quan-tri` chưa có phiên → màn đăng nhập chỉ có nút Google (dùng `GoogleButton`). `POST /api/admin/auth/google { idToken }`.
+- Server xác minh `idToken` như chủ cây, nhưng **cần thêm `email` và `email_verified`** từ payload (sửa `google.ts` trả thêm hai trường). Điều kiện vào: `email_verified`, `lower(email)` có trong `admin_users`, `disabled = false`; nếu `google_sub` đã ghi thì phải trùng. Lần đầu đăng nhập ghi `google_sub`. Cập nhật `last_login_at`.
+- **Quản trị viên duy nhất** tạo từ `ADMIN_BOOTSTRAP_EMAIL` lúc server khởi động: chưa có dòng email đó thì chèn với `role = 'admin'`. Không đặt biến → không ai vào được trang quản trị (server vẫn chạy).
+- Phiên: 256 bit ngẫu nhiên, lưu HMAC trong `admin_sessions`, hết hạn 12 giờ. Cookie `ctln_admin` HttpOnly, Secure (production), SameSite=Strict, **`Path=/api/admin`** (cookie chỉ có một đường dẫn; trang `/quan-tri` không cần đọc cookie). Không dùng chung gì với cookie chủ cây.
+- **Chống giả mạo yêu cầu:** token CSRF = HMAC(`PEPPER`, "csrf:" + token phiên), không cần cột mới. Trả trong `POST …/auth/google` và `GET /api/admin/me`; web giữ trong bộ nhớ, gửi header `X-CSRF-Token` với mọi POST / DELETE quản trị; sai hoặc thiếu → 403 `csrf`.
+- Giới hạn 10 lần đăng nhập thất bại / IP / giờ (`rate_counters`, bucket `admin-login:ip:`), quá → 429.
+- Trang `/quan-tri` gắn `<meta name="robots" content="noindex">` (thêm khi vào route); server thêm header `X-Robots-Tag: noindex` cho `/quan-tri*` và `/api/admin/*`.
+- **Sau 0h 01/01/2027 (ENDED):** `/api/admin/*` **không** trả 410 như API khác — chủ dự án vẫn vào được đến khi xoá dữ liệu 07/01.
+- `GET /api/admin/me` → `{ email, csrfToken }` hoặc 401. `POST /api/admin/auth/logout` thu hồi phiên.
+
+#### 6.8.3 Tổng quan (A2) — trang mở đầu
+
+`GET /api/admin/overview` trả một lần cho cả trang; web tự tải lại mỗi 60 giây khi tab đang mở.
+
+**Người dùng:**
+- Giai đoạn hiện tại (từ `phase.ts`) và đếm ngược tới mốc kế tiếp.
+- Tổng và số mới trong 24 giờ của: **phòng** (`trees`), **lời nhắn** (`messages`), **lượt xem** (`events` loại `tree_viewed_guest`).
+- **Báo cáo đang chờ** (`reports.status = 'open'`), bấm vào sang trang Báo cáo.
+- **Hệ số lan truyền** = số phòng có `ref_tree_id` / tổng số phòng (định nghĩa ở mục 17).
+
+**Máy chủ:**
+- **Lỗi 5xx:** hook `onResponse` của Fastify, mã trạng thái ≥ 500 → cộng vào bảng mới `error_counts` theo giờ (upsert). Hiện số lỗi trong 24 giờ và **lần lỗi gần nhất**: thời điểm, mã trạng thái, **mẫu đường dẫn** của route (`req.routeOptions.url`, ví dụ `/api/trees/:id/messages`, không phải URL thật có mã phòng). Không ghi body, IP, mã thiết bị.
+- **Độ chậm:** p95 thời gian phản hồi của `/api/*` trong 60 phút qua, đo trong bộ nhớ (vòng đệm theo phút). Mất khi khởi động lại — ghi rõ "từ lúc khởi động {giờ}" nếu chưa đủ 60 phút.
+- **Dung lượng CSDL:** `pg_database_size(current_database())` so với `DB_QUOTA_GB` (biến môi trường, mặc định 32 — dung lượng nhỏ nhất của Azure Flexible B1ms).
+- **Kho ảnh:** số lời nhắn có ảnh và tổng `photo_bytes` (cột mới, số byte của file WebP thực sự lưu, ghi lúc lưu / thay ảnh); thêm số bản chụp báo cáo có ảnh. Lời nhắn cũ chưa có `photo_bytes` thì không cộng và ghi "{n} ảnh chưa rõ dung lượng".
+- **Đường dẫn sang Azure Portal** cho CPU, bộ nhớ, chi phí: biến `ADMIN_AZURE_URL` (đặt ở M4); chưa đặt thì ẩn.
+
+**Migration `0005`:** thêm `messages.photo_bytes integer NULL`; tạo bảng
+```sql
+CREATE TABLE error_counts (
+  hour        timestamptz PRIMARY KEY,   -- đầu giờ
+  count       integer NOT NULL DEFAULT 0,
+  last_at     timestamptz NOT NULL,
+  last_route  text,                      -- mẫu route, không có giá trị tham số
+  last_status smallint NOT NULL
+);
+```
+Giữ mục 7.3 và `docs/schema.postgres.sql` khớp (17 bảng). Bảng này xoá cùng toàn bộ dữ liệu ngày 07/01/2027.
+
+#### 6.8.4 Báo cáo (A3)
+
+- `GET /api/admin/reports?status=open|handled` (mặc định `open`, mới nhất trước; `handled` = `resolved` + `dismissed`, 50 dòng gần nhất). Mỗi báo cáo: mã, thời điểm, ai báo (`owner` / `guest`), lý do, mã phòng, `message_snapshot`, có ảnh chụp hay không, lời nhắn gốc còn tồn tại không; với báo cáo đã xử lý thêm kết quả, ghi chú, thời điểm xử lý.
+- `GET /api/admin/reports/:rid/photo` → ảnh `photo_snapshot_key` (`Cache-Control: private, no-store`); không có → 404. **Đây là đường duy nhất quản trị viên xem được ảnh.**
+- `POST /api/admin/reports/:rid/resolve { action: 'delete_message' | 'delete_tree' | 'dismiss', note }`, `note` **bắt buộc**, 1–500 ký tự.
+  - `delete_message`: chỉ khi báo cáo có `message_id` và lời nhắn còn; xoá lời nhắn + Blob ảnh như khi chủ cây xoá; báo cáo `resolved` / `message_deleted`.
+  - `delete_tree`: xoá cây như `DELETE /api/admin/trees/:id`. Báo cáo bị xoá theo cây (`ON DELETE CASCADE`), nên chỉ còn dấu vết ở `admin_audit` (ghi cả `note`, mã báo cáo trong `note` hoặc `target_id`); bản chụp ảnh `r/{reportId}.webp` của mọi báo cáo thuộc cây phải bị xoá cùng.
+  - `dismiss`: `dismissed` / `no_action`.
+  - Ghi `handled_by`, `handled_at`, và `admin_audit` trong cùng giao dịch. Báo cáo đã xử lý → 409.
+- Báo cáo cả phòng của khách (server đã nhận, web chưa có nút — G8, P1) hiện chung hàng đợi, chỉ có `delete_tree` và `dismiss`. Không thêm nút báo cáo cho khách ở M3b.
+- Màn hình: danh sách bên trái (thẻ trên điện thoại), bấm một báo cáo mở chi tiết bên phải: bản chụp chữ, ảnh (nếu có), mã phòng (bấm sang Tra cứu phòng), ô ghi chú, ba nút. Xoá lời nhắn / xoá phòng có hộp xác nhận.
+
+#### 6.8.5 Tra cứu phòng (A4)
+
+- Ô nhập nhận **mã phòng** hoặc **link** (`…/c/{id}`, bỏ phần `#k=` nếu dán nhầm link riêng — không gửi phần đó lên server).
+- `GET /api/admin/trees/:id` → tên chủ cây (`owner_name`), tên cây, ngày tạo, lần chủ cây vào gần nhất, số món, số lời nhắn (đã mở / chưa mở), cách khôi phục (PIN có / không, Google có / không; link riêng luôn có), số phiên chủ cây còn hiệu lực, số báo cáo (đang chờ / tổng), **PIN đang bị khoá** (trần 50 lần sai / ngày đã chạm, kèm giờ hết khoá) và số lần sai trong ngày. **Không** có nội dung lời nhắn, tên người viết, ảnh kèm. Không tìm thấy → 404.
+- Ảnh phòng như khách thấy: `GET /api/admin/trees/:id/room.png` (cần phiên quản trị; cùng bộ vẽ và bộ đệm với `image.png` nhưng **không** ghi event `image_downloaded` và vẫn chạy sau 01/01/2027). *(Sửa 24/11 sau lượt duyệt: trước định dùng lại `image.png` công khai.)*
+- Hành động (mỗi cái có hộp xác nhận, ghi `admin_audit`, ghi chú tuỳ chọn; xoá phòng **bắt buộc** ghi chú):
+  - `POST /api/admin/trees/:id/unlock-pin` — xoá các bucket `pin:tree:{id}…` trong `rate_counters`.
+  - `POST /api/admin/trees/:id/revoke-sessions` — đặt `revoked_at` cho mọi `owner_sessions` còn hiệu lực của cây.
+  - `DELETE /api/admin/trees/:id` — dùng lại đường xoá cây hiện có (lấy `photo_key` trước, xoá dòng, xoá Blob, dọn bản chụp báo cáo).
+- **Xử lý yêu cầu xoá phòng qua email** (chủ dự án chốt 24/11): app không xác minh ai là chủ cây. Chủ dự án yêu cầu người gửi chứng minh qua email (ví dụ mô tả phòng, tên chủ cây, ngày tạo) rồi tự quyết. Mở khoá PIN và thu hồi phiên làm nhầm cũng vô hại.
+
+#### 6.8.6 Nhật ký (A5)
+
+- `GET /api/admin/audit?before={id}` — 50 dòng mới nhất trước `before`, không lọc.
+- Ghi các `action`: `login`, `logout`, `report_resolve` (kèm hành động), `tree_delete`, `sessions_revoke`, `pin_unlock`. `target_type` / `target_id` theo đối tượng; `note` = ghi chú của quản trị viên.
+
+#### 6.8.7 Email hỗ trợ
+
+- Biến `SUPPORT_EMAIL`; `/api/config` trả thêm `supportEmail` (hoặc `null`, khi đó ẩn mọi chỗ nhắc).
+- Hiện ở: chân trang chủ ("Cần giúp? {email}"); bảng "⋯ Tuỳ chọn" của chủ cây (thêm 24/11); thông báo khi PIN bị khoá đến hết ngày; thông báo "Không mở được cây này"; thông báo Google `not_owner` / không có cây. Trang chính sách (M4) cũng nhắc.
+- Câu nhắc: gửi **mã cây** và mô tả vấn đề. *(Bỏ câu "đừng gửi PIN hay link riêng" theo chủ dự án, 24/11.)*
+
+#### 6.8.8 Bố cục trang quản trị
+
+- `/quan-tri` (Tổng quan), `/quan-tri/bao-cao`, `/quan-tri/phong` (có `?id=`), `/quan-tri/nhat-ky`. Thanh bên trên máy tính: Tổng quan · Báo cáo (số đang chờ) · Tra cứu phòng · Nhật ký · Đăng xuất (email đang đăng nhập). Điện thoại: thanh tab trên cùng.
+- Dùng bảng màu và phông của trang chính nhưng gọn hơn; bảng biến thành thẻ trên điện thoại.
+- Lỗi 401 ở bất kỳ API nào → về màn đăng nhập; 403 `csrf` → tải lại `me` rồi thử lại một lần.
+
+#### 6.8.9 Thứ tự làm và kiểm thử
+
+Làm lần lượt: (1) `GoogleButton` + Google cho chủ cây → (2) đăng nhập quản trị, phiên, CSRF, khung trang lazy → (3) Tổng quan + migration 0005 + đếm lỗi / p95 → (4) Báo cáo → (5) Tra cứu phòng → (6) Nhật ký → (7) email hỗ trợ.
+
+**Kiểm thử:**
+- **Server (Vitest + PGlite, Google giả lập):** email không có trong `admin_users` / bị khoá / `email_verified = false` / `google_sub` khác → 403; quá 10 lần sai → 429; bootstrap tạo đúng một dòng; phiên hết 12 giờ → 401; cookie chủ cây không vào được API quản trị và cookie quản trị không vào được API chủ cây; POST thiếu / sai `X-CSRF-Token` → 403; ENDED vẫn 200 cho `/api/admin/*`; overview đếm đúng tổng / 24 giờ / lan truyền; route ném lỗi → `error_counts` tăng, `last_route` là mẫu route; `photo_bytes` ghi khi treo và sửa ảnh; resolve ba hành động (trạng thái, Blob bị xoá, `admin_audit` có dòng), báo cáo đã xử lý → 409, `note` trống → 400; ảnh báo cáo chỉ đọc được bằng phiên quản trị; **`GET /api/admin/trees/:id` và `/reports` không chứa nội dung lời nhắn nào ngoài `message_snapshot`**; unlock-pin xoá đúng bucket của cây đó; revoke-sessions làm phiên chủ cây cũ hết dùng được; xoá cây xoá cả ảnh và bản chụp báo cáo; mọi thao tác thay đổi có `admin_audit` (thử lỗi giữa chừng → không có dòng audit lẻ).
+- **Web (RTL):** `GoogleButton` khoá khi không có `googleClientId`; tạo cây bằng Google; `ReopenDialog` 0 / 1 / nhiều cây; `OwnerLogin` Google thành công / `not_owner`; trang quản trị: chưa đăng nhập → màn đăng nhập, 401 → về đăng nhập; tổng quan hiện số; resolve có xác nhận và bắt ghi chú; tra cứu nhận link có `#k=` mà không gửi phần đó; email hỗ trợ ẩn khi `null`.
+- **Build:** kiểm gói JS chính không chứa mã trang quản trị (gói quản trị là file riêng) và vẫn ≤ 250 KB gzip.
+
+**Để người làm tự quyết:** chia component; chữ thông báo phụ; kích thước vòng đệm p95; cách hiển thị đếm ngược; thứ tự cột trong danh sách báo cáo.
+
 ---
 
 ## 7. Thiết kế cơ sở dữ liệu
@@ -618,7 +740,7 @@ erDiagram
     ADMIN_USERS |o--o{ REPORTS : "xử lý"
 ```
 
-Tổng cộng **16 bảng**: 10 bảng cho người dùng (`owner_accounts`, `trees`, `room_items`, `owner_sessions`, `messages`, `blocked_devices`, `auth_attempts`, `rate_counters`, `reports`, `events`) và 6 bảng cho quản trị (`admin_users`, `admin_sessions`, `admin_audit`, `global_blocks`, `banned_words`, `site_settings`).
+Tổng cộng **17 bảng** (từ migration 0005): 10 bảng cho người dùng (`owner_accounts`, `trees`, `room_items`, `owner_sessions`, `messages`, `blocked_devices`, `auth_attempts`, `rate_counters`, `reports`, `events`) và 7 bảng cho quản trị (`admin_users`, `admin_sessions`, `admin_audit`, `global_blocks`, `banned_words`, `site_settings`, `error_counts`).
 
 ### 7.3 Lược đồ (PostgreSQL 16)
 
@@ -715,6 +837,7 @@ CREATE TABLE messages (
   created_at      timestamptz NOT NULL DEFAULT now(),
   updated_at      timestamptz NOT NULL DEFAULT now(),
   photo_key       text,                                               -- ảnh kèm (migration 0004), NULL nếu không có
+  photo_bytes     integer,                                            -- số byte ảnh đã lưu (migration 0005)
   read_at         timestamptz,                                        -- NULL = chưa mở
   UNIQUE (tree_id, slot_index),
   CONSTRAINT messages_anon_name CHECK ((is_anonymous AND author_name IS NULL) OR (NOT is_anonymous AND author_name IS NOT NULL))
@@ -824,6 +947,15 @@ CREATE TABLE site_settings (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+-- Đếm lỗi 5xx theo giờ cho Tổng quan quản trị (migration 0005, đặc tả 6.8.3)
+CREATE TABLE error_counts (
+  hour        timestamptz PRIMARY KEY,   -- đầu giờ
+  count       integer NOT NULL DEFAULT 0,
+  last_at     timestamptz NOT NULL,
+  last_route  text,                      -- mẫu route, không có giá trị tham số
+  last_status smallint NOT NULL
+);
+
 -- ===== Thống kê =====
 
 CREATE TABLE events (
@@ -916,7 +1048,7 @@ Ghi chú: trình duyệt trong Zalo/Messenger có bộ nhớ riêng, nên chủ 
 ### 7.9 Kết nối, migration, sao lưu
 
 - **Kết nối:** driver `postgres` (postgres.js) qua Drizzle, nhóm kết nối 10 / instance, bắt buộc TLS tới Azure.
-- **Migration:** file SQL viết tay trong `apps/server/src/db/migrations/` là gốc; `schema.ts` của Drizzle chỉ để có kiểu khi truy vấn, có test đối chiếu với CSDL. Script tự viết chạy các file theo thứ tự khi khởi động server (giữ khoá `pg_advisory_xact_lock` trong giao dịch, tự nhả khi xong), ghi file đã chạy vào bảng `meta.migrations` (schema riêng, không tính vào 16 bảng).
+- **Migration:** file SQL viết tay trong `apps/server/src/db/migrations/` là gốc; `schema.ts` của Drizzle chỉ để có kiểu khi truy vấn, có test đối chiếu với CSDL. Script tự viết chạy các file theo thứ tự khi khởi động server (giữ khoá `pg_advisory_xact_lock` trong giao dịch, tự nhả khi xong), ghi file đã chạy vào bảng `meta.migrations` (schema riêng, không tính vào 17 bảng).
 - **Sao lưu:** Azure tự sao lưu hằng ngày, giữ 7 ngày, khôi phục về một thời điểm bất kỳ. Không cần tự viết script sao lưu như SQLite.
 - **Môi trường phát triển:** PostgreSQL chạy bằng Docker trên máy; kiểm thử tự động dùng PGlite (PostgreSQL chạy trong tiến trình, không cần cài).
 - **Xoá cuối mùa:** sau 07/01/2027 xoá luôn máy chủ PostgreSQL, toàn bộ dữ liệu và bản sao lưu biến mất cùng lúc.
@@ -988,7 +1120,10 @@ JSON, UTF-8. Header `X-Device-Id` cho người viết. Quyền chủ cây qua co
 | GET | `/api/admin/overview` | cả hai | Giai đoạn, tổng số, số mới 24 giờ, báo cáo chờ, hệ số lan truyền |
 | GET | `/api/admin/stats?range=24h\|7d\|season` | admin | Chuỗi số liệu cho biểu đồ, phễu, phân bố lựa chọn đồ hoạ |
 | GET | `/api/admin/reports?status=open` | cả hai | Hàng đợi báo cáo kèm bản chụp nội dung |
-| POST | `/api/admin/reports/:rid/resolve` | cả hai | `{ action: 'delete_message' \| 'delete_tree' \| 'block_device' \| 'dismiss', note }` |
+| GET | `/api/admin/me` | cả hai | Email đang đăng nhập + token CSRF (6.8.2) |
+| GET | `/api/admin/reports/:rid/photo` | cả hai | Ảnh chụp trong báo cáo (đường duy nhất quản trị xem ảnh) |
+| GET | `/api/admin/trees/:id/room.png` | cả hai | Ảnh phòng như khách thấy, không tính lượt tải (6.8.5) |
+| POST | `/api/admin/reports/:rid/resolve` | cả hai | `{ action: 'delete_message' \| 'delete_tree' \| 'dismiss', note }` (M3b bỏ `block_device`, để cuối — 6.8) |
 | GET | `/api/admin/trees/:id` | cả hai | Thông tin tra cứu phòng (không có nội dung lời nhắn) |
 | DELETE | `/api/admin/trees/:id` | admin | Xoá phòng |
 | POST | `/api/admin/trees/:id/revoke-sessions` | admin | Thu hồi mọi phiên chủ cây |
@@ -1000,7 +1135,7 @@ JSON, UTF-8. Header `X-Device-Id` cho người viết. Quyền chủ cây qua co
 | GET | `/api/admin/audit` | admin | Nhật ký thao tác |
 | GET | `/api/admin/export.csv` | admin | Số liệu tổng hợp (P2) |
 
-Quản trị viên đầu tiên được tạo từ biến môi trường `ADMIN_BOOTSTRAP_EMAIL` khi khởi động lần đầu.
+Quản trị viên đầu tiên được tạo từ biến môi trường `ADMIN_BOOTSTRAP_EMAIL` khi khởi động lần đầu. M3b: không phân quyền, `/api/admin/*` không trả 410 sau ENDED, chi tiết ở 6.8.
 
 ### 8.8 Ma trận quyền
 
@@ -1156,7 +1291,7 @@ Khi bị spam tạo phòng hoặc lời nhắn hàng loạt: quản trị viên 
 
 **Ứng dụng web:** hiển thị nội dung bằng `textContent`; CSP chỉ cùng nguồn (trừ Google Identity: `https://accounts.google.com` cho script, khung, kết nối, style — cấu hình helmet 22/11); truy vấn có tham số; giới hạn kích thước body 64 KB; kiểm tra danh mục cho mọi mã kiểu.
 
-**Trang quản trị:** đăng nhập Google + danh sách cho phép; cookie phiên riêng (`ctln_admin`, HttpOnly, Secure, SameSite=Strict, đường dẫn `/quan-tri` và `/api/admin`); mọi thao tác thay đổi dữ liệu yêu cầu thêm header chống giả mạo yêu cầu (CSRF token); giới hạn 10 lần đăng nhập thất bại / IP / giờ; thao tác xoá phòng và xoá dữ liệu có hộp xác nhận; trang quản trị gắn `noindex`.
+**Trang quản trị:** đăng nhập Google + danh sách cho phép; cookie phiên riêng (`ctln_admin`, HttpOnly, Secure, SameSite=Strict, đường dẫn `/api/admin` — sửa 24/11 vì cookie chỉ có một đường dẫn); mọi thao tác thay đổi dữ liệu yêu cầu thêm header chống giả mạo yêu cầu (CSRF token); giới hạn 10 lần đăng nhập thất bại / IP / giờ; thao tác xoá phòng và xoá dữ liệu có hộp xác nhận; trang quản trị gắn `noindex`.
 
 **Quyền riêng tư:** không lưu email người dùng (chỉ lưu email của quản trị viên), không lưu IP thô; quản trị viên chỉ thấy nội dung lời nhắn đã bị báo cáo; ẩn danh thì không lưu tên; chính sách riêng tư ngắn, thông báo ngày xoá dữ liệu; chủ cây xoá phòng bất cứ lúc nào.
 
@@ -1232,7 +1367,7 @@ Giá trên chỉ là ước tính, cần kiểm tra lại bảng giá khi tạo 
 | M1 | 18–25/11 | Dựng monorepo; backend Fastify + PostgreSQL (Docker): migration, giai đoạn, xác thực (link, PIN, Google), API phòng và lời nhắn, kiểm thử API với PGlite |
 | M2 | 25/11–02/12 | Frontend React phòng tự do: tải lớp ảnh, kéo thả, xếp lớp, mũi tên, dải chọn, bố cục máy tính, tự lưu |
 | M3 | 02–07/12 | Bạn bè: zoom, bảng viết, sửa 15 phút; chủ cây đọc, khoá, đếm ngược; chia sẻ, OG |
-| M3b | 05–08/12 | **Trang quản trị P0:** đăng nhập, tổng quan, hàng đợi báo cáo, tra cứu phòng, nhật ký |
+| M3b | 05–08/12 | **Trang quản trị P0:** đăng nhập, tổng quan (kèm khối máy chủ), hàng đợi báo cáo, tra cứu phòng, nhật ký; nút Google cho chủ cây; email hỗ trợ (mục 6.8) |
 | M4 | 07–10/12 | Hoàn thiện hiệu ứng, lỗi, biểu ngữ giai đoạn; tạo App Service + PostgreSQL trên Azure, triển khai |
 | M5 | 10–12/12 | **Chạy thử kín** với nhóm bạn bè, sửa lỗi |
 | M6 | **15/12** | **Ra mắt công khai** |

@@ -7,17 +7,17 @@ import * as schema from '../src/db/schema.js';
 describe('runMigrations', () => {
   it('chạy mọi migration lần đầu, lần hai không chạy lại', async () => {
     const h = await connectPglite();
-    expect(await runMigrations(h)).toEqual(['0000_init.sql', '0001_show_message_count.sql', '0002_pin_failed_at.sql', '0003_pin_rate_counters.sql', '0004_card_photo.sql']);
+    expect(await runMigrations(h)).toEqual(['0000_init.sql', '0001_show_message_count.sql', '0002_pin_failed_at.sql', '0003_pin_rate_counters.sql', '0004_card_photo.sql', '0005_admin_metrics.sql']);
     expect(await runMigrations(h)).toEqual([]);
     await h.close();
   });
 
-  it('có 16 bảng public và bảng meta.migrations', async () => {
+  it('có 17 bảng public và bảng meta.migrations', async () => {
     const h = await connectPglite();
     await runMigrations(h);
     await h.transaction(async (c) => {
       const pub = await c.query<{ n: number }>(`select count(*)::int n from information_schema.tables where table_schema='public'`);
-      expect(pub[0]!.n).toBe(16);
+      expect(pub[0]!.n).toBe(17);
       const meta = await c.query(`select 1 from information_schema.tables where table_schema='meta' and table_name='migrations'`);
       expect(meta).toHaveLength(1);
     });

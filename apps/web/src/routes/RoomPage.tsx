@@ -13,6 +13,7 @@ import { createEditorStore } from '../room/store';
 import { Button } from '../ui/Button';
 import { useToast } from '../ui/Toast';
 import { OwnerLogin } from './OwnerLogin';
+import { SupportHint } from '../ui/SupportHint';
 
 type Autosave = ReturnType<typeof createAutosave>;
 type Loaded<T> = { meta: T; room: Room };
@@ -140,6 +141,7 @@ function TreeRoom({ id }: { id: string }) {
       <main className="placeholder">
         <h1>{view.kind === 'notFound' ? 'Không tìm thấy cây này.' : 'Không mở được cây này.'}</h1>
         <Link to="/" className="btn btn-primary">Tạo cây của bạn</Link>
+        {view.kind === 'error' ? <SupportHint /> : null}
       </main>
     );
   }

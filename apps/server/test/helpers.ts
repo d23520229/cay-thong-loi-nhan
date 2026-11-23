@@ -5,8 +5,11 @@ import { runMigrations } from '../src/db/migrate.js';
 import { loadEnv } from '../src/env.js';
 import { memoryStore } from '../src/storage/memory.js';
 
+/** `ok:SUB` → { sub }; `ok:SUB:EMAIL` → có email đã xác minh; `unverified:SUB:EMAIL` → email chưa xác minh. */
 export const FakeGoogle: GoogleVerifier = async (token) => {
-  if (token.startsWith('ok:')) return { sub: token.slice(3) };
+  const [kind, sub, email] = token.split(':');
+  if (kind === 'ok' && sub && email === undefined) return { sub };
+  if ((kind === 'ok' || kind === 'unverified') && sub && email) return { sub, email, emailVerified: kind === 'ok' };
   throw new Error('invalid token');
 };
 
@@ -26,4 +29,17 @@ export async function makeTestApp(opts: { at?: string; google?: GoogleVerifier |
 export async function seedTree(h: { db: import('../src/db/client.js').Db }, id: string) {
   const { trees } = await import('../src/db/schema.js');
   await h.db.insert(trees).values({ id, ownerName: 'Chủ cây', privateKeyHash: 'x', pinHash: 'x' });
+}
+
+export const ADMIN_EMAIL = 'admin@test.vn';
+export const ADMIN_ENV = { ADMIN_BOOTSTRAP_EMAIL: ADMIN_EMAIL };
+
+/** Đăng nhập quản trị bằng email bootstrap; trả cookie (`ctln_admin=…`) và token CSRF. */
+export async function adminLogin(app: import('fastify').FastifyInstance): Promise<{ cookie: string; csrf: string }> {
+  const r = await app.inject({
+    method: 'POST', url: '/api/admin/auth/google', headers: { 'content-type': 'application/json' },
+    payload: { idToken: `ok:admin-sub:${ADMIN_EMAIL}` },
+  });
+  if (r.statusCode !== 200) throw new Error(`adminLogin ${r.statusCode} ${r.body}`);
+  return { cookie: String(r.headers['set-cookie']).split(';')[0]!, csrf: r.json().csrfToken as string };
 }

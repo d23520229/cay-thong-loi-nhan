@@ -14,8 +14,8 @@ const GoogleBody = z.object({ idToken: z.string().min(1).max(4096), treeId: z.st
 // Chống dò PIN (đặc tả 10): đếm trong rate_counters, chỉ giữ lại lần sai.
 const PIN_FAILS_PER_TREE_IP = 5;
 const PIN_TREE_IP_WINDOW_MS = 15 * 60_000;
-const PIN_FAILS_PER_TREE_DAY = 50;
-const DAY_MS = 86_400_000;
+export const PIN_FAILS_PER_TREE_DAY = 50;
+export const DAY_MS = 86_400_000;
 const PIN_FAILS_PER_IP_HOUR = 20;
 
 const notFound = () => new HttpError(404, 'not_found', 'Không tìm thấy cây này.');

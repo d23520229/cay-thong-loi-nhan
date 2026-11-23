@@ -4,7 +4,7 @@ import { rateCounters } from './db/schema.js';
 import type { Db } from './db/client.js';
 import type { Env } from './env.js';
 
-export type HmacPurpose = 'link' | 'session' | 'edit' | 'device' | 'ip';
+export type HmacPurpose = 'link' | 'session' | 'edit' | 'device' | 'ip' | 'admin' | 'csrf';
 
 export function hmac(env: Env, purpose: HmacPurpose, value: string): string {
   return createHmac('sha256', `${env.pepper}:${purpose}`).update(value).digest('hex');

@@ -10,10 +10,19 @@ vi.mock('../lib/api', async (orig) => {
   const actual = await orig<typeof import('../lib/api')>();
   return {
     ...actual,
-    api: { getOwnerTree: vi.fn(), authPin: vi.fn(), authLink: vi.fn() },
+    api: { getOwnerTree: vi.fn(), authPin: vi.fn(), authLink: vi.fn(), authGoogle: vi.fn() },
   };
 });
 
+vi.mock('../ui/GoogleButton', () => ({
+  GoogleButton: ({ onToken }: { onToken: (t: string) => void }) => (
+    <button type="button" onClick={() => onToken(GTOKEN)}>Google giả</button>
+  ),
+}));
+
+// idToken giả có tên "Lan" trong payload.
+const GTOKEN = `h.${btoa(JSON.stringify({ name: 'Lan' })).replace(/=+$/, '')}.s`;
+vi.mock('../ui/SupportHint', () => ({ SupportHint: () => <p>HỖ TRỢ</p> }));
 const mocked = vi.mocked(api);
 
 beforeEach(() => {
@@ -59,6 +68,15 @@ describe('ReopenDialog', () => {
     renderDialog();
     await fill('k7m2xq4a', '111111');
     expect(await screen.findByText('Nhập sai quá nhiều lần, thử lại sau 15 phút')).toBeInTheDocument();
+    expect(screen.queryByText('HỖ TRỢ')).not.toBeInTheDocument();
+  });
+
+  it('PIN bị khoá đến hết ngày (> 60 phút) → hiện email hỗ trợ', async () => {
+    const retryAt = new Date(Date.now() + 5 * 3_600_000).toISOString();
+    mocked.authPin.mockRejectedValue(new ApiError(429, 'pin_locked', 'x', { retryAt }));
+    renderDialog();
+    await fill('k7m2xq4a', '111111');
+    expect(await screen.findByText('HỖ TRỢ')).toBeInTheDocument();
   });
 
   it('404', async () => {
@@ -121,9 +139,44 @@ describe('ReopenDialog', () => {
     expect(screen.getByLabelText('Mã PIN 6 số')).toHaveValue('123');
   });
 
-  it('nút Google bị khoá', () => {
-    renderDialog();
-    expect(screen.getByRole('button', { name: /Đăng nhập bằng Google/ })).toBeDisabled();
-    expect(screen.getByText('sắp có')).toBeInTheDocument();
+  describe('Google', () => {
+    it('tài khoản chưa có cây', async () => {
+      mocked.authGoogle.mockResolvedValue({ trees: [] });
+      renderDialog();
+      await userEvent.click(screen.getByRole('button', { name: 'Google giả' }));
+      expect(await screen.findByText('Tài khoản Google này chưa có cây nào')).toBeInTheDocument();
+      expect(screen.getByText('HỖ TRỢ')).toBeInTheDocument();
+    });
+
+    it('một cây → đăng nhập cây đó, nhớ cây, mở phòng', async () => {
+      mocked.authGoogle.mockResolvedValueOnce({ trees: [{ id: 'abc12345', title: 'Cây Lan' }] }).mockResolvedValueOnce(undefined);
+      renderDialog();
+      await userEvent.click(screen.getByRole('button', { name: 'Google giả' }));
+      expect(await screen.findByText('Phòng đã mở')).toBeInTheDocument();
+      expect(mocked.authGoogle).toHaveBeenLastCalledWith(GTOKEN, 'abc12345');
+      expect(storage.myTrees().map((t) => t.id)).toContain('abc12345');
+    });
+
+    it('nhiều cây → chọn một cây rồi đăng nhập cây đó', async () => {
+      mocked.authGoogle
+        .mockResolvedValueOnce({ trees: [{ id: 'abc12345', title: 'Cây A' }, { id: 'xyz98765', title: null }] })
+        .mockResolvedValueOnce(undefined);
+      renderDialog();
+      await userEvent.click(screen.getByRole('button', { name: 'Google giả' }));
+      await userEvent.click(await screen.findByRole('button', { name: 'xyz98765' }));
+      expect(await screen.findByText('Phòng đã mở')).toBeInTheDocument();
+      expect(mocked.authGoogle).toHaveBeenLastCalledWith(GTOKEN, 'xyz98765');
+    });
+
+    it('token Google hết hạn khi đang chọn cây → báo lỗi và hiện lại nút Google', async () => {
+      mocked.authGoogle
+        .mockResolvedValueOnce({ trees: [{ id: 'abc12345', title: 'Cây A' }, { id: 'xyz98765', title: null }] })
+        .mockRejectedValueOnce(new ApiError(400, 'google_invalid', 'x'));
+      renderDialog();
+      await userEvent.click(screen.getByRole('button', { name: 'Google giả' }));
+      await userEvent.click(await screen.findByRole('button', { name: 'xyz98765' }));
+      expect(await screen.findByText('Đăng nhập Google chưa thành công, thử lại nhé.')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'Google giả' })).toBeInTheDocument();
+    });
   });
 });

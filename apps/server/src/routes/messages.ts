@@ -137,7 +137,7 @@ export async function messagesRoutes(app: FastifyInstance) {
           const key = photoKey(treeId, row!.id);
           putKey = key; // gán trước put: put hỏng giữa chừng vẫn được dọn
           await app.deps.photos.put(key, webp);
-          await tx.update(messages).set({ photoKey: key }).where(eq(messages.id, row!.id));
+          await tx.update(messages).set({ photoKey: key, photoBytes: webp.length }).where(eq(messages.id, row!.id));
         }
         return row!.id;
       });
@@ -256,7 +256,7 @@ export async function messagesRoutes(app: FastifyInstance) {
             authorName: body.anonymous ? null : (body.authorName ?? null),
             content: body.content,
             updatedAt: at,
-            ...(photoChange ? { photoKey: newKey } : {}),
+            ...(photoChange ? { photoKey: newKey, photoBytes: webp ? webp.length : null } : {}),
           })
           .where(eq(messages.id, mid));
         return { treeId: m.treeId, oldKey: m.photoKey };

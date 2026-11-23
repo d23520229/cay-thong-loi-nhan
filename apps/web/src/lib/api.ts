@@ -45,6 +45,7 @@ export type AppConfig = {
   catalogVersion: number;
   limits: Catalog['limits'];
   googleClientId: string | null;
+  supportEmail: string | null;
 };
 
 /** `photo`: base64 trơn của ảnh WebP/JPEG đã thu nhỏ; khi sửa `null` = gỡ ảnh, không có trường = giữ nguyên. */
@@ -74,7 +75,7 @@ export type OpenedMessage = {
 
 type RequestOpts = { keepalive?: boolean; headers?: Record<string, string>; as?: 'blob' };
 
-async function request<T>(method: string, path: string, body?: unknown, opts?: RequestOpts): Promise<T> {
+export async function request<T>(method: string, path: string, body?: unknown, opts?: RequestOpts): Promise<T> {
   const headers: Record<string, string> = { 'x-device-id': storage.deviceId(), ...opts?.headers };
   if (body !== undefined) headers['content-type'] = 'application/json';
   let res: Response;

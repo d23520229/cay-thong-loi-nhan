@@ -11,6 +11,14 @@ vi.mock('../lib/api', async (orig) => {
   return { ...actual, api: { createTree: vi.fn() } };
 });
 
+vi.mock('../ui/GoogleButton', () => ({
+  GoogleButton: ({ onToken }: { onToken: (t: string) => void }) => (
+    <button type="button" onClick={() => onToken(GTOKEN)}>Google giả</button>
+  ),
+}));
+
+// idToken giả có tên "Lan" trong payload.
+const GTOKEN = `h.${btoa(JSON.stringify({ name: 'Lan' })).replace(/=+$/, '')}.s`;
 const mocked = vi.mocked(api);
 const created = { id: 'k7m2xq4a', publicUrl: 'http://h/c/k7m2xq4a', privateUrl: 'http://h/c/k7m2xq4a#k=z', roomVersion: 1 };
 
@@ -53,7 +61,35 @@ describe('CreatePage', () => {
     expect(createBtn()).toBeDisabled();
     await userEvent.type(screen.getByLabelText('Mã PIN 6 số'), '6');
     expect(createBtn()).toBeEnabled();
-    expect(screen.getByRole('button', { name: /Google/ })).toBeDisabled();
+  });
+
+  it('chọn Google: ẩn PIN, đăng nhập xong hiện tên, tạo cây gửi recovery google', async () => {
+    mocked.createTree.mockResolvedValue(created);
+    renderPage();
+    await openSheet();
+    await userEvent.type(screen.getByLabelText('Tên của bạn'), 'Lan');
+    await userEvent.click(screen.getByRole('button', { name: 'Google' }));
+    expect(screen.queryByLabelText('Mã PIN 6 số')).not.toBeInTheDocument();
+    expect(createBtn()).toBeDisabled();
+    await userEvent.click(screen.getByRole('button', { name: 'Google giả' }));
+    expect(screen.getByText('Đã chọn Google: Lan')).toBeInTheDocument();
+    await userEvent.click(createBtn());
+    await waitFor(() => expect(mocked.createTree).toHaveBeenCalled());
+    expect(mocked.createTree.mock.calls[0]![0].recovery).toEqual({ type: 'google', idToken: GTOKEN });
+    expect(await screen.findByText('Mở cây trên máy khác bằng Google hoặc link riêng')).toBeInTheDocument();
+  });
+
+  it('Google hết hạn (google_invalid) → báo lỗi và hiện lại nút Google', async () => {
+    mocked.createTree.mockRejectedValue(new ApiError(400, 'google_invalid', 'Không xác minh được tài khoản Google.'));
+    renderPage();
+    await openSheet();
+    await userEvent.type(screen.getByLabelText('Tên của bạn'), 'Lan');
+    await userEvent.click(screen.getByRole('button', { name: 'Google' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Google giả' }));
+    await userEvent.click(createBtn());
+    expect(await screen.findByText('Đăng nhập Google chưa thành công, thử lại nhé.')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Google giả' })).toBeInTheDocument();
+    expect(createBtn()).toBeDisabled();
   });
 
   it('bấm hai lần nhanh chỉ gọi createTree một lần; thành công hiện màn Tạo xong', async () => {

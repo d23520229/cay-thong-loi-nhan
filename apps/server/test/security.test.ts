@@ -23,6 +23,18 @@ describe('env', () => {
     expect(() => loadEnv(base)).toThrow(/AZURE_STORAGE_CONNECTION_STRING/);
     expect(() => loadEnv({ ...base, AZURE_STORAGE_CONNECTION_STRING: 'cs' })).not.toThrow();
   });
+  it('DB_QUOTA_GB mặc định 32 GB, đọc từ env, từ chối giá trị sai', () => {
+    expect(loadEnv({}).dbQuotaBytes).toBe(32 * 1024 ** 3);
+    expect(loadEnv({ DB_QUOTA_GB: '10' }).dbQuotaBytes).toBe(10 * 1024 ** 3);
+    expect(() => loadEnv({ DB_QUOTA_GB: 'abc' })).toThrow();
+    expect(() => loadEnv({ DB_QUOTA_GB: '0' })).toThrow();
+  });
+  it('ADMIN_BOOTSTRAP_EMAIL chữ thường, bỏ khoảng trắng; ADMIN_AZURE_URL, SUPPORT_EMAIL tuỳ chọn', () => {
+    expect(loadEnv({ ADMIN_BOOTSTRAP_EMAIL: ' A@B.com ' }).adminBootstrapEmail).toBe('a@b.com');
+    expect(loadEnv({}).adminBootstrapEmail).toBeUndefined();
+    expect(loadEnv({ ADMIN_AZURE_URL: 'https://portal.azure.com/x' }).adminAzureUrl).toBe('https://portal.azure.com/x');
+    expect(loadEnv({}).supportEmail).toBeUndefined();
+  });
   it('TRUST_PROXY_HOPS mặc định 1, đọc từ env, từ chối giá trị sai', () => {
     expect(loadEnv({}).trustProxyHops).toBe(1);
     expect(loadEnv({ TRUST_PROXY_HOPS: '2' }).trustProxyHops).toBe(2);

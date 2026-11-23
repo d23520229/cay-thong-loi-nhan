@@ -88,6 +88,7 @@ CREATE TABLE messages (
   created_at      timestamptz NOT NULL DEFAULT now(),
   updated_at      timestamptz NOT NULL DEFAULT now(),
   photo_key       text,                                               -- ảnh kèm (migration 0004), NULL nếu không có
+  photo_bytes     integer,                                            -- số byte ảnh đã lưu (migration 0005)
   read_at         timestamptz,                                        -- NULL = chưa mở
   UNIQUE (tree_id, slot_index),
   CONSTRAINT messages_anon_name CHECK ((is_anonymous AND author_name IS NULL) OR (NOT is_anonymous AND author_name IS NOT NULL))
@@ -195,6 +196,15 @@ CREATE TABLE site_settings (
   value      text NOT NULL,
   updated_by bigint REFERENCES admin_users(id) ON DELETE SET NULL,
   updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- Đếm lỗi 5xx theo giờ cho Tổng quan quản trị (migration 0005, đặc tả 6.8.3)
+CREATE TABLE error_counts (
+  hour        timestamptz PRIMARY KEY,   -- đầu giờ
+  count       integer NOT NULL DEFAULT 0,
+  last_at     timestamptz NOT NULL,
+  last_route  text,                      -- mẫu route, không có giá trị tham số
+  last_status smallint NOT NULL
 );
 
 -- ===== Thống kê =====

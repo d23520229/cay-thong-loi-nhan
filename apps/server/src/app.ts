@@ -15,8 +15,11 @@ import type { OgRoom } from './og/render.js';
 import { ownerRoutes } from './routes/owner.js';
 import { roomRoutes } from './routes/room.js';
 import { treesRoutes } from './routes/trees.js';
+import { adminRoutes } from './routes/admin/index.js';
+import { ensureBootstrapAdmin } from './admin/bootstrap.js';
+import { LatencyTracker, recordError } from './metrics.js';
 
-export type GoogleVerifier = (idToken: string) => Promise<{ sub: string; name?: string }>;
+export type GoogleVerifier = (idToken: string) => Promise<{ sub: string; name?: string; email?: string; emailVerified?: boolean }>;
 export type AppDeps = {
   db: DbHandle;
   env: Env;
@@ -33,6 +36,8 @@ export type AppDeps = {
 declare module 'fastify' {
   interface FastifyInstance {
     deps: AppDeps;
+    /** p95 thời gian phản hồi `/api/*` (Tổng quan quản trị). */
+    latency: LatencyTracker;
   }
 }
 
@@ -54,6 +59,7 @@ const WRITE_METHODS =new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 export async function buildApp(deps: AppDeps, opts: { logStream?: { write(msg: string): void } } = {}): Promise<FastifyInstance> {
   const app = Fastify({ logger: opts.logStream ? { ...loggerOptions, stream: opts.logStream } : process.env.VITEST ? false : loggerOptions, bodyLimit: 65536, trustProxy: (_addr: string, hop: number) => hop < deps.env.trustProxyHops });
   app.decorate('deps', deps);
+  app.decorate('latency', new LatencyTracker(deps.now()));
   await app.register(cookie);
   const GOOGLE = 'https://accounts.google.com';
   // Giữ mặc định helmet cho các chỉ thị khác; chỉ mở đúng accounts.google.com cho Google Identity.
@@ -75,7 +81,8 @@ export async function buildApp(deps: AppDeps, opts: { logStream?: { write(msg: s
   app.addHook('onRequest', async (req, reply) => {
     const path = req.url.split('?')[0]!;
     if (!path.startsWith('/api/') || path === '/api/config') return;
-    if (phaseOf(app).phase === 'ENDED') {
+    // Quản trị vẫn chạy sau 01/01/2027 đến ngày xoá dữ liệu (đặc tả 6.8.2).
+    if (phaseOf(app).phase === 'ENDED' && !path.startsWith('/api/admin/')) {
       return reply.code(410).send(body('service_ended', 'Mùa Noel đã kết thúc, cảm ơn bạn!'));
     }
     const hasBody = Number(req.headers['content-length'] ?? 0) > 0 || req.headers['transfer-encoding'] !== undefined;
@@ -116,6 +123,26 @@ export async function buildApp(deps: AppDeps, opts: { logStream?: { write(msg: s
     return reply.code(500).send(body('internal', 'Có lỗi xảy ra, thử lại sau nhé.'));
   });
 
+  app.addHook('onSend', async (req, reply) => {
+    const path = req.url.split('?')[0]!;
+    if (path.startsWith('/api/admin') || path.startsWith('/quan-tri')) reply.header('x-robots-tag', 'noindex');
+    // API quản trị trả token CSRF và bản chụp lời nhắn: không cho lưu đệm.
+    if (path.startsWith('/api/admin') && !reply.hasHeader('cache-control')) reply.header('cache-control', 'no-store');
+  });
+
+  // Khối "Máy chủ" của Tổng quan (đặc tả 6.8.3): đo thời gian /api/*, đếm lỗi 5xx theo mẫu route.
+  app.addHook('onResponse', async (req, reply) => {
+    if (!req.url.startsWith('/api/')) return;
+    const at = deps.now();
+    app.latency.record(reply.elapsedTime, at);
+    if (reply.statusCode < 500) return;
+    try {
+      await recordError(deps.db.db, at, req.routeOptions.url ?? null, reply.statusCode);
+    } catch (e) {
+      req.log.warn({ code: (e as { code?: string })?.code }, 'error_count_failed');
+    }
+  });
+
   app.get('/healthz', async () => ({ ok: true }));
   await app.register(configRoutes);
   await app.register(ogRoutes);
@@ -124,5 +151,7 @@ export async function buildApp(deps: AppDeps, opts: { logStream?: { write(msg: s
   await app.register(authRoutes);
   await app.register(messagesRoutes);
   await app.register(ownerRoutes);
+  await app.register(adminRoutes);
+  await ensureBootstrapAdmin(deps.db.db, deps.env.adminBootstrapEmail);
   return app;
 }

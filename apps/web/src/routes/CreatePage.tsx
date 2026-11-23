@@ -6,7 +6,9 @@ import { storage } from '../lib/storage';
 import { defaultRoom } from '../room/model';
 import { EditorLayout } from '../room/EditorLayout';
 import { createEditorStore } from '../room/store';
+import { googleName } from '../lib/gis';
 import { Button } from '../ui/Button';
+import { GoogleButton } from '../ui/GoogleButton';
 import { PinInput } from '../ui/PinInput';
 import { Sheet } from '../ui/Sheet';
 import { useToast } from '../ui/Toast';
@@ -21,7 +23,7 @@ function initialRoom(): Room {
   return defaultRoom();
 }
 
-type Created = { id: string; publicUrl: string; privateUrl: string };
+type Created = { id: string; publicUrl: string; privateUrl: string; google: boolean };
 
 function CopyRow({ label, value, show }: { label: string; value: string; show: (m: string) => void }) {
   const input = useRef<HTMLInputElement>(null);
@@ -52,6 +54,8 @@ export function CreatePage() {
   const [ownerName, setOwnerName] = useState('');
   const [title, setTitle] = useState('');
   const [pin, setPin] = useState('');
+  const [recovery, setRecovery] = useState<'pin' | 'google'>('pin');
+  const [googleToken, setGoogleToken] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
   const [created, setCreated] = useState<Created | null>(null);
@@ -68,7 +72,8 @@ export function CreatePage() {
     [store],
   );
 
-  const canCreate = ownerName.trim().length > 0 && /^\d{6}$/.test(pin) && !pending;
+  const recoveryReady = recovery === 'pin' ? /^\d{6}$/.test(pin) : googleToken !== null;
+  const canCreate = ownerName.trim().length > 0 && recoveryReady && !pending;
 
   const create = async () => {
     if (busy.current || !canCreate) return;
@@ -83,15 +88,21 @@ export function CreatePage() {
       const res = await api.createTree({
         ownerName: ownerName.trim(),
         title: treeTitle || undefined,
-        recovery: { type: 'pin', pin },
+        recovery: recovery === 'google' && googleToken ? { type: 'google', idToken: googleToken } : { type: 'pin', pin },
         room,
         ref: storage.getRef() ?? undefined,
       });
       storage.addMyTree({ id: res.id, title: treeTitle || null, createdAt: new Date().toISOString() });
       storage.clearDraft('new');
-      setCreated(res);
+      setCreated({ ...res, google: recovery === 'google' });
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : 'Có lỗi xảy ra, thử lại sau nhé.');
+      if (e instanceof ApiError && e.code === 'google_invalid') {
+        // idToken hết hạn / sai: bỏ token để hiện lại nút Google.
+        setGoogleToken(null);
+        setError('Đăng nhập Google chưa thành công, thử lại nhé.');
+      } else {
+        setError(e instanceof ApiError ? e.message : 'Có lỗi xảy ra, thử lại sau nhé.');
+      }
       busy.current = false;
       setPending(false);
     }
@@ -107,7 +118,7 @@ export function CreatePage() {
         </div>
         <CopyRow label="Link gửi bạn bè" value={created.publicUrl} show={show} />
         <CopyRow label="Link riêng của bạn — đừng gửi ai" value={created.privateUrl} show={show} />
-        <p className="hint">Ghi lại mã cây và PIN để mở cây trên máy khác</p>
+        <p className="hint">{created.google ? 'Mở cây trên máy khác bằng Google hoặc link riêng' : 'Ghi lại mã cây và PIN để mở cây trên máy khác'}</p>
         <Button variant="primary" onClick={() => navigate(`/c/${created.id}`)}>Về phòng của tôi</Button>
         {toast}
       </div>
@@ -128,11 +139,19 @@ export function CreatePage() {
             <input id="tree-title" className="input" maxLength={40} value={title} onChange={(e) => setTitle(e.target.value)} />
           </div>
           <div className="row">
-            <button type="button" className="chip" aria-pressed="true">Mã PIN 6 số</button>
-            <button type="button" className="chip" disabled>Google <small>sắp có</small></button>
+            <button type="button" className="chip" aria-pressed={recovery === 'pin'} onClick={() => setRecovery('pin')}>Mã PIN 6 số</button>
+            <button type="button" className="chip" aria-pressed={recovery === 'google'} onClick={() => setRecovery('google')}>Google</button>
           </div>
-          <PinInput value={pin} onChange={setPin} disabled={pending} />
-          <div className="notice">⚠️ Nhớ PIN nhé. Quên PIN và mất link riêng thì không lấy lại được cây.</div>
+          {recovery === 'pin' ? (
+            <>
+              <PinInput value={pin} onChange={setPin} disabled={pending} />
+              <div className="notice">⚠️ Nhớ PIN nhé. Quên PIN và mất link riêng thì không lấy lại được cây.</div>
+            </>
+          ) : googleToken ? (
+            <div className="notice">Đã chọn Google: {googleName(googleToken) ?? 'tài khoản của bạn'}</div>
+          ) : (
+            <GoogleButton text="continue_with" onToken={(t) => { setGoogleToken(t); setError(''); }} />
+          )}
           {error ? <div className="notice" role="alert">{error}</div> : null}
           <Button variant="primary" disabled={!canCreate} onClick={() => void create()}>Tạo cây</Button>
         </Sheet>

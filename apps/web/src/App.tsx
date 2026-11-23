@@ -17,5 +17,7 @@ export const routes: RouteObject[] = [
   { path: '/', element: <Home /> },
   { path: '/tao', element: <CreatePage /> },
   { path: '/c/:id', element: <RoomPage /> },
+  // Trang quản trị tải riêng (gói JS khác): khách và chủ cây không phải tải (đặc tả 6.8).
+  { path: '/quan-tri/*', lazy: () => import('./admin/AdminApp').then((m) => ({ Component: m.AdminApp })) },
   { path: '*', element: <NotFound /> },
 ];

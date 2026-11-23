@@ -253,4 +253,10 @@ describe('/api/config googleClientId', () => {
   it('trả giá trị khi có env.googleClientId', async () => {
     expect((await cfg({ GOOGLE_CLIENT_ID: 'abc.apps.googleusercontent.com' })).googleClientId).toBe('abc.apps.googleusercontent.com');
   });
+  it('supportEmail null khi không cấu hình, trả giá trị khi có SUPPORT_EMAIL', async () => {
+    expect((await cfg({})).supportEmail).toBeNull();
+    await t.app.close();
+    await t.h.close();
+    expect((await cfg({ SUPPORT_EMAIL: 'hotro@vidu.vn' })).supportEmail).toBe('hotro@vidu.vn');
+  });
 });
