@@ -718,12 +718,11 @@ Làm lần lượt: (1) `GoogleButton` + Google cho chủ cây → (2) đăng nh
 
 #### 6.9.1 Biểu ngữ L3 (NOTICE) và trang kết thúc L4 (ENDED)
 
-Server đã đủ: `/api/config` trả `phase`; từ ENDED mọi `/api/*` trừ `/api/admin/*` trả 410 `service_ended` (kể cả `/api/config`). Chỉ làm phía web.
+Server gần đủ: `/api/config` trả `phase` và **vẫn trả 200 sau ENDED** (được miễn 410, có test); từ ENDED mọi `/api/*` khác trừ `/api/admin/*` trả 410 `service_ended`. Server chỉ thêm `purgeAt` vào `/api/config` (để biểu ngữ không viết cứng ngày xoá); còn lại làm phía web.
 
 - **NOTICE (0h 26/12 → hết 31/12):** dải biểu ngữ trên `/`, `/tao`, `/c/:id` (khách và chủ cây; không có ở `/quan-tri`): "Cây Thông Lời Nhắn ngừng hoạt động hết 31/12. Tải ảnh phòng và thiệp về máy sớm nhé — dữ liệu bị xoá ngày 07/01/2027." Ngày lấy từ `milestones` của `/api/config` (không viết cứng). Không đóng được (mỗi lần vào đều thấy), không che phòng.
 - **NOTICE — đóng tạo cây (L2) trên giao diện:** trang chủ ẩn "Bắt đầu tạo cây", giữ "Bạn đã có cây?"; `/tao` hiện "Đã ngừng tạo cây mới từ 26/12" + nút về trang chủ, không hiện form; nút "Tạo cây của bạn" của khách ẩn. Phần đã có giữ nguyên: "Sửa phòng" ẩn, bong bóng "+" ẩn, nút tải ảnh phòng / thiệp vẫn dùng được.
-- **ENDED (từ 0h 01/01/2027):** `/api/config` trả 410 → mọi trang trừ `/quan-tri` hiện trang kết thúc: "Mùa Noel đã kết thúc, cảm ơn bạn!" + một dòng về ngày xoá dữ liệu + email hỗ trợ (nếu `/api/config` không trả được thì lấy email từ thông báo 410 — người làm quyết cách, có thể bỏ email nếu không có nguồn). Bất kỳ API nào trả 410 `service_ended` giữa chừng (trang mở từ trước 0h) cũng chuyển sang trang kết thúc, không hiện lỗi chung.
-- `useConfig` phân biệt "đang tải / lỗi mạng" với "đã kết thúc" (410); lỗi mạng giữ hành vi cũ (thử lại lần sau).
+- **ENDED (từ 0h 01/01/2027):** `/api/config` trả `phase: 'ENDED'` → mọi trang trừ `/quan-tri` và `/chinh-sach` hiện trang kết thúc: "Mùa Noel đã kết thúc, cảm ơn bạn!" + một dòng về ngày xoá dữ liệu (`purgeAt`) + email hỗ trợ + liên kết chính sách. Bất kỳ API nào trả 410 `service_ended` giữa chừng (trang mở từ trước 0h, `/api/config` đã lưu bản cũ) cũng chuyển sang trang kết thúc, không hiện lỗi chung.
 
 #### 6.9.2 Trang chính sách riêng tư `/chinh-sach`
 
@@ -762,7 +761,7 @@ Server đã đủ: `/api/config` trả `phase`; từ ENDED mọi `/api/*` trừ 
 Làm lần lượt: (1) dọn bảng → (2) NOTICE / ENDED phía web → (3) trang chính sách → (4) Playwright. Làm liền cả bốn rồi chủ dự án thử tay một lần.
 
 - **Server (Vitest + PGlite):** `cleanup` với đồng hồ giả — dòng `rate_counters` 23 giờ trước còn, 25 giờ trước mất (cả `pin:tree:`); `auth_attempts` 6 ngày còn / 8 ngày mất; `admin_sessions` hết hạn / bị thu hồi mất, còn hạn giữ; các bảng khác không đổi; gọi hai lần liền không lỗi.
-- **Web (RTL):** biểu ngữ hiện ở NOTICE, không hiện ở BUILD / OPEN; trang chủ / `/tao` / khách ở NOTICE không còn lối tạo cây; `/api/config` 410 → trang kết thúc; API khác trả 410 giữa chừng → trang kết thúc; `/chinh-sach` hiện email hỗ trợ.
+- **Web (RTL):** biểu ngữ hiện ở NOTICE, không hiện ở BUILD / OPEN; trang chủ / `/tao` / khách ở NOTICE không còn lối tạo cây; `/api/config` `phase: 'ENDED'` → trang kết thúc; API khác trả 410 giữa chừng → trang kết thúc; `/chinh-sach` hiện email hỗ trợ.
 - **Build:** gói JS chính vẫn ≤ 250 KB gzip, trang chính sách là gói riêng.
 - **E2E:** `pnpm e2e` qua cả 3 luồng trên máy có Docker.
 
