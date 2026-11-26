@@ -73,3 +73,10 @@ describe('Home theo giai đoạn (đặc tả 6.9.1)', () => {
     expect(screen.getByRole('button', { name: 'Bạn đã có cây?' })).toBeInTheDocument();
   });
 });
+
+describe('Home — chính sách', () => {
+  it('chân trang có link "Chính sách riêng tư"', () => {
+    renderHome();
+    expect(screen.getByRole('link', { name: 'Chính sách riêng tư' })).toHaveAttribute('href', '/chinh-sach');
+  });
+});

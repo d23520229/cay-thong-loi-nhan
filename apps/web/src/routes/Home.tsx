@@ -35,7 +35,10 @@ export function Home() {
         <p className="wish">Chúc bạn một mùa Noel thật ấm áp ✨</p>
         {canCreate ? <Link to="/tao" className="btn btn-primary">Bắt đầu tạo cây</Link> : null}
         <button type="button" className="linkbtn" onClick={() => setReopen(true)}>Bạn đã có cây?</button>
-        <footer><SupportHint /></footer>
+        <footer>
+          <SupportHint />
+          <Link to="/chinh-sach" className="linkbtn policy-link">Chính sách riêng tư</Link>
+        </footer>
       </div>
       {reopen ? <ReopenDialog onClose={() => setReopen(false)} /> : null}
     </div>

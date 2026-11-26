@@ -170,3 +170,12 @@ a.linkbtn { display: inline-flex; align-items: center; justify-content: center; 
 /* Biểu ngữ NOTICE (đặc tả 6.9.1): nằm trong luồng trang, không che phòng */
 .phase-banner { margin: 0; padding: 8px 14px; background: var(--gold); color: var(--ink); font-size: 15px; line-height: 1.35; text-align: center; }
 .ended .linkbtn { justify-self: center; }
+
+/* Trang chính sách (đặc tả 6.9.2) */
+.policy { max-width: 640px; margin: 0 auto; padding: 24px 18px 40px; display: grid; gap: 10px; }
+.policy h1 { font-size: 52px; }
+.policy h2 { font-size: 32px; margin-top: 10px; }
+.policy p { margin: 0; line-height: 1.5; }
+.policy a:not(.btn) { color: var(--gold); }
+.policy .btn { justify-self: start; margin-top: 14px; }
+.policy-link { font-size: 14px; }

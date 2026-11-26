@@ -40,6 +40,8 @@ export const routes: RouteObject[] = [
       { path: '*', element: <NotFound /> },
     ],
   },
+  // Chính sách: gói riêng, vẫn đọc được sau ENDED (trang kết thúc có link tới đây — đặc tả 6.9.2).
+  { path: '/chinh-sach', lazy: () => import('./routes/PolicyPage').then((m) => ({ Component: m.PolicyPage })) },
   // Trang quản trị tải riêng (gói JS khác): khách và chủ cây không phải tải (đặc tả 6.8); vẫn chạy sau ENDED.
   { path: '/quan-tri/*', lazy: () => import('./admin/AdminApp').then((m) => ({ Component: m.AdminApp })) },
 ];
