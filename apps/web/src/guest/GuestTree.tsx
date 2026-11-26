@@ -292,7 +292,7 @@ export function GuestTree({ treeId, meta, room, toast, onOwnerLogin }: Props) {
         </div>
       ) : (
         <div className="room-bottom">
-          <Link to={`/?ref=${treeId}`} className="btn btn-primary">Tạo cây của bạn</Link>
+          {writable ? <Link to={`/?ref=${treeId}`} className="btn btn-primary">Tạo cây của bạn</Link> : null}
           <button type="button" className="linkbtn" onClick={onOwnerLogin}>Tôi là chủ cây</button>
           <a className="linkbtn" href={api.roomImageUrl(treeId)} download>⬇ Tải ảnh phòng</a>
         </div>

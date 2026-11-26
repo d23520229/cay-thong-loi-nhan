@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { RoomSchema, validateRoom, type Room } from '@ctln/shared';
 import { ApiError, api } from '../lib/api';
+import { useConfig } from '../lib/config';
+import { canWrite } from '../guest/slots';
 import { storage } from '../lib/storage';
 import { defaultRoom } from '../room/model';
 import { EditorLayout } from '../room/EditorLayout';
@@ -61,6 +63,7 @@ export function CreatePage() {
   const [created, setCreated] = useState<Created | null>(null);
   const busy = useRef(false);
   const { toast, show } = useToast();
+  const phase = useConfig()?.phase;
 
   useEffect(
     () =>
@@ -122,6 +125,16 @@ export function CreatePage() {
         <Button variant="primary" onClick={() => navigate(`/c/${created.id}`)}>Về phòng của tôi</Button>
         {toast}
       </div>
+    );
+  }
+
+  // Từ 0h 26/12 không tạo cây mới (L2); chưa biết giai đoạn thì vẫn cho tạo, server vẫn chặn.
+  if (phase && !canWrite(phase)) {
+    return (
+      <main className="placeholder">
+        <h1>Đã ngừng tạo cây mới từ 26/12</h1>
+        <Link to="/" className="btn btn-primary">‹ Về trang chủ</Link>
+      </main>
     );
   }
 

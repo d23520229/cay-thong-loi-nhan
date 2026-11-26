@@ -166,3 +166,7 @@ a.linkbtn { display: inline-flex; align-items: center; justify-content: center; 
 .gs-bubble--right { transform-origin: -29px 50%; }
 .gs-bubble--left { transform-origin: calc(100% + 29px) 50%; }
 @media (prefers-reduced-motion: reduce) { .gs-bubble { animation: none; } }
+
+/* Biểu ngữ NOTICE (đặc tả 6.9.1): nằm trong luồng trang, không che phòng */
+.phase-banner { margin: 0; padding: 8px 14px; background: var(--gold); color: var(--ink); font-size: 15px; line-height: 1.35; text-align: center; }
+.ended .linkbtn { justify-self: center; }
