@@ -19,3 +19,8 @@ graphify-out/
 
 # Ảnh đính kèm lời nhắn (.data/ là dữ liệu chạy máy dev, không commit)
 .data/
+
+# Playwright
+e2e/.out/
+test-results/
+playwright-report/

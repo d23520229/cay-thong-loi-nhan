@@ -41,6 +41,7 @@ cp .env.example .env         # điền PEPPER, GOOGLE_CLIENT_ID, ...
 pnpm db:up                   # PostgreSQL 16 trong Docker
 pnpm dev                     # web: http://localhost:5173  ·  server: http://localhost:3000
 pnpm test                    # kiểm thử tất cả gói
+pnpm e2e                     # Playwright 3 luồng trên bản build (cần pnpm db:up + pnpm build), xem e2e/README.md
 ```
 
 Chạy giao diện M2 (tạo cây, trang trí phòng):
