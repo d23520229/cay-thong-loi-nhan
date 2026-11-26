@@ -4,13 +4,14 @@
 
 ## Hiện tại
 
-- **Ngày cập nhật:** 24/11/2026
+- **Ngày cập nhật:** 27/11/2026
+- **Mốc đang ở:** **M4 khối 1** (hoàn thiện trước triển khai) — thiết kế ở đặc tả 6.9, chờ chủ dự án duyệt, nhánh `m4-khoi1`. M3b đã thử tay và gộp (PR #7); sửa `pnpm dev` treo do SDK Azure (PR #8). Khối 2 (triển khai Azure + CI/CD) thiết kế sau, khoảng 01/12.
 - **Thiệp, ảnh kèm, tải ảnh (đặc tả 6.7):** xong, chủ dự án đã thử tay, đã gộp vào `main` (PR #5, #6). Nhánh `fix-luong-sau-m2` (rà soát luồng 22–23/11) đã gộp (PR #4). Số liệu lúc gộp: **413 test web + 207 test server + 42 test shared + 1 test art**, typecheck sạch, build JS + CSS ≈ 158 KB gzip (giới hạn 250 KB).
-- **Mốc đang ở:** **M3 xong và đã gộp vào `main`** (PR #3; M1, M2 là PR #1, #2), cùng phần 6.7 thiệp/ảnh. M3 gồm 3 phần (đặc tả 6.6): (1) khách treo lời nhắn, (2) chủ cây đọc & quản lý, (3) chia sẻ + OG.
+- **M3:** **xong và đã gộp vào `main`** (PR #3; M1, M2 là PR #1, #2), cùng phần 6.7 thiệp/ảnh. M3 gồm 3 phần (đặc tả 6.6): (1) khách treo lời nhắn, (2) chủ cây đọc & quản lý, (3) chia sẻ + OG.
 - **Số liệu lúc xong M3 (21/11):** 290 test web + 136 test server + 40 test shared, typecheck sạch, build JS + CSS ≈ 155 KB gzip (giới hạn 250 KB). Đã chạy thật (21/11): qua Vite + PostgreSQL khách treo → 201, `GET /api/trees/{id}` không có nội dung; server từ bản build (`WEB_DIST=apps/web/dist`, cổng 3001) trả `/c/{id}` có đủ thẻ OG, `/og/{id}.png` PNG 1200×630, `/tao` trả trang, file tĩnh và API chạy. Kế hoạch: `docs/superpowers/plans/2026-11-21-m3-p1-khach-treo-loi-nhan.md`, `docs/superpowers/plans/2026-11-21-m3-p2-p3-chu-cay-chia-se-og.md`.
-- **Việc tiếp theo:** **M3b xong trên nhánh `m3b`, chờ duyệt cả nhánh + chủ dự án thử tay** theo danh sách "M3b — thử tay" bên dưới → sửa lỗi nếu có → PR `m3b` vào `main` → M4. Số liệu (24/11): **249 test server + 465 test web + 42 test shared + 1 test art**, typecheck sạch, gói JS chính ≈ 158 KB gzip, gói quản trị tách riêng ≈ 5,7 KB gzip. Kế hoạch + quyết định khi làm: `docs/superpowers/plans/2026-11-24-m3b-quan-tri-google.md`.
+- **M3b (24/11):** đã thử tay, gộp vào `main` (PR #7). Số liệu (24/11): **249 test server + 465 test web + 42 test shared + 1 test art**, typecheck sạch, gói JS chính ≈ 158 KB gzip, gói quản trị tách riêng ≈ 5,7 KB gzip. Kế hoạch + quyết định khi làm: `docs/superpowers/plans/2026-11-24-m3b-quan-tri-google.md`.
 
-### M3b — thử tay (chủ dự án, nhánh `m3b`)
+### M3b — thử tay (chủ dự án, đã thử xong, PR #7)
 
 Chuẩn bị: **tắt `pnpm dev` cũ rồi bật lại** (bản đang chạy được bật trước khi `.env` có `GOOGLE_CLIENT_ID` nên chưa có Google và `/api/admin`). `pnpm db:up`, `pnpm dev`, mở http://localhost:5173. Migration `0005_admin_metrics.sql` đã áp dụng sạch trên CSDL Docker có dữ liệu thật (24/11).
 
@@ -162,7 +163,7 @@ Chưa làm ở M1: giao diện web (M2–M3), trang quản trị (M3b), OG ảnh
 | M1 | 18–25/11 | Backend: migration, giai đoạn, xác thực, API phòng + lời nhắn, test | **Xong** (17/11) |
 | M2 | 25/11–02/12 | Frontend phòng tự do: kéo thả, xếp lớp, mũi tên ‹ ›, dải chọn, tự lưu | **Xong** (18/11, nhánh `m2-frontend`) |
 | M3 | 02–07/12 | Bạn bè treo lời nhắn; chủ cây đọc, khoá, đếm ngược; chia sẻ, OG | **Xong** (21/11, PR #3; thiệp/ảnh PR #5, #6 ngày 24/11) |
-| M3b | 05–08/12 | Trang quản trị P0 + Google cho chủ cây | **Xong** (24/11, nhánh `m3b`), chờ thử tay |
+| M3b | 05–08/12 | Trang quản trị P0 + Google cho chủ cây | **Xong** (24/11, PR #7) |
 | M4 | 07–10/12 | Hoàn thiện, triển khai Azure (kèm Blob cho ảnh, câu trung thực về riêng tư trong chính sách; bật IPv6 inbound cho App Service nếu gói B1 cho phép — kiểm chi phí) | |
 | M5 | 10–12/12 | Chạy thử kín | |
 | M6 | 15/12 | Ra mắt công khai | |
