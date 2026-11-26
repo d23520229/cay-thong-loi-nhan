@@ -728,11 +728,11 @@ Server gần đủ: `/api/config` trả `phase` và **vẫn trả 200 sau ENDED*
 
 - Trang React tải lười như `/quan-tri` (không vào gói JS chính); liên kết "Chính sách riêng tư" ở chân trang chủ, cạnh dòng hỗ trợ, và ở trang kết thúc. Một trang, chữ ngắn, đọc được trên điện thoại.
 - Nội dung (chỉ nói điều code đang làm, đối chiếu mục 7.8, 10):
-  - **Lưu gì:** tên chủ cây, tên cây, căn phòng; lời nhắn, tên người viết (ẩn danh thì không lưu tên), ảnh kèm (đã bỏ thông tin vị trí EXIF); mã băm của thiết bị và IP (không lưu IP thật); đăng nhập Google chỉ lưu mã người dùng Google, **không lưu email**.
+  - **Lưu gì:** tên chủ cây, tên cây, căn phòng; lời nhắn, tên người viết (ẩn danh thì không lưu tên), ảnh kèm (đã bỏ thông tin vị trí EXIF); mã băm của thiết bị và IP (không lưu IP thật); đăng nhập Google chỉ lưu mã người dùng Google, **không lưu tên hay email Google** (trước 27/11 server có ghi tên hiển thị vào `owner_accounts.display_name` mà không dùng — đã bỏ; cột giữ nguyên, luôn NULL).
   - **Ai thấy gì:** khách không thấy lời nhắn của nhau; chủ cây đọc được từ 0h 24/12; quản trị viên chỉ thấy lời nhắn đã bị báo cáo (bản chụp lúc báo cáo).
   - **Câu trung thực** (cách hiểu của người viết đặc tả, chủ dự án duyệt lại): dữ liệu không mã hoá đầu-cuối — người vận hành có quyền truy cập máy chủ về kỹ thuật vẫn có thể xem CSDL; trang quản trị không có chức năng đọc lời nhắn, và người vận hành cam kết không xem.
   - **Giữ bao lâu:** lần đăng nhập (kèm mã băm IP) 7 ngày; bộ đếm chống spam tối đa 1 ngày; mọi dữ liệu khác xoá ngày 07/01/2027 (kể cả bản sao lưu); chủ cây xoá cây bất cứ lúc nào, xoá cây là xoá cả lời nhắn và ảnh.
-  - **Lưu trên trình duyệt:** mã thiết bị, danh sách cây của bạn, nháp đang tạo (localStorage); cookie phiên chủ cây. Không có quảng cáo, không có công cụ theo dõi bên thứ ba.
+  - **Lưu trên trình duyệt:** mã thiết bị, danh sách cây của bạn, nháp đang tạo, tên ghi lần trước khi viết lời nhắn, mã sửa lời nhắn (localStorage); cookie `ctln_did` 1 năm khi localStorage không lưu được; cookie phiên chủ cây. Không có quảng cáo, không có công cụ theo dõi; nút Google tải mã từ `accounts.google.com` khi hiện ra.
   - **Liên hệ:** `SUPPORT_EMAIL` (lấy từ `/api/config`).
 
 #### 6.9.3 Dọn bảng định kỳ

@@ -5,7 +5,7 @@
 ## Hiện tại
 
 - **Ngày cập nhật:** 27/11/2026
-- **Mốc đang ở:** **M4 khối 1 xong trên nhánh `m4-khoi1`, chờ chủ dự án thử tay** theo "M4 khối 1 — thử tay" bên dưới (thiết kế: đặc tả 6.9; kế hoạch: `docs/superpowers/plans/2026-11-27-m4-khoi1-hoan-thien.md`). Số liệu (27/11): **255 test server + 486 test web + 42 test shared + 1 test art**, `pnpm e2e` 3/3 luồng, typecheck sạch, gói JS chính ≈ 159 KB gzip, trang chính sách gói riêng ≈ 1,2 KB gzip. M3b đã gộp (PR #7); sửa `pnpm dev` treo do SDK Azure (PR #8). Tiếp theo: **khối 2** (triển khai Azure + CI/CD), thiết kế khoảng 01/12.
+- **Mốc đang ở:** **M4 khối 1 xong trên nhánh `m4-khoi1`, chờ chủ dự án thử tay** theo "M4 khối 1 — thử tay" bên dưới (thiết kế: đặc tả 6.9; kế hoạch: `docs/superpowers/plans/2026-11-27-m4-khoi1-hoan-thien.md`). Số liệu (27/11): **256 test server + 486 test web + 42 test shared + 1 test art**, `pnpm e2e` 3/3 luồng, lượt soát cả nhánh (27/11): 0 nghiêm trọng, đã sửa 2 điểm về trang chính sách (bỏ lưu tên Google; ghi đủ những gì lưu trên trình duyệt), 8 việc nhỏ để sau (ghi dưới), typecheck sạch, gói JS chính ≈ 159 KB gzip, trang chính sách gói riêng ≈ 1,2 KB gzip. M3b đã gộp (PR #7); sửa `pnpm dev` treo do SDK Azure (PR #8). Tiếp theo: **khối 2** (triển khai Azure + CI/CD), thiết kế khoảng 01/12.
 - **Thiệp, ảnh kèm, tải ảnh (đặc tả 6.7):** xong, chủ dự án đã thử tay, đã gộp vào `main` (PR #5, #6). Nhánh `fix-luong-sau-m2` (rà soát luồng 22–23/11) đã gộp (PR #4). Số liệu lúc gộp: **413 test web + 207 test server + 42 test shared + 1 test art**, typecheck sạch, build JS + CSS ≈ 158 KB gzip (giới hạn 250 KB).
 - **M3:** **xong và đã gộp vào `main`** (PR #3; M1, M2 là PR #1, #2), cùng phần 6.7 thiệp/ảnh. M3 gồm 3 phần (đặc tả 6.6): (1) khách treo lời nhắn, (2) chủ cây đọc & quản lý, (3) chia sẻ + OG.
 - **Số liệu lúc xong M3 (21/11):** 290 test web + 136 test server + 40 test shared, typecheck sạch, build JS + CSS ≈ 155 KB gzip (giới hạn 250 KB). Đã chạy thật (21/11): qua Vite + PostgreSQL khách treo → 201, `GET /api/trees/{id}` không có nội dung; server từ bản build (`WEB_DIST=apps/web/dist`, cổng 3001) trả `/c/{id}` có đủ thẻ OG, `/og/{id}.png` PNG 1200×630, `/tao` trả trang, file tĩnh và API chạy. Kế hoạch: `docs/superpowers/plans/2026-11-21-m3-p1-khach-treo-loi-nhan.md`, `docs/superpowers/plans/2026-11-21-m3-p2-p3-chu-cay-chia-se-og.md`.
@@ -23,6 +23,8 @@ Chuẩn bị: `pnpm db:up`, `pnpm dev`, mở http://localhost:5173. Đổi `FAKE
 6. `pnpm build && pnpm e2e` → 3 passed (cần Docker).
 
 **Xoá `FAKE_NOW` sau khi thử.**
+
+**Việc nhỏ để sau (lượt soát M4 khối 1, 27/11):** tab mở qua 0h 26/12 không thấy NOTICE (cấu hình lưu theo tab; bấm tạo thì server báo đã đóng); màn lỗi phòng vẫn có "Tạo cây của bạn" ở NOTICE; tải ảnh qua link `/api/...` không chuyển trang kết thúc khi 410; e2e ENDED chưa mở `/quan-tri`; các server e2e dọn bảng theo `FAKE_NOW` riêng trên CSDL chung (lưu ý nếu thêm e2e khoá PIN); URL CSDL e2e mặc định lặp ở `prepare.mjs` và `servers.ts`; test `startCleanup` dùng giờ thật (có thể chập chờn trên CI); tiêu đề `/tao` đóng viết cứng "26/12". **Khối 2:** kiểm Azure có giữ bản sao lưu PostgreSQL sau khi xoá máy chủ không — trang chính sách hứa "xoá kể cả bản sao lưu".
 
 ### M3b — thử tay (chủ dự án, đã thử xong, PR #7)
 

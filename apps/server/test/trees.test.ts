@@ -53,6 +53,14 @@ describe('POST /api/trees', () => {
     expect(rows[0]!.pinHash).toBeNull();
   });
 
+  it('Google: không lưu tên hiển thị Google (chỉ mã người dùng — đặc tả 6.9.2)', async () => {
+    t = await makeTestApp({ google: async () => ({ sub: 'sub-name', name: 'Tên Thật Google' }) });
+    expect((await create(googleBody())).statusCode).toBe(201);
+    const [acc] = await t.h.db.select().from(ownerAccounts);
+    expect(acc!.googleSub).toBe('sub-name');
+    expect(acc!.displayName).toBeNull();
+  });
+
   it('token Google sai → 400 google_invalid', async () => {
     t = await makeTestApp();
     const r = await create(googleBody('bad'));

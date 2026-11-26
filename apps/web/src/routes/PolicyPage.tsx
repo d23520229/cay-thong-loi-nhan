@@ -13,7 +13,7 @@ export function PolicyPage() {
 
       <h2>Lưu gì</h2>
       <p>Tên chủ cây, tên cây và căn phòng bạn trang trí. Lời nhắn, tên người viết (chọn ẩn danh thì không lưu tên) và ảnh kèm — ảnh đã được bỏ thông tin vị trí (EXIF).</p>
-      <p>Mã băm của thiết bị và của địa chỉ IP để chống spam; chúng tôi không lưu địa chỉ IP thật. Đăng nhập bằng Google chỉ lưu mã người dùng Google, không lưu email.</p>
+      <p>Mã băm của thiết bị và của địa chỉ IP để chống spam; chúng tôi không lưu địa chỉ IP thật. Đăng nhập bằng Google chỉ lưu mã người dùng Google, không lưu tên hay email Google.</p>
 
       <h2>Ai thấy gì</h2>
       <p>Khách không thấy lời nhắn của nhau. Chủ cây đọc được lời nhắn từ 0h 24/12 (giờ Việt Nam). Quản trị viên chỉ thấy lời nhắn đã bị báo cáo (bản chụp lúc báo cáo).</p>
@@ -24,7 +24,8 @@ export function PolicyPage() {
       <p>Chủ cây xoá cây bất cứ lúc nào; xoá cây là xoá cả lời nhắn và ảnh.</p>
 
       <h2>Lưu trên trình duyệt</h2>
-      <p>Mã thiết bị, danh sách cây của bạn và bản nháp đang tạo (localStorage); cookie phiên để nhớ bạn là chủ cây. Không có quảng cáo, không có công cụ theo dõi của bên thứ ba.</p>
+      <p>Trong trình duyệt (localStorage): mã thiết bị, danh sách cây của bạn, bản nháp đang tạo, tên bạn ghi lần trước khi viết lời nhắn, và mã sửa lời nhắn (để sửa trong 15 phút). Nếu trình duyệt chặn localStorage, mã thiết bị được giữ bằng một cookie 1 năm. Cookie phiên để nhớ bạn là chủ cây.</p>
+      <p>Không có quảng cáo, không có công cụ theo dõi. Nút đăng nhập Google tải mã từ accounts.google.com khi nút đó hiện ra.</p>
 
       <h2>Liên hệ</h2>
       <p>{email ? <>Gửi thư tới <a href={`mailto:${email}`}>{email}</a>.</> : 'Dùng email hỗ trợ ở trang chủ.'}</p>

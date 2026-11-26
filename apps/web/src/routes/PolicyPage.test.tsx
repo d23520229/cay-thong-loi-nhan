@@ -27,7 +27,8 @@ describe('PolicyPage (đặc tả 6.9.2)', () => {
       expect(screen.getByRole('heading', { name: h })).toBeInTheDocument();
     }
     const text = document.body.textContent!;
-    for (const t of ['không lưu email', '7 ngày', '07/01/2027', 'không mã hoá đầu-cuối', 'cam kết không xem']) {
+    for (const t of ['không lưu tên hay email Google', '7 ngày', '07/01/2027', 'không mã hoá đầu-cuối', 'cam kết không xem',
+      'tên bạn ghi lần trước', 'mã sửa lời nhắn', 'cookie', 'accounts.google.com']) {
       expect(text).toContain(t);
     }
     expect(await screen.findByRole('link', { name: 'hotro@x.vn' })).toHaveAttribute('href', 'mailto:hotro@x.vn');
