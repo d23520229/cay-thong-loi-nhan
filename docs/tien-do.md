@@ -40,7 +40,7 @@ Chuẩn bị: **tắt `pnpm dev` cũ rồi bật lại** (bản đang chạy đ�
 7. Tải ảnh phòng (chủ cây và khách): file `cay-thong-{mã}.png` có đủ phụ kiện.
 8. `FAKE_NOW=2026-12-24T08:00:00+07:00`: chủ cây mở thiệp có ảnh, thấy ảnh; trước 0h 24/12 không có đường nào lấy được ảnh. **Xoá `FAKE_NOW` sau khi thử.**
 
-**Việc cho M4:** tạo Storage Account + vùng chứa `photos` (riêng tư); đặt `AZURE_STORAGE_CONNECTION_STRING` trong App Service (production thiếu biến này thì server không khởi động); thử `azureStore` thật (ghi, đọc, xoá, chép, kể cả thử lại khi tạo vùng chứa lần đầu).
+**Việc cho M4:** tạo Storage Account + vùng chứa `photos` (riêng tư); đặt `AZURE_STORAGE_CONNECTION_STRING` trong App Service (production thiếu biến này thì server không khởi động); thử `azureStore` thật (ghi, đọc, xoá, chép, kể cả thử lại khi tạo vùng chứa lần đầu). SDK Azure nạp lười (27/11) nên chuỗi kết nối sai **không** làm server dừng lúc khởi động — health check `/api/config` 200 chưa đủ; sau mỗi lần deploy phải treo thử một lời nhắn kèm ảnh và thấy file trong `photos`.
 **Việc cho M10:** xoá Storage Account ngày 07/01/2027.
 
 **Cần chủ dự án quyết / đo (để lại)**
@@ -226,6 +226,7 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 - **`trustProxy` phải là số bước proxy, không bao giờ là `true`:** `true` lấy mục trái nhất của `X-Forwarded-For` (do khách tự đặt) làm `req.ip`, một header là qua mặt mọi giới hạn theo IP và chặn IP. Dùng `TRUST_PROXY_HOPS` (mặc định 1 cho Azure App Service) và `clientIp(req)` (bỏ `:port`).
 - **Không log nguyên `DrizzleQueryError`:** `message`, `query`, `params` chứa nội dung người dùng (lời nhắn, tên, băm). Chỉ log `{ name, code }`.
 - **`tsc` không chép file `.sql`:** script `build` phải chép `src/db/migrations` sang `dist/db/migrations`, nếu không `pnpm start` không tìm thấy migration.
+- **`tsx watch` treo vô hạn khi import tĩnh `@azure/storage-blob`** (tsx 4.23.15, Node 24; `tsx` thường thì không): `pnpm dev` không bao giờ in `Server listening`, Vite báo `ECONNREFUSED`. `azure.ts` import động SDK lúc dùng lần đầu; đừng đổi lại thành import tĩnh.
 - Server dev/migrate nạp `.env` bằng `tsx --env-file-if-exists=../../.env` (Node ≥ 22.9); không có thư viện dotenv.
 - **CSS:** class của app không được trùng tên với class trong `room-animations.css` (gom từ canvas thiết kế) — đã từng va chạm lớp panel; đặt tiền tố riêng.
 - **jsdom** không có `ResizeObserver`, và sự kiện pointer không có `clientX` → test kéo thả qua controller (`drag.ts`) thay vì bắn sự kiện DOM.
