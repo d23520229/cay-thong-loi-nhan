@@ -24,8 +24,10 @@ buoc() { echo; echo "▶ $*"; }
 azv() { az "$@" -o tsv | tr -d '\r'; }
 
 # Ghi JSON (stdin) ra file tạm, in đường dẫn cho `az rest --body @...` — truyền JSON thẳng qua az.cmd dễ hỏng dấu nháy.
+TMPD=$(mktemp -d)
+trap 'rm -rf "$TMPD"' EXIT
 json_file() {
-  local f; f=$(mktemp); cat > "$f"
+  local f; f=$(mktemp -p "$TMPD"); cat > "$f"
   if command -v cygpath > /dev/null; then cygpath -w "$f"; else echo "$f"; fi
 }
 
@@ -75,6 +77,20 @@ if [ "$avail" != "true" ]; then
   exit 1
 fi
 echo "Tên $APP còn trống."
+pg_avail=$(azv rest --method post \
+  --url "https://management.azure.com/subscriptions/$SUB/providers/Microsoft.DBforPostgreSQL/locations/$LOCATION/checkNameAvailability?api-version=2022-12-01" \
+  --body "@$(echo "{\"name\":\"$PG\",\"type\":\"Microsoft.DBforPostgreSQL/flexibleServers\"}" | json_file)" --query nameAvailable)
+st_avail=$(azv storage account check-name -n "$ST" --query nameAvailable)
+if [ "$pg_avail" != "true" ] || [ "$st_avail" != "true" ]; then
+  echo "Tên $PG hoặc $ST đã có người dùng (hậu tố ngẫu nhiên trùng) — chạy lại script." >&2
+  exit 1
+fi
+if ! azv postgres flexible-server list-skus -l "$LOCATION" \
+  --query "[0].supportedServerEditions[?name=='Burstable'].supportedServerSkus[].name" 2>/dev/null | grep -qx Standard_B1ms; then
+  echo "Vùng $LOCATION không có PostgreSQL Burstable B1ms cho tài khoản này. Chọn vùng khác: LOCATION=<vùng>" >&2
+  exit 1
+fi
+echo "Tên $PG, $ST còn trống; $LOCATION có PostgreSQL B1ms."
 
 buoc "4. Resource group $RG"
 az group create -n "$RG" -l "$LOCATION" -o none
@@ -100,6 +116,11 @@ az webapp create -g "$RG" -p "$PLAN" -n "$APP" --runtime "NODE:22-lts" -o none
 az webapp config set -g "$RG" -n "$APP" --always-on true --ftps-state Disabled --min-tls-version 1.2 \
   --startup-file "node dist/index.js" --generic-configurations "healthCheckPath=/healthz" -o none
 az webapp update -g "$RG" -n "$APP" --https-only true -o none
+# Tắt đăng nhập bằng mật khẩu cho SCM và FTP: triển khai đi qua OIDC (Entra ID), không cần publish profile.
+for p in scm ftp; do
+  az resource update -g "$RG" -n "$p" --namespace Microsoft.Web --resource-type basicPublishingCredentialsPolicies \
+    --parent "sites/$APP" --set properties.allow=false -o none
+done
 
 buoc "8. Cấu hình App Service (đặc tả 6.10.3)"
 az webapp config appsettings set -g "$RG" -n "$APP" -o none --settings \

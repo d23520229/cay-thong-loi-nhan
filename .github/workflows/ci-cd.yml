@@ -11,6 +11,12 @@ on:
 permissions:
   contents: read
 
+# Mỗi nhánh một hàng: PR có lần đẩy mới thì huỷ lần cũ; main xếp hàng, lần chờ mới nhất thay lần chờ cũ,
+# nên bản triển khai cuối luôn là commit mới nhất.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 env:
   APP_URL: https://caythongloinhan.azurewebsites.net
 
@@ -65,9 +71,6 @@ jobs:
     environment:
       name: production
       url: ${{ env.APP_URL }}
-    concurrency:
-      group: trien-khai
-      cancel-in-progress: false
     permissions:
       id-token: write
       contents: read
@@ -91,13 +94,13 @@ jobs:
       - name: Kiểm khói
         run: |
           for i in $(seq 1 36); do
-            if curl -fsS "$APP_URL/healthz" > /dev/null; then break; fi
+            if curl -fsS --max-time 10 "$APP_URL/healthz" > /dev/null; then break; fi
             if [ "$i" -eq 36 ]; then
               echo "Trang chưa lên sau 180 giây — xem: az webapp log tail -g rg-caythong -n caythongloinhan"
               exit 1
             fi
             sleep 5
           done
-          curl -fsS "$APP_URL/" | grep -q '<div id="root">'
-          curl -fsS "$APP_URL/api/config" | grep -q '"phase"'
+          curl -fsS --max-time 10 "$APP_URL/" | grep -q '<div id="root">'
+          curl -fsS --max-time 10 "$APP_URL/api/config" | grep -q '"phase"'
           echo "Trang đã lên: $APP_URL"

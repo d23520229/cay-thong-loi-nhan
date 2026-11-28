@@ -11,9 +11,14 @@ for f in apps/server/dist/index.js apps/web/dist/index.html; do
   fi
 done
 
-rm -rf out
+# pnpm deploy (node-linker=hoisted) còn ghi thừa .bin vào apps/server/out; lần sau trên Windows
+# không ghi đè được (EPERM) — dọn trước và sau.
+rm -rf out apps/server/out
+# pwd -W cho dạng D:/... trên Git Bash (pnpm chạy bằng node Windows không hiểu /d/...); Linux dùng pwd.
+OUT="$(pwd -W 2>/dev/null || pwd)/out"
 # node_modules phẳng, không symlink: zip deploy của App Service không giữ symlink.
-pnpm --filter @ctln/server deploy --prod --config.node-linker=hoisted out
+pnpm --filter @ctln/server deploy --prod --config.node-linker=hoisted "$OUT"
+rm -rf apps/server/out
 cp -r apps/web/dist out/web
 
 missing=0
@@ -29,6 +34,12 @@ done
 
 if [ -n "$(find out -type l | head -1)" ]; then
   echo "Gói còn symlink: $(find out -type l | head -1)" >&2
+  exit 1
+fi
+
+# sharp cần bản biên dịch sẵn đúng hệ điều hành (@img/sharp-<os>-<arch>): nạp thử để chắc gói đủ.
+if ! (cd out && node --input-type=module -e "await import('sharp')"); then
+  echo "Gói không nạp được sharp (thiếu bản biên dịch cho $(uname -s)?)" >&2
   exit 1
 fi
 
