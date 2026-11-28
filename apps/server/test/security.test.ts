@@ -40,9 +40,9 @@ describe('env', () => {
     expect(loadEnv({ TRUST_PROXY_HOPS: '2' }).trustProxyHops).toBe(2);
     expect(() => loadEnv({ TRUST_PROXY_HOPS: 'abc' })).toThrow();
   });
-  it('production không cho đặt FAKE_NOW', () => {
+  it('production tạm cho đặt FAKE_NOW (đặc tả 6.10.6, gỡ trước 10/12)', () => {
     const base = { NODE_ENV: 'production', PEPPER: 'x'.repeat(32), BLOCK_IP_KEY: 'y'.repeat(32), AZURE_STORAGE_CONNECTION_STRING: 'cs' };
-    expect(() => loadEnv({ ...base, FAKE_NOW: '2026-12-24T00:00:00+07:00' })).toThrow(/FAKE_NOW/);
+    expect(() => loadEnv({ ...base, FAKE_NOW: '2026-12-24T00:00:00+07:00' })).not.toThrow();
     expect(() => loadEnv(base)).not.toThrow();
     expect(() => loadEnv({ FAKE_NOW: '2026-12-24T00:00:00+07:00' })).not.toThrow();
   });
