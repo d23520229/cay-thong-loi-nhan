@@ -1,0 +1,103 @@
+# Kiểm tra mọi PR vào main; mỗi lần có code vào main thì kiểm tra rồi tự triển khai lên Azure (đặc tả 6.10.5).
+name: CI/CD
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  APP_URL: https://caythongloinhan.azurewebsites.net
+
+jobs:
+  kiem-tra:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ctln
+          POSTGRES_PASSWORD: ctln_dev
+          POSTGRES_DB: caythong
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ctln"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: pnpm e2e
+        run: pnpm e2e
+        env:
+          E2E_ADMIN_DB_URL: postgres://ctln:ctln_dev@localhost:5432/caythong
+      - name: Lưu kết quả e2e khi trượt
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-ket-qua
+          path: e2e/.out/results
+          retention-days: 7
+
+  trien-khai:
+    needs: kiem-tra
+    # Chỉ code đã vào main mới được triển khai; PR (kể cả từ fork) không bao giờ tới bước này.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: ${{ env.APP_URL }}
+    concurrency:
+      group: trien-khai
+      cancel-in-progress: false
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: bash infra/dong-goi.sh
+      - run: cd out && zip -qr ../app.zip .
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      - run: az webapp deploy -g rg-caythong -n caythongloinhan --type zip --src-path app.zip
+      - name: Kiểm khói
+        run: |
+          for i in $(seq 1 36); do
+            if curl -fsS "$APP_URL/healthz" > /dev/null; then break; fi
+            if [ "$i" -eq 36 ]; then
+              echo "Trang chưa lên sau 180 giây — xem: az webapp log tail -g rg-caythong -n caythongloinhan"
+              exit 1
+            fi
+            sleep 5
+          done
+          curl -fsS "$APP_URL/" | grep -q '<div id="root">'
+          curl -fsS "$APP_URL/api/config" | grep -q '"phase"'
+          echo "Trang đã lên: $APP_URL"
