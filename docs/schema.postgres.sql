@@ -6,7 +6,7 @@
 CREATE TABLE owner_accounts (
   id            bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   google_sub    text NOT NULL UNIQUE,              -- mã người dùng Google ("sub"); không lưu email
-  display_name  text CHECK (display_name IS NULL OR char_length(display_name) <= 60),
+  display_name  text CHECK (display_name IS NULL OR char_length(display_name) <= 60),  -- không còn ghi từ 27/11 (đặc tả 6.9.2), luôn NULL
   created_at    timestamptz NOT NULL DEFAULT now(),
   last_login_at timestamptz
 );

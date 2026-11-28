@@ -14,6 +14,11 @@
     "db:up": "docker compose up -d db",
     "db:migrate": "pnpm --filter @ctln/server db:migrate",
     "art:export": "pnpm --filter @ctln/art export",
-    "canvas:build": "node tools/design-canvas/build-board-tree2.mjs && node tools/design-canvas/build-board-free.mjs && node tools/design-canvas/build-design-ornaments-v2.mjs"
+    "canvas:build": "node tools/design-canvas/build-board-tree2.mjs && node tools/design-canvas/build-board-free.mjs && node tools/design-canvas/build-design-ornaments-v2.mjs",
+    "e2e": "node e2e/prepare.mjs && playwright test -c e2e"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.1",
+    "postgres": "^3.4.0"
   }
 }

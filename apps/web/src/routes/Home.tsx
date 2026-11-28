@@ -4,6 +4,8 @@ import { defaultRoom } from '../room/model';
 import { RoomStage } from '../room/RoomStage';
 import { TREE_ID } from '../lib/treeRef';
 import { storage } from '../lib/storage';
+import { useConfig } from '../lib/config';
+import { canWrite } from '../guest/slots';
 import { ReopenDialog } from './ReopenDialog';
 import { SupportHint } from '../ui/SupportHint';
 
@@ -13,6 +15,8 @@ export function Home() {
   const [params] = useSearchParams();
   const [reopen, setReopen] = useState(false);
   const ref = params.get('ref');
+  const phase = useConfig()?.phase;
+  const canCreate = !phase || canWrite(phase); // chưa tải cấu hình thì vẫn hiện nút
 
   useEffect(() => {
     if (ref && TREE_ID.test(ref)) storage.setRef(ref);
@@ -29,9 +33,12 @@ export function Home() {
           <li>0h 24/12 mới được mở quà đọc thư</li>
         </ul>
         <p className="wish">Chúc bạn một mùa Noel thật ấm áp ✨</p>
-        <Link to="/tao" className="btn btn-primary">Bắt đầu tạo cây</Link>
+        {canCreate ? <Link to="/tao" className="btn btn-primary">Bắt đầu tạo cây</Link> : null}
         <button type="button" className="linkbtn" onClick={() => setReopen(true)}>Bạn đã có cây?</button>
-        <footer><SupportHint /></footer>
+        <footer>
+          <SupportHint />
+          <Link to="/chinh-sach" className="linkbtn policy-link">Chính sách riêng tư</Link>
+        </footer>
       </div>
       {reopen ? <ReopenDialog onClose={() => setReopen(false)} /> : null}
     </div>

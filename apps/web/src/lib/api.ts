@@ -1,5 +1,6 @@
 import type { CreateTreeBody, Room, RoomItem, TreeConfig } from '@ctln/shared';
 import type { Catalog } from './catalog';
+import { markServiceEnded } from './ended';
 import { storage } from './storage';
 
 export class ApiError extends Error {
@@ -42,6 +43,7 @@ export type AppConfig = {
   unlockAt: string;
   writeClosesAt: string;
   serviceEndsAt: string;
+  purgeAt: string;
   catalogVersion: number;
   limits: Catalog['limits'];
   googleClientId: string | null;
@@ -98,6 +100,7 @@ export async function request<T>(method: string, path: string, body?: unknown, o
       /* không phải JSON */
     }
     const { code, message, ...extra } = err;
+    if (res.status === 410 && code === 'service_ended') markServiceEnded();
     throw new ApiError(res.status, code ?? 'unknown', message ?? 'Có lỗi xảy ra, thử lại sau nhé.', extra);
   }
   if (res.status === 204) return undefined as T;

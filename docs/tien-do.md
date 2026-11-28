@@ -4,13 +4,29 @@
 
 ## Hiện tại
 
-- **Ngày cập nhật:** 24/11/2026
+- **Ngày cập nhật:** 27/11/2026
+- **Mốc đang ở:** **M4 khối 1 xong trên nhánh `m4-khoi1`, chờ chủ dự án thử tay** theo "M4 khối 1 — thử tay" bên dưới (thiết kế: đặc tả 6.9; kế hoạch: `docs/superpowers/plans/2026-11-27-m4-khoi1-hoan-thien.md`). Số liệu (27/11): **256 test server + 492 test web + 42 test shared + 1 test art**, `pnpm e2e` 3/3 luồng, lượt soát cả nhánh (27/11): 0 nghiêm trọng, đã sửa 2 điểm về trang chính sách (bỏ lưu tên Google; ghi đủ những gì lưu trên trình duyệt), 8 việc nhỏ đã sửa 28/11 (ghi dưới), typecheck sạch, gói JS chính ≈ 159 KB gzip, trang chính sách gói riêng ≈ 1,2 KB gzip. M3b đã gộp (PR #7); sửa `pnpm dev` treo do SDK Azure (PR #8). Tiếp theo: **khối 2** (triển khai Azure + CI/CD), thiết kế khoảng 01/12.
 - **Thiệp, ảnh kèm, tải ảnh (đặc tả 6.7):** xong, chủ dự án đã thử tay, đã gộp vào `main` (PR #5, #6). Nhánh `fix-luong-sau-m2` (rà soát luồng 22–23/11) đã gộp (PR #4). Số liệu lúc gộp: **413 test web + 207 test server + 42 test shared + 1 test art**, typecheck sạch, build JS + CSS ≈ 158 KB gzip (giới hạn 250 KB).
-- **Mốc đang ở:** **M3 xong và đã gộp vào `main`** (PR #3; M1, M2 là PR #1, #2), cùng phần 6.7 thiệp/ảnh. M3 gồm 3 phần (đặc tả 6.6): (1) khách treo lời nhắn, (2) chủ cây đọc & quản lý, (3) chia sẻ + OG.
+- **M3:** **xong và đã gộp vào `main`** (PR #3; M1, M2 là PR #1, #2), cùng phần 6.7 thiệp/ảnh. M3 gồm 3 phần (đặc tả 6.6): (1) khách treo lời nhắn, (2) chủ cây đọc & quản lý, (3) chia sẻ + OG.
 - **Số liệu lúc xong M3 (21/11):** 290 test web + 136 test server + 40 test shared, typecheck sạch, build JS + CSS ≈ 155 KB gzip (giới hạn 250 KB). Đã chạy thật (21/11): qua Vite + PostgreSQL khách treo → 201, `GET /api/trees/{id}` không có nội dung; server từ bản build (`WEB_DIST=apps/web/dist`, cổng 3001) trả `/c/{id}` có đủ thẻ OG, `/og/{id}.png` PNG 1200×630, `/tao` trả trang, file tĩnh và API chạy. Kế hoạch: `docs/superpowers/plans/2026-11-21-m3-p1-khach-treo-loi-nhan.md`, `docs/superpowers/plans/2026-11-21-m3-p2-p3-chu-cay-chia-se-og.md`.
-- **Việc tiếp theo:** **M3b xong trên nhánh `m3b`, chờ duyệt cả nhánh + chủ dự án thử tay** theo danh sách "M3b — thử tay" bên dưới → sửa lỗi nếu có → PR `m3b` vào `main` → M4. Số liệu (24/11): **249 test server + 465 test web + 42 test shared + 1 test art**, typecheck sạch, gói JS chính ≈ 158 KB gzip, gói quản trị tách riêng ≈ 5,7 KB gzip. Kế hoạch + quyết định khi làm: `docs/superpowers/plans/2026-11-24-m3b-quan-tri-google.md`.
+- **M3b (24/11):** đã thử tay, gộp vào `main` (PR #7). Số liệu (24/11): **249 test server + 465 test web + 42 test shared + 1 test art**, typecheck sạch, gói JS chính ≈ 158 KB gzip, gói quản trị tách riêng ≈ 5,7 KB gzip. Kế hoạch + quyết định khi làm: `docs/superpowers/plans/2026-11-24-m3b-quan-tri-google.md`.
 
-### M3b — thử tay (chủ dự án, nhánh `m3b`)
+### M4 khối 1 — thử tay (chủ dự án, nhánh `m4-khoi1`)
+
+Chuẩn bị: `pnpm db:up`, `pnpm dev`, mở http://localhost:5173. Đổi `FAKE_NOW` trong `.env` rồi **tắt và bật lại** `pnpm dev` (server chỉ đọc `.env` lúc khởi động).
+
+1. `FAKE_NOW=2026-12-27T10:00:00+07:00` (NOTICE): dải vàng "ngừng hoạt động hết 31/12 … xoá ngày 07/01/2027" ở trang chủ, `/tao`, phòng (chủ cây và khách); trang chủ không còn "Bắt đầu tạo cây", vẫn có "Bạn đã có cây?"; `/tao` báo "Đã ngừng tạo cây mới từ 26/12"; khách không có "Tạo cây của bạn"; vẫn tải được ảnh phòng và thiệp. Dải vàng không che phòng trên điện thoại.
+2. `FAKE_NOW=2027-01-02T10:00:00+07:00` (ENDED): `/`, `/tao`, `/c/{mã cây}` hiện "Mùa Noel đã kết thúc, cảm ơn bạn!" kèm ngày xoá, email hỗ trợ, link chính sách; `/quan-tri` vẫn đăng nhập và dùng được.
+3. Mở một phòng ở NOTICE, giữ nguyên tab; đổi `FAKE_NOW` sang ENDED, bật lại server; trên tab cũ bấm một thao tác (vd. mở lời nhắn) → chuyển sang trang kết thúc, không hiện lỗi chung.
+4. `/chinh-sach` (link ở chân trang chủ): đọc trên điện thoại, nội dung đúng ý (có câu "không mã hoá đầu-cuối … cam kết không xem"), email hỗ trợ bấm được.
+5. Dọn bảng: bật server thấy chạy bình thường; nếu có dòng cũ trong `rate_counters` / `auth_attempts` thì log có dòng "đã dọn bảng".
+6. `pnpm build && pnpm e2e` → 3 passed (cần Docker).
+
+**Xoá `FAKE_NOW` sau khi thử.**
+
+**Việc nhỏ từ lượt soát M4 khối 1 — đã sửa hết (28/11):** cấu hình tự tải lại ở mốc giai đoạn kế tiếp (hẹn tối đa 1 ngày) và khi quay lại tab, nên tab mở qua 0h 26/12 / 0h 01/01 cũng đổi sang NOTICE / trang kết thúc (bao luôn việc tải ảnh qua link `/api/...` ở tab cũ); màn lỗi phòng ở NOTICE ghi "Về trang chủ"; e2e ENDED mở `/quan-tri`; ghi chú dọn bảng trong `e2e/README.md`; URL CSDL e2e gom về `e2e/db.mjs`; test `startCleanup` dùng giờ giả; tiêu đề `/tao` lấy ngày từ `writeClosesAt`. **Khối 2:** kiểm Azure có giữ bản sao lưu PostgreSQL sau khi xoá máy chủ không — trang chính sách hứa "xoá kể cả bản sao lưu".
+
+### M3b — thử tay (chủ dự án, đã thử xong, PR #7)
 
 Chuẩn bị: **tắt `pnpm dev` cũ rồi bật lại** (bản đang chạy được bật trước khi `.env` có `GOOGLE_CLIENT_ID` nên chưa có Google và `/api/admin`). `pnpm db:up`, `pnpm dev`, mở http://localhost:5173. Migration `0005_admin_metrics.sql` đã áp dụng sạch trên CSDL Docker có dữ liệu thật (24/11).
 
@@ -138,8 +154,8 @@ Chưa làm ở M1: giao diện web (M2–M3), trang quản trị (M3b), OG ảnh
 - ~~`/mine` trả 403 khi không có lời nhắn~~ — đã sửa 22/11 (404 / 403, so token timing-safe).
 - Tạo cây mà mất phản hồi giữa chừng → bấm lại tạo cây thứ hai, cây đầu mồ côi — **chấp nhận** (chủ dự án chốt 22/11).
 - ~~`pagehide` lúc đang lưu ra 409 giả~~ — đã sửa 22/11: 409 mà phòng server giống hệt phòng trên máy thì nhận version, không hỏi; 409 thiếu phòng → "Không mở được cây này." thay vì treo.
-- Dọn `rate_counters` (M4/M10): chỉ xoá khung đã kết thúc — bucket `pin:tree:` giữ đến khi `window_start` quá 1 ngày, bucket khác quá 1 giờ; dọn thô hằng giờ sẽ xoá khung ngày và đặt lại trần 50 lần sai / phòng / ngày. (Hoặc lưu độ dài khung khi ghi.)
-- M4/M5: khi Fastify phục vụ HTML của web, thử header CSP trên `/` và `/c/:id`, gồm cả mặc định của helmet như `frame-ancestors`.
+- ~~Dọn `rate_counters` (M4/M10)~~ — làm 27/11 (`cleanup.ts`, quy tắc chung: xoá khung quá 1 ngày, đặc tả 6.9.3). Ghi chú cũ: chỉ xoá khung đã kết thúc — bucket `pin:tree:` giữ đến khi `window_start` quá 1 ngày, bucket khác quá 1 giờ; dọn thô hằng giờ sẽ xoá khung ngày và đặt lại trần 50 lần sai / phòng / ngày. (Hoặc lưu độ dài khung khi ghi.)
+- M4/M5 (một phần xong 27/11: `pnpm e2e` kiểm không có vi phạm CSP và có `frame-ancestors` trên `/c/:id`; còn Google trên Azure): khi Fastify phục vụ HTML của web, thử header CSP trên `/` và `/c/:id`, gồm cả mặc định của helmet như `frame-ancestors`.
 - ~~Trước Azure: chạy `pnpm db:migrate` trên Postgres Docker đã có 0000–0002 để kiểm tra 0003 áp dụng sạch~~ — đã chạy 23/11 trên CSDL Docker có dữ liệu thật (5 cây, 7 lời nhắn): lần 1 chỉ chạy `0003_pin_rate_counters.sql`, lần 2 "Không có migration mới"; còn mỗi cột `pin_hash`, hết trigger và hàm `touch_updated_at`, dữ liệu giữ nguyên; server đọc được cây cũ, PIN sai ghi vào `rate_counters`.
 - Rủi ro chấp nhận: một IP có thể dùng hết trần 50 lần sai / ngày của một cây trong khoảng 3 giờ. Chủ cây vẫn còn cookie, link riêng và Google; cách gỡ là nút mở khoá M3b.
 - Khi bật IPv6: cân nhắc gom IPv6 theo /64; trần ngày theo cây vẫn chặn lạm dụng.
@@ -162,8 +178,8 @@ Chưa làm ở M1: giao diện web (M2–M3), trang quản trị (M3b), OG ảnh
 | M1 | 18–25/11 | Backend: migration, giai đoạn, xác thực, API phòng + lời nhắn, test | **Xong** (17/11) |
 | M2 | 25/11–02/12 | Frontend phòng tự do: kéo thả, xếp lớp, mũi tên ‹ ›, dải chọn, tự lưu | **Xong** (18/11, nhánh `m2-frontend`) |
 | M3 | 02–07/12 | Bạn bè treo lời nhắn; chủ cây đọc, khoá, đếm ngược; chia sẻ, OG | **Xong** (21/11, PR #3; thiệp/ảnh PR #5, #6 ngày 24/11) |
-| M3b | 05–08/12 | Trang quản trị P0 + Google cho chủ cây | **Xong** (24/11, nhánh `m3b`), chờ thử tay |
-| M4 | 07–10/12 | Hoàn thiện, triển khai Azure (kèm Blob cho ảnh, câu trung thực về riêng tư trong chính sách; bật IPv6 inbound cho App Service nếu gói B1 cho phép — kiểm chi phí) | |
+| M3b | 05–08/12 | Trang quản trị P0 + Google cho chủ cây | **Xong** (24/11, PR #7) |
+| M4 | 07–10/12 | Hoàn thiện, triển khai Azure (kèm Blob cho ảnh, câu trung thực về riêng tư trong chính sách; bật IPv6 inbound cho App Service nếu gói B1 cho phép — kiểm chi phí) | Khối 1 xong (27/11, nhánh `m4-khoi1`), chờ thử tay; khối 2 chưa làm |
 | M5 | 10–12/12 | Chạy thử kín | |
 | M6 | 15/12 | Ra mắt công khai | |
 | M7–M10 | 16/12–07/01/2027 | Theo dõi, mở quà 24/12, thông báo tải ảnh, kết thúc, xoá dữ liệu | |
@@ -226,6 +242,9 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 - **`trustProxy` phải là số bước proxy, không bao giờ là `true`:** `true` lấy mục trái nhất của `X-Forwarded-For` (do khách tự đặt) làm `req.ip`, một header là qua mặt mọi giới hạn theo IP và chặn IP. Dùng `TRUST_PROXY_HOPS` (mặc định 1 cho Azure App Service) và `clientIp(req)` (bỏ `:port`).
 - **Không log nguyên `DrizzleQueryError`:** `message`, `query`, `params` chứa nội dung người dùng (lời nhắn, tên, băm). Chỉ log `{ name, code }`.
 - **`tsc` không chép file `.sql`:** script `build` phải chép `src/db/migrations` sang `dist/db/migrations`, nếu không `pnpm start` không tìm thấy migration.
+- **Playwright bật `webServer` trước `globalSetup`:** dựng CSDL e2e (DROP … WITH FORCE) trong `globalSetup` sẽ cắt kết nối server vừa bật → dựng ở `e2e/prepare.mjs` chạy trước.
+- **`pnpm add -Dw` có thể làm mất liên kết gói của workspace con** (sau đó `vite build` báo thiếu `@vitejs/plugin-react`): chạy lại `pnpm install`.
+- **`toLocaleDateString('vi-VN')` không năm cho ra "31-12"** (gạch ngang): dùng `lib/dates.ts` (`vnDate`).
 - **`tsx watch` treo vô hạn khi import tĩnh `@azure/storage-blob`** (tsx 4.23.15, Node 24; `tsx` thường thì không): `pnpm dev` không bao giờ in `Server listening`, Vite báo `ECONNREFUSED`. `azure.ts` import động SDK lúc dùng lần đầu; đừng đổi lại thành import tĩnh.
 - Server dev/migrate nạp `.env` bằng `tsx --env-file-if-exists=../../.env` (Node ≥ 22.9); không có thư viện dotenv.
 - **CSS:** class của app không được trùng tên với class trong `room-animations.css` (gom từ canvas thiết kế) — đã từng va chạm lớp panel; đặt tiền tố riêng.

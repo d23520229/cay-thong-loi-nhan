@@ -704,6 +704,69 @@ Làm lần lượt: (1) `GoogleButton` + Google cho chủ cây → (2) đăng nh
 
 **Để người làm tự quyết:** chia component; chữ thông báo phụ; kích thước vòng đệm p95; cách hiển thị đếm ngược; thứ tự cột trong danh sách báo cáo.
 
+### 6.9 Thiết kế M4 khối 1 — hoàn thiện trước khi triển khai (chốt 27/11)
+
+**Mục đích.** Làm xong mọi việc viết code của M4 trên máy, trước khi tạo tài nguyên Azure (khối 2, khoảng 01/12, để tiết kiệm credit). Khối 1 gồm: biểu ngữ L3 và trang kết thúc L4 phía web, trang chính sách riêng tư, dọn bảng định kỳ, Playwright cho vài luồng chính (kèm kiểm CSP). Khối 2 (tạo App Service / PostgreSQL / Blob, biến môi trường, Google Cloud, CI/CD) thiết kế riêng sau.
+
+**Không làm:** dòng "hoàn thiện hiệu ứng, lỗi" ở lịch M4 (chủ dự án không nêu chỗ cụ thể — bỏ, có thì thêm sau); A9 biểu ngữ tuỳ chỉnh, A10 tạm dừng khẩn cấp qua giao diện; xoá dữ liệu 07/01 (M10, làm tay bằng cách xoá tài nguyên Azure); thử Google thật trong Playwright.
+
+**Không được xảy ra:** dọn bảng xoá dòng còn đang dùng (đặt lại giới hạn tần suất / khoá PIN); dọn bảng đụng tới cây, lời nhắn, ảnh, báo cáo, nhật ký, thống kê; trang chính sách hứa điều code không làm; khách bấm "Bắt đầu tạo cây" trong NOTICE rồi mới biết đã đóng; sau 01/01 trang trắng hoặc báo lỗi chung.
+
+**Cách đã cân nhắc (chủ dự án chọn A cho cả hai, 27/11):**
+- Dọn bảng — **A. `setInterval` trong server** (chọn): không thêm dịch vụ, test được bằng đồng hồ giả, nhiều instance chạy trùng vô hại. B. `pg_cron` của Azure: không chạy trên Docker/PGlite, khó test. C. Azure Function / WebJob: thêm dịch vụ, thêm chi phí.
+- Playwright — **A. chạy trên bản build thật** (`node apps/server/dist/index.js` + `WEB_DIST`) với CSDL riêng trong Docker (chọn): kiểm được server phục vụ HTML, thẻ OG, CSP; dùng lại nguyên cho CI ở khối 2. B. qua Vite dev: nhanh hơn nhưng không kiểm được những phần đó.
+
+#### 6.9.1 Biểu ngữ L3 (NOTICE) và trang kết thúc L4 (ENDED)
+
+Server gần đủ: `/api/config` trả `phase` và **vẫn trả 200 sau ENDED** (được miễn 410, có test); từ ENDED mọi `/api/*` khác trừ `/api/admin/*` trả 410 `service_ended`. Server chỉ thêm `purgeAt` vào `/api/config` (để biểu ngữ không viết cứng ngày xoá); còn lại làm phía web.
+
+- **NOTICE (0h 26/12 → hết 31/12):** dải biểu ngữ trên `/`, `/tao`, `/c/:id` (khách và chủ cây; không có ở `/quan-tri`): "Cây Thông Lời Nhắn ngừng hoạt động hết 31/12. Tải ảnh phòng và thiệp về máy sớm nhé — dữ liệu bị xoá ngày 07/01/2027." Ngày lấy từ `milestones` của `/api/config` (không viết cứng). Không đóng được (mỗi lần vào đều thấy), không che phòng.
+- **NOTICE — đóng tạo cây (L2) trên giao diện:** trang chủ ẩn "Bắt đầu tạo cây", giữ "Bạn đã có cây?"; `/tao` hiện "Đã ngừng tạo cây mới từ 26/12" + nút về trang chủ, không hiện form; nút "Tạo cây của bạn" của khách ẩn. Phần đã có giữ nguyên: "Sửa phòng" ẩn, bong bóng "+" ẩn, nút tải ảnh phòng / thiệp vẫn dùng được.
+- **ENDED (từ 0h 01/01/2027):** `/api/config` trả `phase: 'ENDED'` → mọi trang trừ `/quan-tri` và `/chinh-sach` hiện trang kết thúc: "Mùa Noel đã kết thúc, cảm ơn bạn!" + một dòng về ngày xoá dữ liệu (`purgeAt`) + email hỗ trợ + liên kết chính sách. Bất kỳ API nào trả 410 `service_ended` giữa chừng (trang mở từ trước 0h, `/api/config` đã lưu bản cũ) cũng chuyển sang trang kết thúc, không hiện lỗi chung.
+
+#### 6.9.2 Trang chính sách riêng tư `/chinh-sach`
+
+- Trang React tải lười như `/quan-tri` (không vào gói JS chính); liên kết "Chính sách riêng tư" ở chân trang chủ, cạnh dòng hỗ trợ, và ở trang kết thúc. Một trang, chữ ngắn, đọc được trên điện thoại.
+- Nội dung (chỉ nói điều code đang làm, đối chiếu mục 7.8, 10):
+  - **Lưu gì:** tên chủ cây, tên cây, căn phòng; lời nhắn, tên người viết (ẩn danh thì không lưu tên), ảnh kèm (đã bỏ thông tin vị trí EXIF); mã băm của thiết bị và IP (không lưu IP thật); đăng nhập Google chỉ lưu mã người dùng Google, **không lưu tên hay email Google** (trước 27/11 server có ghi tên hiển thị vào `owner_accounts.display_name` mà không dùng — đã bỏ; cột giữ nguyên, luôn NULL).
+  - **Ai thấy gì:** khách không thấy lời nhắn của nhau; chủ cây đọc được từ 0h 24/12; quản trị viên chỉ thấy lời nhắn đã bị báo cáo (bản chụp lúc báo cáo).
+  - **Câu trung thực** (cách hiểu của người viết đặc tả, chủ dự án duyệt lại): dữ liệu không mã hoá đầu-cuối — người vận hành có quyền truy cập máy chủ về kỹ thuật vẫn có thể xem CSDL; trang quản trị không có chức năng đọc lời nhắn, và người vận hành cam kết không xem.
+  - **Giữ bao lâu:** lần đăng nhập (kèm mã băm IP) 7 ngày; bộ đếm chống spam tối đa 1 ngày; mọi dữ liệu khác xoá ngày 07/01/2027 (kể cả bản sao lưu); chủ cây xoá cây bất cứ lúc nào, xoá cây là xoá cả lời nhắn và ảnh.
+  - **Lưu trên trình duyệt:** mã thiết bị, danh sách cây của bạn, nháp đang tạo, tên ghi lần trước khi viết lời nhắn, mã sửa lời nhắn (localStorage); cookie `ctln_did` 1 năm khi localStorage không lưu được; cookie phiên chủ cây. Không có quảng cáo, không có công cụ theo dõi; nút Google tải mã từ `accounts.google.com` khi hiện ra.
+  - **Liên hệ:** `SUPPORT_EMAIL` (lấy từ `/api/config`).
+
+#### 6.9.3 Dọn bảng định kỳ
+
+- Hàm `cleanup(db, at)` trong `apps/server/src/cleanup.ts`, trả số dòng xoá mỗi bảng. `index.ts` gọi một lần khi khởi động rồi mỗi giờ (`setInterval(...).unref()`); `buildApp` không bật hẹn giờ (test gọi `cleanup` trực tiếp). `at` lấy từ `now()` của `phase.ts` (theo `FAKE_NOW`), không dùng `now()` của CSDL.
+- Quy tắc:
+  - `rate_counters`: xoá dòng `window_start < at − 1 ngày`. **Cách người làm chọn (27/11), thay quy tắc theo tiền tố ở mục 7:** khung dài nhất hiện có là 1 ngày (`pin:tree:{id}`), các khung khác 15 phút / 1 giờ — một quy tắc chung không phụ thuộc tên bucket, không thể xoá khung đang chạy; đổi lại bảng giữ tối đa 1 ngày dữ liệu thay vì 1 giờ (vẫn nhỏ). Thêm khung dài hơn 1 ngày thì phải sửa quy tắc này.
+  - `auth_attempts`: xoá `created_at < at − 7 ngày`.
+  - `admin_sessions`: xoá `expires_at < at` hoặc `revoked_at IS NOT NULL`.
+  - Không đụng: `owner_sessions` (hết hạn ở `PURGE_AT`), `error_counts`, `events`, `admin_audit`, `global_blocks` và mọi bảng nội dung.
+- Lỗi khi dọn: log `{ name, code }` (không log nguyên lỗi, xem bài học kỹ thuật), lần sau chạy lại, server không dừng. Xoá được dòng nào thì log số lượng ở mức info.
+- Nhiều instance cùng dọn: `DELETE` trùng vô hại, không cần khoá.
+
+#### 6.9.4 Playwright (vài luồng chính) và CSP
+
+- Thư mục `e2e/` ở gốc repo, `@playwright/test` là devDependency gốc, lệnh `pnpm e2e`. **Không** nằm trong `pnpm test` (cần Docker + trình duyệt). Chỉ Chromium, khung điện thoại 390×844 (sản phẩm dùng trên điện thoại là chính).
+- **Chuẩn bị (globalSetup):** chạy `pnpm build` trước (hoặc dùng bản build có sẵn — người làm quyết); xoá và tạo lại CSDL `caythong_e2e` trên Postgres Docker (`localhost:5432`); thư mục ảnh tạm (`PHOTO_DIR`). Bật 4 server từ bản build trên 4 cổng, chung CSDL, mỗi server một `FAKE_NOW`: BUILD (01/12), OPEN (24/12 08:00), NOTICE (27/12), ENDED (02/01/2027); `WEB_DIST=apps/web/dist`, không đặt `GOOGLE_CLIENT_ID` (không gọi mạng ngoài), `NODE_ENV` không phải production (cookie không `Secure` trên http). Cookie không tách theo cổng nên phiên chủ cây tạo ở server BUILD dùng được ở server OPEN.
+- **Luồng:**
+  1. BUILD: tạo cây bằng PIN → vào phòng → mở link công khai trong context khác (khách) → zoom cây → treo lời nhắn kèm phụ kiện → thấy "Đã treo"; tải lại vẫn thấy phụ kiện trên cây, không thấy nội dung.
+  2. OPEN: chủ cây (context ở luồng 1) mở phòng → mở quà → đọc đúng nội dung khách đã viết. Khách ở OPEN vẫn không đọc được.
+  3. NOTICE: biểu ngữ hiện ở trang chủ và phòng; không có "Bắt đầu tạo cây"; `/tao` báo đã đóng. ENDED: `/` và `/c/{id}` hiện trang kết thúc.
+- **CSP:** mọi luồng lắng nghe console + `securitypolicyviolation`; có vi phạm là trượt. Kiểm `/c/{id}` có thẻ `og:image` và header `content-security-policy` có `frame-ancestors`. Phần Google Identity (script từ `accounts.google.com`) không thử được ở đây — thử tay sau khi lên Azure (khối 2).
+
+#### 6.9.5 Thứ tự làm và kiểm thử
+
+Làm lần lượt: (1) dọn bảng → (2) NOTICE / ENDED phía web → (3) trang chính sách → (4) Playwright. Làm liền cả bốn rồi chủ dự án thử tay một lần.
+
+- **Server (Vitest + PGlite):** `cleanup` với đồng hồ giả — dòng `rate_counters` 23 giờ trước còn, 25 giờ trước mất (cả `pin:tree:`); `auth_attempts` 6 ngày còn / 8 ngày mất; `admin_sessions` hết hạn / bị thu hồi mất, còn hạn giữ; các bảng khác không đổi; gọi hai lần liền không lỗi.
+- **Web (RTL):** biểu ngữ hiện ở NOTICE, không hiện ở BUILD / OPEN; trang chủ / `/tao` / khách ở NOTICE không còn lối tạo cây; `/api/config` `phase: 'ENDED'` → trang kết thúc; API khác trả 410 giữa chừng → trang kết thúc; `/chinh-sach` hiện email hỗ trợ.
+- **Build:** gói JS chính vẫn ≤ 250 KB gzip, trang chính sách là gói riêng.
+- **E2E:** `pnpm e2e` qua cả 3 luồng trên máy có Docker.
+
+**Để người làm tự quyết:** chữ phụ của biểu ngữ và trang kết thúc; vị trí biểu ngữ (trên cùng hay dưới thanh trên); cổng của 4 server e2e; cách chờ server sẵn sàng; chia file test e2e.
+
 ---
 
 ## 7. Thiết kế cơ sở dữ liệu
@@ -991,7 +1054,7 @@ CREATE TRIGGER trg_messages_touch BEFORE UPDATE ON messages FOR EACH ROW EXECUTE
 | Không sửa sau khi chủ cây đã mở | Điều kiện `read_at IS NULL` trong câu `UPDATE ... WHERE` |
 | Hai thiết bị cùng sửa phòng | `room_version`: gửi kèm phiên bản đang có; lệch thì trả 409 và gửi bản mới |
 | Mỗi thiết bị tối đa 3 lời nhắn / phòng | Đếm theo `(tree_id, device_hash)` trong giao dịch |
-| Giới hạn tần suất dùng chung khi chạy nhiều instance | Bảng `rate_counters`: `INSERT ... ON CONFLICT DO UPDATE SET hits = hits + 1 RETURNING hits`; dọn hằng giờ **chỉ khung đã kết thúc**: dòng có bucket bắt đầu `pin:tree:` giữ đến khi `window_start` quá 1 ngày, bucket khác giữ đến khi quá 1 giờ (xoá nhầm `pin:tree:{id}` sẽ đặt lại trần 50 lần sai / ngày) |
+| Giới hạn tần suất dùng chung khi chạy nhiều instance | Bảng `rate_counters`: `INSERT ... ON CONFLICT DO UPDATE SET hits = hits + 1 RETURNING hits`; dọn hằng giờ **chỉ khung đã kết thúc**: xoá dòng có `window_start` quá 1 ngày, mọi bucket (khung dài nhất là 1 ngày của `pin:tree:{id}`; xoá sớm sẽ đặt lại trần 50 lần sai / ngày — sửa 27/11, mục 6.9.3) |
 | `updated_at` đúng nghĩa "sửa lần cuối" | Code đặt `updated_at = now()` (theo `phase.now`, có `FAKE_NOW`) khi lưu phòng và khi người viết sửa lời nhắn; không có trigger (bỏ ở migration 0003, 22/11) |
 | Thiết bị / IP bị chặn toàn hệ thống | Kiểm tra `global_blocks` (còn hạn) trước mọi thao tác ghi; kết quả lưu đệm 60 giây |
 | Từ cấm | So khớp sau khi chuyển chữ thường và bỏ dấu; `mask` thì thay bằng `***`, `reject` thì trả 400 |

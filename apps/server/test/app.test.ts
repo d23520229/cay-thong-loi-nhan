@@ -28,6 +28,7 @@ describe('app', () => {
     expect(j.catalogVersion).toBe(1);
     expect(j.limits.maxItems).toBe(25);
     expect(j.unlockAt).toBe('2026-12-23T17:00:00.000Z');
+    expect(j.purgeAt).toBe('2027-01-06T17:00:00.000Z');
   });
   it('CSP chỉ cùng nguồn + accounts.google.com', async () => {
     t = await makeTestApp();

@@ -97,7 +97,7 @@ export async function treesRoutes(app: FastifyInstance) {
       pinHash = await hashPin(body.recovery.pin);
     } else {
       if (!google) throw new HttpError(503, 'google_unavailable', 'Đăng nhập Google tạm thời chưa dùng được.');
-      let who: { sub: string; name?: string };
+      let who: { sub: string };
       try {
         who = await google(body.recovery.idToken);
       } catch {
@@ -105,7 +105,7 @@ export async function treesRoutes(app: FastifyInstance) {
       }
       const [acc] = await db.db
         .insert(ownerAccounts)
-        .values({ googleSub: who.sub, displayName: who.name ?? null, lastLoginAt: at })
+        .values({ googleSub: who.sub, lastLoginAt: at }) // chỉ mã người dùng Google, không lưu tên / email (đặc tả 6.9.2)
         .onConflictDoUpdate({ target: ownerAccounts.googleSub, set: { lastLoginAt: at } })
         .returning({ id: ownerAccounts.id });
       ownerAccountId = acc!.id;

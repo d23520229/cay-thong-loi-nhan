@@ -442,3 +442,14 @@ describe('GuestTree — việc nhỏ', () => {
     }
   });
 });
+
+describe('GuestTree theo giai đoạn (đặc tả 6.9.1)', () => {
+  it('NOTICE: không có "Tạo cây của bạn"', () => {
+    show(meta({ phase: 'NOTICE' }));
+    expect(screen.queryByRole('link', { name: 'Tạo cây của bạn' })).not.toBeInTheDocument();
+  });
+  it('OPEN: có "Tạo cây của bạn"', () => {
+    show(meta({ phase: 'OPEN' }));
+    expect(screen.getByRole('link', { name: 'Tạo cây của bạn' })).toBeInTheDocument();
+  });
+});
