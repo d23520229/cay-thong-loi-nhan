@@ -273,7 +273,7 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 
 - **`@fontsource/<phông>/vietnamese-400.css` + `latin-400.css` không có `unicode-range`:** file nạp sau đè hẳn file trước, chữ có dấu rơi về phông hệ thống. Nạp file theo độ đậm (`400.css`, `700.css`).
 - **Azure for Students chỉ cho 5 vùng** (eastasia, japaneast, indonesiacentral, centralindia, indiasouthcentral) — kiểm `az policy assignment list` trước khi chọn vùng.
-- **`az` gọi từ Git Bash:** đặt `MSYS_NO_PATHCONV=1` (không thì `/subscriptions/...` bị đổi thành đường dẫn Windows), bỏ `` ở đầu ra `-o tsv`, truyền JSON cho `az rest` qua file `@...`.
+- **`az` gọi từ Git Bash:** đặt `MSYS_NO_PATHCONV=1` (không thì `/subscriptions/...` bị đổi thành đường dẫn Windows), bỏ ký tự CR (`\r`) ở đầu ra `-o tsv`, truyền JSON cho `az rest` qua file `@...`.
 
 ## Tài nguyên
 
