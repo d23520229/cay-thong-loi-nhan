@@ -125,10 +125,11 @@ describe('api lời nhắn', () => {
 describe('api ảnh', () => {
   it('getMyPhoto gửi x-edit-token, 404 → null', async () => {
     fetchMock()
-      .mockResolvedValueOnce(new Response(new Blob(['w'], { type: 'image/webp' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response('w', { status: 200, headers: { 'content-type': 'image/webp' } }))
       .mockResolvedValueOnce(json(404, { error: { code: 'not_found', message: 'x' } }));
     const b = await api.getMyPhoto('7', 'tk');
-    expect(b).toBeInstanceOf(Blob);
+    // Không dùng toBeInstanceOf(Blob): Node 22 (CI) và jsdom có hai lớp Blob khác nhau.
+    expect([b?.type, b?.size]).toEqual(['image/webp', 1]);
     const [url, init] = fetchMock().mock.calls[0]!;
     expect([url, init?.method]).toEqual(['/api/messages/7/photo', 'GET']);
     expect(new Headers(init?.headers).get('x-edit-token')).toBe('tk');
@@ -137,10 +138,11 @@ describe('api ảnh', () => {
 
   it('getOwnerPhoto trả Blob; lỗi khác 404 vẫn ném', async () => {
     fetchMock()
-      .mockResolvedValueOnce(new Response(new Blob(['w'], { type: 'image/webp' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response('w', { status: 200, headers: { 'content-type': 'image/webp' } }))
       .mockResolvedValueOnce(json(423, { error: { code: 'locked', message: 'x' } }));
     const b = await api.getOwnerPhoto('abcdefgh', '5');
-    expect(b).toBeInstanceOf(Blob);
+    // Không dùng toBeInstanceOf(Blob): Node 22 (CI) và jsdom có hai lớp Blob khác nhau.
+    expect([b?.type, b?.size]).toEqual(['image/webp', 1]);
     expect(fetchMock().mock.calls[0]![0]).toBe('/api/trees/abcdefgh/messages/5/photo');
     await expect(api.getOwnerPhoto('abcdefgh', '5')).rejects.toMatchObject({ status: 423 });
   });
