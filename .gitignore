@@ -24,3 +24,7 @@ graphify-out/
 e2e/.out/
 test-results/
 playwright-report/
+
+# Gói triển khai Azure (infra/dong-goi.sh)
+out/
+app.zip

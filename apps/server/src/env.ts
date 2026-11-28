@@ -7,6 +7,8 @@ export type Env = {
   webDist?: string;
   /** `WEB_DIST` có đặt nhưng không dùng được (để index.ts ghi cảnh báo). */
   webDistProblem?: string;
+  /** TẠM (đặc tả 6.10.6): production đang chạy giờ giả — index.ts ghi cảnh báo. */
+  fakeNowProblem?: string;
   /** Thư mục ảnh WebP để vẽ OG: `webDist` nếu có, ngược lại `apps/web/public`. */
   assetDir: string;
   pepper: string;
@@ -44,7 +46,7 @@ export function loadEnv(src: Record<string, string | undefined> = process.env): 
   if (production && (!pepper || pepper.length < 32)) {
     throw new Error('PEPPER là bắt buộc và phải có ít nhất 32 ký tự khi chạy production');
   }
-  if (production && src.FAKE_NOW) throw new Error('FAKE_NOW không được đặt khi chạy production');
+  // TẠM (đặc tả 6.10.6): cho FAKE_NOW trên production để thử NOTICE/ENDED; trả lại lệnh cấm trước 10/12.
   const blockIpKey = src.BLOCK_IP_KEY;
   if (production && (!blockIpKey || blockIpKey.length < 32)) {
     throw new Error('BLOCK_IP_KEY là bắt buộc và phải có ít nhất 32 ký tự khi chạy production');
@@ -71,6 +73,7 @@ export function loadEnv(src: Record<string, string | undefined> = process.env): 
   if (src.ADMIN_BOOTSTRAP_EMAIL?.trim()) env.adminBootstrapEmail = src.ADMIN_BOOTSTRAP_EMAIL.trim().toLowerCase();
   if (src.SUPPORT_EMAIL?.trim()) env.supportEmail = src.SUPPORT_EMAIL.trim();
   if (src.ADMIN_AZURE_URL?.trim()) env.adminAzureUrl = src.ADMIN_AZURE_URL.trim();
+  if (production && src.FAKE_NOW) env.fakeNowProblem = `FAKE_NOW=${src.FAKE_NOW}: trang thật đang chạy giờ giả — xoá biến này khi thử xong`;
   if (src.WEB_DIST && existsSync(join(src.WEB_DIST, 'index.html'))) env.webDist = resolve(src.WEB_DIST);
   else if (src.WEB_DIST) env.webDistProblem = `WEB_DIST=${src.WEB_DIST}: không thấy index.html — server không phục vụ trang web`;
   return env;

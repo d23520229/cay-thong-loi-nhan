@@ -767,6 +767,87 @@ Làm lần lượt: (1) dọn bảng → (2) NOTICE / ENDED phía web → (3) tr
 
 **Để người làm tự quyết:** chữ phụ của biểu ngữ và trang kết thúc; vị trí biểu ngữ (trên cùng hay dưới thanh trên); cổng của 4 server e2e; cách chờ server sẵn sàng; chia file test e2e.
 
+### 6.10 Thiết kế M4 khối 2 — triển khai Azure và CI/CD (chốt 29/11)
+
+**Mục đích.** Đưa bản trên `main` lên Azure trước chạy thử kín 10/12, và từ đó mọi thay đổi vào `main` tự kiểm tra rồi tự triển khai, chủ dự án không phải làm tay. Đồng thời thử những gì máy cá nhân không thử được: đăng nhập Google, CSP với Google Identity, ảnh lưu Blob, tốc độ trên B1, và các giai đoạn NOTICE / ENDED ngay trên Azure.
+
+**Bối cảnh.** Tài khoản **Azure for Students**, chưa có tài nguyên nào. Hết credit thì Azure tắt dịch vụ, không trừ tiền thẻ. Tài khoản sinh viên chỉ cho tạo ở một số vùng; nhiều tenant trường chặn đăng ký ứng dụng (app registration). Máy chủ dự án có Azure CLI, chưa có GitHub CLI. Repo: `github.com/d23520229/cay-thong-loi-nhan`.
+
+**Không làm:** tên miền riêng (giữ `caythongloinhan.azurewebsites.net`, chủ dự án chốt 29/11); Key Vault; VNet / private endpoint; deployment slot (B1 không có); Docker; Bicep; script dọn dữ liệu thử; Cloudflare.
+
+**Không được xảy ra:** trang thật chạy giờ giả sau khi đã thử xong; bí mật (`PEPPER`, mật khẩu CSDL, chuỗi kết nối Blob) nằm trong repo hay log CI; code trượt test vẫn lên Azure; một PR từ người lạ triển khai được lên Azure; ảnh có link công khai.
+
+#### 6.10.1 Các cách đã cân nhắc
+
+- **Tạo tài nguyên — A. Script `az` (chọn):** một file shell đọc là hiểu, chạy một lần, in ra đủ thứ cần dán vào GitHub; ngày 07/01 xoá cả resource group. B. Bicep: chạy lại an toàn nhưng phải học thêm, quá sức cho dự án 5 tuần. C. Bấm tay trên Portal: phần managed identity + federated credential + phân quyền ~20 bước, dễ sai ngầm.
+- **Đưa code lên — A. Gói zip từ `pnpm deploy` (chọn):** build trên Linux ở CI, gom server + `@ctln/shared` + `@ctln/art` + thư viện chạy (có `sharp` bản Linux) + `apps/web/dist`; App Service chỉ chạy `node dist/index.js` như lệnh `start` hiện có. B. esbuild gộp một file: vướng `sharp`, import động SDK Azure, đường dẫn migration. C. Docker: cần kho image (ACR ~5 USD/tháng hoặc GHCR + đăng nhập). D. Để Azure tự build (Oryx): kém với monorepo pnpm, chậm trên B1.
+- **GitHub đăng nhập Azure:** **managed identity do người dùng tạo + federated credential (OIDC)** — không cần app registration trong tenant trường, không có mật khẩu lưu ở GitHub. Publish profile bị loại vì phải bật basic auth cho SCM và là bí mật lâu dài.
+- **Thử giai đoạn trên Azure — B (chọn, chủ dự án 29/11):** commit tạm bỏ lệnh cấm `FAKE_NOW` khi production; chủ dự án đặt / xoá `FAKE_NOW` trong cấu hình App Service (đổi cấu hình là app tự khởi động lại, không cần triển khai lại); thử xong, một commit trả lại đúng lệnh cấm. A (chỉ thử giai đoạn qua e2e trên CI, không bao giờ cho `FAKE_NOW` trên production) bị loại vì chủ dự án muốn tự bấm thấy. Dữ liệu thử để lại, xoá cây thử trên `/quan-tri` nếu muốn.
+
+#### 6.10.2 Tài nguyên Azure — `infra/tao-azure.sh`
+
+Script bash (chạy bằng Git Bash trên máy chủ dự án sau `az login`), `set -euo pipefail`, chú thích tiếng Việt từng bước. Đầu vào hỏi khi chạy (hoặc đọc biến môi trường): `GOOGLE_CLIENT_ID`, `ADMIN_BOOTSTRAP_EMAIL`, `SUPPORT_EMAIL`, email nhận cảnh báo chi phí. Thứ tự:
+
+1. Kiểm `az account show` (đúng subscription Azure for Students); kiểm vùng `japaneast` được phép (Azure for Students của dự án chỉ cho eastasia, japaneast, indonesiacentral, centralindia, indiasouthcentral — không có Southeast Asia; chủ dự án chọn Japan East 29/11) (chính sách "Allowed locations" của subscription). Không được → dừng, in danh sách vùng được phép để chủ dự án chọn rồi chạy lại với `LOCATION=...`.
+2. Resource group `rg-caythong`.
+3. PostgreSQL Flexible Server: tên `psql-caythong-<4 ký tự ngẫu nhiên>`, Burstable **B1ms**, PostgreSQL 16, 32 GB, sao lưu 7 ngày, không geo-redundant, không HA; truy cập công khai + quy tắc tường lửa chỉ cho dịch vụ Azure (`0.0.0.0`); tài khoản quản trị và mật khẩu ngẫu nhiên (`openssl rand`); CSDL `caythong`. Code đã bắt SSL khi production (`db/client.ts`).
+4. Storage account `stcaythong<ngẫu nhiên>`: StorageV2, LRS, TLS ≥ 1.2, **cấm truy cập Blob công khai**; container riêng tư `photos`.
+5. App Service plan `asp-caythong` Linux **B1**; Web App **`caythongloinhan`** (báo rõ nếu tên đã có người dùng), runtime Node 22 LTS, Always On bật (để dọn bảng mỗi giờ chạy), chỉ HTTPS, TLS ≥ 1.2, tắt FTP, startup `node dist/index.js`, health check `/healthz`.
+6. Cấu hình App Service (mục 6.10.3); bí mật sinh ngay trong script, **không in ra màn hình**.
+7. Managed identity `id-caythong-github`; federated credential cho `repo:d23520229/cay-thong-loi-nhan:environment:production`; vai trò **Website Contributor** trên resource group `rg-caythong` (chỉ chứa tài nguyên dự án; quyền chỉ trên Web App có thể không đủ để `azure/login` thấy subscription — sửa 29/11 sau lượt soát).
+8. Cảnh báo chi phí 40 USD gửi email. Nếu loại subscription sinh viên không hỗ trợ budget → in hướng dẫn xem credit ở trang Azure for Students, không dừng script.
+9. In ra: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` (dán vào GitHub, mục 6.10.5), địa chỉ trang, link Portal của resource group.
+
+Kèm `infra/README.md`: cách chạy, các bước tay (Google Cloud, GitHub), lệnh đổi / xoá `FAKE_NOW`, lệnh xem log (`az webapp log tail`), lệnh xoá cả resource group ngày 07/01/2027.
+
+#### 6.10.3 Cấu hình App Service (app settings)
+
+`NODE_ENV=production`, `BASE_URL=https://caythongloinhan.azurewebsites.net`, `DATABASE_URL`, `PEPPER`, `BLOCK_IP_KEY` (mỗi cái 48 ký tự ngẫu nhiên), `AZURE_STORAGE_CONNECTION_STRING`, `GOOGLE_CLIENT_ID`, `ADMIN_BOOTSTRAP_EMAIL`, `SUPPORT_EMAIL`, `DB_QUOTA_GB=32`, `ADMIN_AZURE_URL` (link Portal resource group), 4 mốc `UNLOCK_AT` / `WRITE_CLOSES_AT` / `SERVICE_ENDS_AT` / `PURGE_AT` (giá trị như `.env.example`), `WEB_DIST=/home/site/wwwroot/web`, `TRUST_PROXY_HOPS=1`, `WEBSITE_RUN_FROM_PACKAGE=1` (zip gắn chỉ đọc — không sao vì ảnh ở Blob, OG lưu đệm trong bộ nhớ), `SCM_DO_BUILD_DURING_DEPLOYMENT=false`.
+
+#### 6.10.4 Google Cloud (chủ dự án làm tay, theo `infra/README.md`)
+
+Dùng OAuth client loại Web đã có (hoặc tạo mới): thêm Authorized JavaScript origin `https://caythongloinhan.azurewebsites.net`, giữ `http://localhost:5173`. Màn đồng ý OAuth: chuyển sang "In production" nếu đang "Testing" (không thì chỉ người dùng thử đăng nhập được). Phải xong trước khi chạy script (script cần `GOOGLE_CLIENT_ID`).
+
+#### 6.10.5 CI/CD — `.github/workflows/ci-cd.yml`
+
+**Kích hoạt:** `pull_request` vào `main` (chỉ kiểm tra), `push` vào `main` (kiểm tra rồi triển khai), `workflow_dispatch` (chạy tay khi cần). PR từ fork không bao giờ có quyền triển khai: job triển khai chỉ chạy ở `push` lên `main` và trong environment `production`.
+
+**Job `kiem-tra`** (ubuntu-latest, service `postgres:16` user `ctln` / `ctln_dev`): pnpm 9 + Node 22 có cache → `pnpm install --frozen-lockfile` → `pnpm typecheck` → `pnpm test` → `pnpm build` → `playwright install --with-deps chromium` → `pnpm e2e` với `E2E_ADMIN_DB_URL` trỏ service. Trượt bước nào thì dừng. Lỗi e2e: tải lên thư mục kết quả Playwright làm artifact để xem.
+
+**Job `trien-khai`** (`needs: kiem-tra`, chỉ `push` lên `main`, `environment: production`, `concurrency` một lượt một lúc, không huỷ lượt đang chạy, `permissions: id-token: write, contents: read`):
+1. Build lại (`pnpm install --frozen-lockfile`, `pnpm build`) — hoặc nhận artifact từ `kiem-tra`, người làm chọn.
+2. `pnpm --filter @ctln/server deploy --prod --config.node-linker=hoisted out/` (node_modules phẳng, không symlink — zip deploy không giữ symlink); chép `apps/web/dist` → `out/web`; nén `out/` thành `app.zip`.
+3. `azure/login@v2` bằng `AZURE_CLIENT_ID` / `AZURE_TENANT_ID` / `AZURE_SUBSCRIPTION_ID` (secret của environment `production`).
+4. `az webapp deploy --type zip --src-path app.zip`.
+5. Kiểm khói: gọi `https://caythongloinhan.azurewebsites.net/healthz` lặp tối đa ~3 phút đến khi 200; rồi `GET /` trả HTML và `GET /api/config` trả JSON. Không đạt → job đỏ (GitHub gửi email cho chủ dự án).
+
+**Chủ dự án đặt tay trên GitHub:** environment `production` (giới hạn nhánh `main`) chứa 3 secret trên. Không cần phê duyệt tay mỗi lần triển khai.
+
+#### 6.10.6 `FAKE_NOW` trên Azure (tạm thời)
+
+- Commit 1 (cùng đợt triển khai đầu): `env.ts` bỏ dòng `if (production && src.FAKE_NOW) throw ...`; test tương ứng đổi theo. Ghi rõ trong `tien-do.md` là việc tạm.
+- Chủ dự án thử: `az webapp config appsettings set ... FAKE_NOW=2026-12-27T10:00:00+07:00` (NOTICE), `...2027-01-02T10:00:00+07:00` (ENDED); xong `az webapp config appsettings delete ... --setting-names FAKE_NOW`. Lệnh sẵn trong `infra/README.md`.
+- Commit 2 (khi chủ dự án báo thử xong, **trước 10/12**): trả lại đúng dòng cấm và test cũ.
+
+#### 6.10.7 Việc cần kiểm khi làm
+
+- **Sao lưu PostgreSQL sau khi xoá máy chủ:** đọc tài liệu Azure (Flexible Server giữ bản sao lưu của máy chủ đã xoá một số ngày để khôi phục). Nếu có, sửa câu "xoá kể cả bản sao lưu" ở `/chinh-sach` thành câu đúng (vd. "bản sao lưu tự động của Azure tự huỷ trong vòng N ngày sau đó") — hỏi chủ dự án duyệt chữ trước khi đổi.
+- **IPv6 inbound cho App Service** (mục 15, M4): nếu B1 bật được miễn phí bằng CLI thì thêm vào script; không thì bỏ, ghi lý do. `clientIp` đã xử lý `[IPv6]:port`.
+- **PostgreSQL miễn phí cho sinh viên** (750 giờ B1ms / tháng trong 12 tháng): kiểm khi tạo; nếu áp dụng thì sửa bảng chi phí mục 13.
+- **`TRUST_PROXY_HOPS=1`:** sau khi lên, kiểm một request thật — IP ghi nhận (băm) đổi theo mạng của người gọi, không phải IP proxy của Azure.
+
+#### 6.10.8 Thứ tự làm và tiêu chí xong
+
+1. Code trên máy (nhánh `m4-khoi2`): workflow, script, `infra/README.md`, commit tạm `FAKE_NOW`. Kiểm: `pnpm test`, `pnpm typecheck`; chạy thử bước đóng gói trên máy (Git Bash) ra `out/` khởi động được bằng `node dist/index.js` với `WEB_DIST=out/web` và trả `/healthz`. Script kiểm bằng `bash -n` và đọc lại; không chạy thật trước khi chủ dự án đồng ý.
+2. Chủ dự án: Google Cloud origin → `az login` → chạy script → đặt environment + secret trên GitHub.
+3. Gộp PR `m4-khoi2` → workflow chạy → trang lên `caythongloinhan.azurewebsites.net`.
+4. Chủ dự án thử tay trên Azure: tạo cây (PIN và Google), khách treo lời nhắn kèm ảnh, quản trị đăng nhập, không lỗi CSP trong console; NOTICE / ENDED bằng `FAKE_NOW`.
+5. Commit trả lệnh cấm `FAKE_NOW`, triển khai lại; kiểm các mục 6.10.7.
+
+**Xong khi:** một commit vào `main` tự lên Azure sau khi qua kiểm tra; trang thật qua danh sách thử tay; không còn `FAKE_NOW` trong cấu hình lẫn code cho phép nó ở production.
+
+**Để người làm tự quyết:** tên job / bước; dùng artifact hay build lại ở job triển khai; cách viết vòng chờ `/healthz`; chữ trong `infra/README.md`; hậu tố ngẫu nhiên của tên tài nguyên.
+
 ---
 
 ## 7. Thiết kế cơ sở dữ liệu
@@ -1394,13 +1475,13 @@ Khi bị spam tạo phòng hoặc lời nhắn hàng loạt: quản trị viên 
 | Ứng dụng | App Service Linux **B1**, Node 22, 1 instance (có thể tăng lên 2 đêm 24/12) | ~13 USD |
 | Cơ sở dữ liệu | Azure Database for PostgreSQL – Flexible Server, **Burstable B1ms**, 32 GB | ~16 USD (máy chủ ~12 + lưu trữ ~4) |
 | Sao lưu | Tự động 7 ngày, đi kèm | 0 |
-| Ảnh tĩnh | **Azure Blob Storage** cùng vùng (Southeast Asia), cache dài hạn — giảm tải cho App Service B1. Cloudflare không dùng được vì cần tên miền riêng | < 1 (trong 100 GB băng thông miễn phí/tháng) |
+| Ảnh tĩnh | **Azure Blob Storage** cùng vùng với App Service (Japan East — tài khoản sinh viên không cho Southeast Asia, chốt 29/11), cache dài hạn — giảm tải cho App Service B1. Cloudflare không dùng được vì cần tên miền riêng | < 1 (trong 100 GB băng thông miễn phí/tháng) |
 
 **Tổng khoảng 29 USD/tháng.** Tạo tài nguyên khoảng 01/12, xoá ngày 07/01/2027 (khoảng 1,2 tháng) → **khoảng 35 USD**, còn dư so với credit 50 USD.
 
 Để tiết kiệm:
 - Giai đoạn phát triển (18/11–30/11) chạy PostgreSQL bằng Docker trên máy, chưa tạo tài nguyên Azure.
-- Không tạo môi trường thử riêng trên Azure; dùng `FAKE_NOW` trên chính bản chạy thật trước ra mắt.
+- Không tạo môi trường thử riêng trên Azure; dùng `FAKE_NOW` trên chính bản chạy thật trước ra mắt — tạm thời, gỡ trước 10/12 (mục 6.10.6).
 - Bật cảnh báo chi phí ở mức 40 USD.
 
 Giá trên chỉ là ước tính, cần kiểm tra lại bảng giá khi tạo tài nguyên.

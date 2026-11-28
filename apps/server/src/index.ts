@@ -17,6 +17,7 @@ const ran = await runMigrations(db);
 const app = await buildApp({ db, env, now: () => now(), google: makeGoogleVerifier(env.googleClientId), photos: makePhotoStore(env) });
 if (ran.length) app.log.info({ migrations: ran }, 'đã chạy migration');
 if (env.webDistProblem) app.log.warn(env.webDistProblem);
+if (env.fakeNowProblem) app.log.warn(env.fakeNowProblem);
 
 const port = Number(process.env.PORT ?? 3000);
 app.listen({ port, host: '0.0.0.0' }).then(() => {
