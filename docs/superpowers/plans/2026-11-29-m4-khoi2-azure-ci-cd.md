@@ -15,7 +15,7 @@
 - Vùng `japaneast` (chủ dự án chốt 29/11; Southeast Asia bị chính sách subscription chặn); resource group `rg-caythong`; Web App `caythongloinhan`; plan `asp-caythong` Linux **B1**; PostgreSQL Flexible **B1ms** Burstable, phiên bản 16, 32 GB, sao lưu 7 ngày; storage StorageV2 LRS, container riêng tư `photos`; identity `id-caythong-github`.
 - Runtime `NODE:22-lts`, startup `node dist/index.js`, health check `/healthz`, Always On, chỉ HTTPS, TLS ≥ 1.2, tắt FTP.
 - App settings đúng danh sách đặc tả 6.10.3, `WEB_DIST=/home/site/wwwroot/web`, `WEBSITE_RUN_FROM_PACKAGE=1`, `SCM_DO_BUILD_DURING_DEPLOYMENT=false`, `TRUST_PROXY_HOPS=1`.
-- Federated credential subject: `repo:d23520229/cay-thong-loi-nhan:environment:production`; vai trò **Website Contributor** chỉ trên Web App.
+- Federated credential subject: `repo:d23520229/cay-thong-loi-nhan:environment:production`; vai trò **Website Contributor** trên resource group `rg-caythong` (xem Ruling sau lượt soát).
 - Bí mật không bao giờ in ra màn hình / log CI, không nằm trong repo. Không `set -x`; lệnh `az` trả bí mật dùng `-o none` hoặc `--query ... -o tsv` gán vào biến.
 - Không dịch vụ trả phí ngoài App Service B1 + PostgreSQL B1ms + Storage (CLAUDE.md).
 - Chữ hiện cho người, chú thích, commit: tiếng Việt.

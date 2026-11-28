@@ -794,7 +794,7 @@ Script bash (chạy bằng Git Bash trên máy chủ dự án sau `az login`), `
 4. Storage account `stcaythong<ngẫu nhiên>`: StorageV2, LRS, TLS ≥ 1.2, **cấm truy cập Blob công khai**; container riêng tư `photos`.
 5. App Service plan `asp-caythong` Linux **B1**; Web App **`caythongloinhan`** (báo rõ nếu tên đã có người dùng), runtime Node 22 LTS, Always On bật (để dọn bảng mỗi giờ chạy), chỉ HTTPS, TLS ≥ 1.2, tắt FTP, startup `node dist/index.js`, health check `/healthz`.
 6. Cấu hình App Service (mục 6.10.3); bí mật sinh ngay trong script, **không in ra màn hình**.
-7. Managed identity `id-caythong-github`; federated credential cho `repo:d23520229/cay-thong-loi-nhan:environment:production`; vai trò **Website Contributor** chỉ trên Web App.
+7. Managed identity `id-caythong-github`; federated credential cho `repo:d23520229/cay-thong-loi-nhan:environment:production`; vai trò **Website Contributor** trên resource group `rg-caythong` (chỉ chứa tài nguyên dự án; quyền chỉ trên Web App có thể không đủ để `azure/login` thấy subscription — sửa 29/11 sau lượt soát).
 8. Cảnh báo chi phí 40 USD gửi email. Nếu loại subscription sinh viên không hỗ trợ budget → in hướng dẫn xem credit ở trang Azure for Students, không dừng script.
 9. In ra: `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID` (dán vào GitHub, mục 6.10.5), địa chỉ trang, link Portal của resource group.
 

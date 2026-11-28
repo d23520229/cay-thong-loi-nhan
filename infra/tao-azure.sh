@@ -132,14 +132,21 @@ az identity federated-credential create -g "$RG" --identity-name "$IDENTITY" -n 
   --issuer https://token.actions.githubusercontent.com \
   --subject "repo:$REPO:environment:production" \
   --audiences api://AzureADTokenExchange -o none
-APP_ID=$(azv webapp show -g "$RG" -n "$APP" --query id)
+# Quyền đặt trên resource group (chỉ chứa tài nguyên của dự án): azure/login cần thấy subscription,
+# quyền chỉ trên Web App có thể không đủ để đăng nhập.
+RG_ID=$(azv group show -n "$RG" --query id)
+ROLE_OK=0
 # Identity mới tạo cần vài giây mới thấy được khi phân quyền.
 for i in 1 2 3 4 5 6; do
-  if az role assignment create --assignee-object-id "$PRINCIPAL_ID" --assignee-principal-type ServicePrincipal \
-    --role "Website Contributor" --scope "$APP_ID" -o none 2>/dev/null; then break; fi
-  if [ "$i" -eq 6 ]; then echo "Không phân quyền được cho $IDENTITY — chạy lại riêng lệnh az role assignment create." >&2; exit 1; fi
+  err=$(az role assignment create --assignee-object-id "$PRINCIPAL_ID" --assignee-principal-type ServicePrincipal \
+    --role "Website Contributor" --scope "$RG_ID" -o none 2>&1) && { ROLE_OK=1; break; }
   sleep 10
 done
+if [ "$ROLE_OK" -ne 1 ]; then
+  echo "⚠ Chưa phân quyền được cho $IDENTITY. Lỗi cuối: $err" >&2
+  echo "  Chờ 1 phút rồi chạy tay (không cần chạy lại cả script):" >&2
+  echo "  MSYS_NO_PATHCONV=1 az role assignment create --assignee-object-id $PRINCIPAL_ID --assignee-principal-type ServicePrincipal --role \"Website Contributor\" --scope $RG_ID" >&2
+fi
 
 buoc "10. Cảnh báo chi phí 40 USD → $ALERT_EMAIL"
 START=$(date -u +%Y-%m-01)
