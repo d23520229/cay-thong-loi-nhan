@@ -788,7 +788,7 @@ Làm lần lượt: (1) dọn bảng → (2) NOTICE / ENDED phía web → (3) tr
 
 Script bash (chạy bằng Git Bash trên máy chủ dự án sau `az login`), `set -euo pipefail`, chú thích tiếng Việt từng bước. Đầu vào hỏi khi chạy (hoặc đọc biến môi trường): `GOOGLE_CLIENT_ID`, `ADMIN_BOOTSTRAP_EMAIL`, `SUPPORT_EMAIL`, email nhận cảnh báo chi phí. Thứ tự:
 
-1. Kiểm `az account show` (đúng subscription Azure for Students); kiểm vùng `southeastasia` được phép (chính sách "Allowed locations" của subscription). Không được → dừng, in danh sách vùng được phép để chủ dự án chọn rồi chạy lại với `LOCATION=...`.
+1. Kiểm `az account show` (đúng subscription Azure for Students); kiểm vùng `japaneast` được phép (Azure for Students của dự án chỉ cho eastasia, japaneast, indonesiacentral, centralindia, indiasouthcentral — không có Southeast Asia; chủ dự án chọn Japan East 29/11) (chính sách "Allowed locations" của subscription). Không được → dừng, in danh sách vùng được phép để chủ dự án chọn rồi chạy lại với `LOCATION=...`.
 2. Resource group `rg-caythong`.
 3. PostgreSQL Flexible Server: tên `psql-caythong-<4 ký tự ngẫu nhiên>`, Burstable **B1ms**, PostgreSQL 16, 32 GB, sao lưu 7 ngày, không geo-redundant, không HA; truy cập công khai + quy tắc tường lửa chỉ cho dịch vụ Azure (`0.0.0.0`); tài khoản quản trị và mật khẩu ngẫu nhiên (`openssl rand`); CSDL `caythong`. Code đã bắt SSL khi production (`db/client.ts`).
 4. Storage account `stcaythong<ngẫu nhiên>`: StorageV2, LRS, TLS ≥ 1.2, **cấm truy cập Blob công khai**; container riêng tư `photos`.
@@ -1475,7 +1475,7 @@ Khi bị spam tạo phòng hoặc lời nhắn hàng loạt: quản trị viên 
 | Ứng dụng | App Service Linux **B1**, Node 22, 1 instance (có thể tăng lên 2 đêm 24/12) | ~13 USD |
 | Cơ sở dữ liệu | Azure Database for PostgreSQL – Flexible Server, **Burstable B1ms**, 32 GB | ~16 USD (máy chủ ~12 + lưu trữ ~4) |
 | Sao lưu | Tự động 7 ngày, đi kèm | 0 |
-| Ảnh tĩnh | **Azure Blob Storage** cùng vùng (Southeast Asia), cache dài hạn — giảm tải cho App Service B1. Cloudflare không dùng được vì cần tên miền riêng | < 1 (trong 100 GB băng thông miễn phí/tháng) |
+| Ảnh tĩnh | **Azure Blob Storage** cùng vùng với App Service (Japan East — tài khoản sinh viên không cho Southeast Asia, chốt 29/11), cache dài hạn — giảm tải cho App Service B1. Cloudflare không dùng được vì cần tên miền riêng | < 1 (trong 100 GB băng thông miễn phí/tháng) |
 
 **Tổng khoảng 29 USD/tháng.** Tạo tài nguyên khoảng 01/12, xoá ngày 07/01/2027 (khoảng 1,2 tháng) → **khoảng 35 USD**, còn dư so với credit 50 USD.
 
