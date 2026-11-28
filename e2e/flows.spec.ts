@@ -111,6 +111,13 @@ test.describe.serial('Cây Thông Lời Nhắn', () => {
     await p.goto(url('notice', `/c/${treeId}`));
     await expect(p.getByRole('status').filter({ hasText: 'ngừng hoạt động hết 31/12' })).toBeVisible();
     await expect(p.getByRole('link', { name: 'Tạo cây của bạn' })).toHaveCount(0);
+    // Biểu ngữ không đẩy trang tràn khỏi màn hình (cả 3 trang công khai).
+    for (const path of ['/', '/tao', `/c/${treeId}`]) {
+      await p.goto(url('notice', path));
+      await expect(p.getByRole('status').filter({ hasText: 'ngừng hoạt động hết' })).toBeVisible();
+      const overflow = await p.evaluate(() => document.documentElement.scrollHeight - window.innerHeight);
+      expect(overflow, path).toBeLessThanOrEqual(0);
+    }
 
     for (const path of ['/', `/c/${treeId}`]) {
       await p.goto(url('ended', path));

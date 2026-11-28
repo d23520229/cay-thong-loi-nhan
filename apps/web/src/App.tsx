@@ -23,10 +23,12 @@ function AppShell() {
   const ended = useServiceEnded();
   if (ended || config?.phase === 'ENDED') return <EndedPage />;
   return (
-    <>
+    <div className="app-shell">
       <PhaseBanner />
-      <Outlet />
-    </>
+      <div className="app-main">
+        <Outlet />
+      </div>
+    </div>
   );
 }
 
