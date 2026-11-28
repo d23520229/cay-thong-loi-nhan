@@ -7,6 +7,8 @@ export type Env = {
   webDist?: string;
   /** `WEB_DIST` có đặt nhưng không dùng được (để index.ts ghi cảnh báo). */
   webDistProblem?: string;
+  /** TẠM (đặc tả 6.10.6): production đang chạy giờ giả — index.ts ghi cảnh báo. */
+  fakeNowProblem?: string;
   /** Thư mục ảnh WebP để vẽ OG: `webDist` nếu có, ngược lại `apps/web/public`. */
   assetDir: string;
   pepper: string;
@@ -71,6 +73,7 @@ export function loadEnv(src: Record<string, string | undefined> = process.env): 
   if (src.ADMIN_BOOTSTRAP_EMAIL?.trim()) env.adminBootstrapEmail = src.ADMIN_BOOTSTRAP_EMAIL.trim().toLowerCase();
   if (src.SUPPORT_EMAIL?.trim()) env.supportEmail = src.SUPPORT_EMAIL.trim();
   if (src.ADMIN_AZURE_URL?.trim()) env.adminAzureUrl = src.ADMIN_AZURE_URL.trim();
+  if (production && src.FAKE_NOW) env.fakeNowProblem = `FAKE_NOW=${src.FAKE_NOW}: trang thật đang chạy giờ giả — xoá biến này khi thử xong`;
   if (src.WEB_DIST && existsSync(join(src.WEB_DIST, 'index.html'))) env.webDist = resolve(src.WEB_DIST);
   else if (src.WEB_DIST) env.webDistProblem = `WEB_DIST=${src.WEB_DIST}: không thấy index.html — server không phục vụ trang web`;
   return env;

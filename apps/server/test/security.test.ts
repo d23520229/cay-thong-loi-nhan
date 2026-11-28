@@ -43,6 +43,10 @@ describe('env', () => {
   it('production tạm cho đặt FAKE_NOW (đặc tả 6.10.6, gỡ trước 10/12)', () => {
     const base = { NODE_ENV: 'production', PEPPER: 'x'.repeat(32), BLOCK_IP_KEY: 'y'.repeat(32), AZURE_STORAGE_CONNECTION_STRING: 'cs' };
     expect(() => loadEnv({ ...base, FAKE_NOW: '2026-12-24T00:00:00+07:00' })).not.toThrow();
+    // Cảnh báo để `az webapp log tail` thấy trang thật đang chạy giờ giả.
+    expect(loadEnv({ ...base, FAKE_NOW: '2026-12-24T00:00:00+07:00' }).fakeNowProblem).toMatch(/FAKE_NOW=2026-12-24/);
+    expect(loadEnv(base).fakeNowProblem).toBeUndefined();
+    expect(loadEnv({ FAKE_NOW: '2026-12-24T00:00:00+07:00' }).fakeNowProblem).toBeUndefined();
     expect(() => loadEnv(base)).not.toThrow();
     expect(() => loadEnv({ FAKE_NOW: '2026-12-24T00:00:00+07:00' })).not.toThrow();
   });
