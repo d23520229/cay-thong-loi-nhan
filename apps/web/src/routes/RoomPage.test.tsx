@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError, api, type OwnerRoom, type PublicRoom } from '../lib/api';
+import { resetConfigForTest } from '../lib/config';
 import { storage } from '../lib/storage';
 import { defaultRoom } from '../room/model';
 import { RoomPage } from './RoomPage';
@@ -42,6 +43,7 @@ beforeEach(() => {
   vi.useFakeTimers({ shouldAdvanceTime: true, advanceTimeDelta: 2 });
   localStorage.clear();
   vi.resetAllMocks();
+  resetConfigForTest();
   mocked.ownerVisit.mockResolvedValue(undefined);
   mocked.getConfig.mockRejectedValue(new Error('không cần trong test này'));
   window.history.replaceState(null, '', '/');
@@ -160,6 +162,14 @@ describe('RoomPage', () => {
     expect(await screen.findByText('Không tìm thấy cây này.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Tạo cây của bạn' })).toHaveAttribute('href', '/');
     expect(storage.myTrees().map((t) => t.id)).toEqual(['zzzzzzzz']);
+  });
+
+  it('404 ở NOTICE → nút "Về trang chủ" thay cho "Tạo cây của bạn" (đặc tả 6.9.1)', async () => {
+    mocked.getConfig.mockResolvedValue({ phase: 'NOTICE' } as never);
+    mocked.getOwnerTree.mockRejectedValue(new ApiError(404, 'not_found', 'x'));
+    renderAt();
+    expect(await screen.findByRole('link', { name: 'Về trang chủ' })).toHaveAttribute('href', '/');
+    expect(screen.queryByRole('link', { name: 'Tạo cây của bạn' })).not.toBeInTheDocument();
   });
 
   it('#k= → authLink(id, key) một lần (kể cả StrictMode), xoá #k= khỏi địa chỉ, ghi myTrees', async () => {

@@ -10,10 +10,4 @@ export type Phase = keyof typeof SERVERS;
 
 export const url = (phase: Phase, path: string): string => `http://localhost:${SERVERS[phase].port}${path}`;
 
-export const ADMIN_DB_URL = process.env.E2E_ADMIN_DB_URL ?? 'postgres://ctln:ctln_dev@localhost:5432/caythong';
-export const E2E_DB = 'caythong_e2e';
-export const e2eDbUrl = (): string => {
-  const u = new URL(ADMIN_DB_URL);
-  u.pathname = `/${E2E_DB}`;
-  return u.toString();
-};
+export { ADMIN_DB_URL, E2E_DB, e2eDbUrl } from './db.mjs';

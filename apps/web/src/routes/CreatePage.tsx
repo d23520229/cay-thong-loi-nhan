@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router';
 import { RoomSchema, validateRoom, type Room } from '@ctln/shared';
 import { ApiError, api } from '../lib/api';
 import { useConfig } from '../lib/config';
+import { vnDate } from '../lib/dates';
 import { canWrite } from '../guest/slots';
 import { storage } from '../lib/storage';
 import { defaultRoom } from '../room/model';
@@ -63,7 +64,8 @@ export function CreatePage() {
   const [created, setCreated] = useState<Created | null>(null);
   const busy = useRef(false);
   const { toast, show } = useToast();
-  const phase = useConfig()?.phase;
+  const config = useConfig();
+  const phase = config?.phase;
 
   useEffect(
     () =>
@@ -132,7 +134,7 @@ export function CreatePage() {
   if (phase && !canWrite(phase)) {
     return (
       <main className="placeholder">
-        <h1>Đã ngừng tạo cây mới từ 26/12</h1>
+        <h1>Đã ngừng tạo cây mới từ {config?.writeClosesAt ? vnDate(config.writeClosesAt, false) : '26/12'}</h1>
         <Link to="/" className="btn btn-primary">‹ Về trang chủ</Link>
       </main>
     );

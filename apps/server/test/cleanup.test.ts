@@ -76,18 +76,24 @@ describe('cleanup (đặc tả 6.9.3)', () => {
 
 describe('startCleanup', () => {
   it('CSDL lỗi: log chỉ { name, code }, vẫn chạy lần sau; dừng thì thôi', async () => {
-    const boom = () => { throw Object.assign(new Error('boom chứa dữ liệu'), { code: '57P01' }); };
-    const db = { delete: boom } as unknown as Parameters<typeof cleanup>[0];
-    const log = { info: vi.fn(), error: vi.fn() };
-    const stop = startCleanup({ db, now: () => at, log, everyMs: 20 });
-    await new Promise((r) => setTimeout(r, 70));
-    stop();
-    const calls = log.error.mock.calls.length;
-    expect(calls).toBeGreaterThanOrEqual(2);
-    for (const [obj] of log.error.mock.calls) expect(obj).toEqual({ name: 'Error', code: '57P01' });
-    await new Promise((r) => setTimeout(r, 60));
-    expect(log.error.mock.calls.length).toBe(calls);
-    expect(log.info).not.toHaveBeenCalled();
+    vi.useFakeTimers();
+    try {
+      const boom = () => { throw Object.assign(new Error('boom chứa dữ liệu'), { code: '57P01' }); };
+      const db = { delete: boom } as unknown as Parameters<typeof cleanup>[0];
+      const log = { info: vi.fn(), error: vi.fn() };
+      const stop = startCleanup({ db, now: () => at, log, everyMs: 1_000 });
+      await vi.advanceTimersByTimeAsync(0);
+      expect(log.error).toHaveBeenCalledTimes(1); // chạy ngay khi bật
+      await vi.advanceTimersByTimeAsync(2_000);
+      expect(log.error).toHaveBeenCalledTimes(3); // vẫn chạy tiếp sau lỗi
+      for (const [obj] of log.error.mock.calls) expect(obj).toEqual({ name: 'Error', code: '57P01' });
+      stop();
+      await vi.advanceTimersByTimeAsync(5_000);
+      expect(log.error).toHaveBeenCalledTimes(3);
+      expect(log.info).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('có dòng bị xoá thì log info số lượng', async () => {

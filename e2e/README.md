@@ -23,7 +23,9 @@ Dựng CSDL ở `prepare.mjs` chứ không ở `globalSetup`, vì Playwright b�
 | 4103 | NOTICE | 27/12 10:00 |
 | 4104 | ENDED | 02/01/2027 10:00 |
 
-Cả 4 dùng chung CSDL; cookie không tách theo cổng nên phiên chủ cây tạo ở 4101 dùng được ở 4102. Cấu hình ở `servers.ts`, `playwright.config.ts`.
+Cả 4 dùng chung CSDL; cookie không tách theo cổng nên phiên chủ cây tạo ở 4101 dùng được ở 4102. Cấu hình ở `servers.ts`, `playwright.config.ts`; URL CSDL ở `db.mjs`.
+
+**Lưu ý dọn bảng:** mỗi server chạy `cleanup` lúc khởi động theo `FAKE_NOW` của nó, trên cùng một CSDL. Server ENDED (02/01) xoá `rate_counters` / `auth_attempts` mà server BUILD (01/12) ghi. Hiện vô hại vì chỉ dọn lúc khởi động, trước mọi test. Nếu thêm e2e thử khoá PIN / giới hạn tần suất, đừng dựa vào bộ đếm còn sau khi một server khác vừa bật.
 
 ## Luồng
 

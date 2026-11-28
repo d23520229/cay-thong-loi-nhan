@@ -171,8 +171,14 @@ describe('CreatePage', () => {
 });
 
 describe('CreatePage ở NOTICE (đặc tả 6.9.1)', () => {
+  it('ngày đóng lấy từ cấu hình (writeClosesAt), không viết cứng', async () => {
+    mocked.getConfig.mockResolvedValue({ phase: 'NOTICE', writeClosesAt: '2026-12-26T17:00:00.000Z' } as never);
+    renderPage();
+    expect(await screen.findByText('Đã ngừng tạo cây mới từ 27/12')).toBeInTheDocument();
+  });
+
   it('báo đã ngừng tạo cây, có nút về trang chủ, không có form', async () => {
-    mocked.getConfig.mockResolvedValue({ phase: 'NOTICE' } as never);
+    mocked.getConfig.mockResolvedValue({ phase: 'NOTICE', writeClosesAt: '2026-12-25T17:00:00.000Z' } as never);
     renderPage();
     expect(await screen.findByText('Đã ngừng tạo cây mới từ 26/12')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Về trang chủ/ })).toHaveAttribute('href', '/');

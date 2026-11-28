@@ -2,11 +2,13 @@ import { useCallback, useEffect, useRef, useState, type MutableRefObject } from 
 import { Link, useParams } from 'react-router';
 import { RoomSchema, validateRoom, type Room } from '@ctln/shared';
 import { ApiError, api, type OwnerRoom, type PublicRoom } from '../lib/api';
+import { useConfig } from '../lib/config';
 import { storage } from '../lib/storage';
 import { TREE_CODE } from '../lib/treeRef';
 import { createAutosave, type SaveState } from '../room/autosave';
 import { ConflictDialog } from '../room/ConflictDialog';
 import { GuestTree } from '../guest/GuestTree';
+import { canWrite } from '../guest/slots';
 import { OwnerTree } from '../owner/OwnerTree';
 import { EditorLayout } from '../room/EditorLayout';
 import { createEditorStore } from '../room/store';
@@ -51,6 +53,7 @@ function TreeRoom({ id }: { id: string }) {
   const [view, setView] = useState<View>({ kind: 'loading' });
   const [mode, setMode] = useState<'view' | 'edit' | null>(null);
   const [writeClosed, setWriteClosed] = useState(false);
+  const phase = useConfig()?.phase;
   const [login, setLogin] = useState<null | 'guest' | 'unauthorized'>(null);
   const autosave = useRef<Autosave | null>(null);
   const link = useRef<Promise<void> | null>(null);
@@ -140,7 +143,7 @@ function TreeRoom({ id }: { id: string }) {
     return (
       <main className="placeholder">
         <h1>{view.kind === 'notFound' ? 'Không tìm thấy cây này.' : 'Không mở được cây này.'}</h1>
-        <Link to="/" className="btn btn-primary">Tạo cây của bạn</Link>
+        <Link to="/" className="btn btn-primary">{!phase || canWrite(phase) ? 'Tạo cây của bạn' : 'Về trang chủ'}</Link>
         {view.kind === 'error' ? <SupportHint /> : null}
       </main>
     );

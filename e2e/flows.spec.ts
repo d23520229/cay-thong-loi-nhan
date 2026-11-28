@@ -116,6 +116,11 @@ test.describe.serial('Cây Thông Lời Nhắn', () => {
       await p.goto(url('ended', path));
       await expect(p.getByRole('heading', { name: ENDED_TITLE })).toBeVisible();
     }
+    // Trang quản trị vẫn chạy sau ENDED (nằm ngoài khung trang công khai).
+    await p.goto(url('ended', '/quan-tri'));
+    await expect(p.getByText('Đăng nhập bằng tài khoản Google được cấp quyền.')).toBeVisible();
+    await expect(p.getByRole('heading', { name: ENDED_TITLE })).toHaveCount(0);
+    await p.goto(url('ended', '/'));
     await p.getByRole('link', { name: 'Chính sách riêng tư' }).click();
     await expect(p.getByRole('heading', { level: 1, name: 'Chính sách riêng tư' })).toBeVisible();
     await ctx.close();
