@@ -4,14 +4,27 @@
 
 ## Hiện tại
 
-- **Ngày cập nhật:** 27/11/2026
-- **Mốc đang ở:** **M4 khối 1 xong trên nhánh `m4-khoi1`, chờ chủ dự án thử tay** theo "M4 khối 1 — thử tay" bên dưới (thiết kế: đặc tả 6.9; kế hoạch: `docs/superpowers/plans/2026-11-27-m4-khoi1-hoan-thien.md`). Số liệu (27/11): **256 test server + 492 test web + 42 test shared + 1 test art**, `pnpm e2e` 3/3 luồng, lượt soát cả nhánh (27/11): 0 nghiêm trọng, đã sửa 2 điểm về trang chính sách (bỏ lưu tên Google; ghi đủ những gì lưu trên trình duyệt), 8 việc nhỏ đã sửa 28/11 (ghi dưới), typecheck sạch, gói JS chính ≈ 159 KB gzip, trang chính sách gói riêng ≈ 1,2 KB gzip. M3b đã gộp (PR #7); sửa `pnpm dev` treo do SDK Azure (PR #8). Tiếp theo: **khối 2** (triển khai Azure + CI/CD), thiết kế khoảng 01/12.
+- **Ngày cập nhật:** 29/11/2026
+- **Mốc đang ở:** **M4 khối 2 — code xong trên nhánh `m4-khoi2`, chờ chủ dự án tạo tài nguyên Azure** theo "M4 khối 2 — việc của chủ dự án" bên dưới (thiết kế: đặc tả 6.10; kế hoạch: `docs/superpowers/plans/2026-11-29-m4-khoi2-azure-ci-cd.md`; hướng dẫn: `infra/README.md`). Số liệu (29/11): 256 test server + 492 test web + 42 test shared + 1 test art, typecheck sạch. **Việc tạm phải gỡ trước 10/12:** production đang cho phép `FAKE_NOW` (đặc tả 6.10.6) — thử xong NOTICE/ENDED thì xoá biến trên Azure và trả lại lệnh cấm trong `env.ts` (kế hoạch Task 7).
+- **M4 khối 1:** xong, chủ dự án đã thử tay (sửa phông tiếng Việt và biểu ngữ đẩy trang), gộp vào `main` (PR #9). Chi tiết: "M4 khối 1 — thử tay" bên dưới (thiết kế: đặc tả 6.9; kế hoạch: `docs/superpowers/plans/2026-11-27-m4-khoi1-hoan-thien.md`). Số liệu (27/11): **256 test server + 492 test web + 42 test shared + 1 test art**, `pnpm e2e` 3/3 luồng, lượt soát cả nhánh (27/11): 0 nghiêm trọng, đã sửa 2 điểm về trang chính sách (bỏ lưu tên Google; ghi đủ những gì lưu trên trình duyệt), 8 việc nhỏ đã sửa 28/11 (ghi dưới), typecheck sạch, gói JS chính ≈ 159 KB gzip, trang chính sách gói riêng ≈ 1,2 KB gzip. M3b đã gộp (PR #7); sửa `pnpm dev` treo do SDK Azure (PR #8). Tiếp theo: **khối 2** (triển khai Azure + CI/CD), thiết kế khoảng 01/12.
 - **Thiệp, ảnh kèm, tải ảnh (đặc tả 6.7):** xong, chủ dự án đã thử tay, đã gộp vào `main` (PR #5, #6). Nhánh `fix-luong-sau-m2` (rà soát luồng 22–23/11) đã gộp (PR #4). Số liệu lúc gộp: **413 test web + 207 test server + 42 test shared + 1 test art**, typecheck sạch, build JS + CSS ≈ 158 KB gzip (giới hạn 250 KB).
 - **M3:** **xong và đã gộp vào `main`** (PR #3; M1, M2 là PR #1, #2), cùng phần 6.7 thiệp/ảnh. M3 gồm 3 phần (đặc tả 6.6): (1) khách treo lời nhắn, (2) chủ cây đọc & quản lý, (3) chia sẻ + OG.
 - **Số liệu lúc xong M3 (21/11):** 290 test web + 136 test server + 40 test shared, typecheck sạch, build JS + CSS ≈ 155 KB gzip (giới hạn 250 KB). Đã chạy thật (21/11): qua Vite + PostgreSQL khách treo → 201, `GET /api/trees/{id}` không có nội dung; server từ bản build (`WEB_DIST=apps/web/dist`, cổng 3001) trả `/c/{id}` có đủ thẻ OG, `/og/{id}.png` PNG 1200×630, `/tao` trả trang, file tĩnh và API chạy. Kế hoạch: `docs/superpowers/plans/2026-11-21-m3-p1-khach-treo-loi-nhan.md`, `docs/superpowers/plans/2026-11-21-m3-p2-p3-chu-cay-chia-se-og.md`.
 - **M3b (24/11):** đã thử tay, gộp vào `main` (PR #7). Số liệu (24/11): **249 test server + 465 test web + 42 test shared + 1 test art**, typecheck sạch, gói JS chính ≈ 158 KB gzip, gói quản trị tách riêng ≈ 5,7 KB gzip. Kế hoạch + quyết định khi làm: `docs/superpowers/plans/2026-11-24-m3b-quan-tri-google.md`.
 
-### M4 khối 1 — thử tay (chủ dự án, nhánh `m4-khoi1`)
+### M4 khối 2 — việc của chủ dự án (nhánh `m4-khoi2`)
+
+Chi tiết từng bước: `infra/README.md`.
+
+1. Google Cloud: thêm origin `https://caythongloinhan.azurewebsites.net`, chuyển màn đồng ý OAuth sang "In production".
+2. Git Bash: `az login` → chạy `infra/tao-azure.sh` với 4 email / client ID (vùng **Japan East** — tài khoản sinh viên không cho Southeast Asia).
+3. GitHub: environment `production` (chỉ nhánh `main`) + 3 secret script in ra.
+4. Gộp PR `m4-khoi2` → tab Actions: `kiem-tra` rồi `trien-khai` xanh → mở trang.
+5. Thử tay trên Azure: tạo cây (PIN và Google), khách treo lời nhắn kèm ảnh, `/quan-tri` đăng nhập, console không lỗi CSP; NOTICE / ENDED bằng `FAKE_NOW`. Thử xong: xoá `FAKE_NOW` rồi báo để trả lệnh cấm.
+
+Sau lần triển khai đầu còn kiểm (kế hoạch Task 6): Azure giữ bản sao lưu PostgreSQL bao lâu sau khi xoá máy chủ (trang chính sách hứa "xoá kể cả bản sao lưu"); IPv6; PostgreSQL miễn phí cho sinh viên; `TRUST_PROXY_HOPS`.
+
+### M4 khối 1 — thử tay (chủ dự án, đã thử xong, PR #9)
 
 Chuẩn bị: `pnpm db:up`, `pnpm dev`, mở http://localhost:5173. Đổi `FAKE_NOW` trong `.env` rồi **tắt và bật lại** `pnpm dev` (server chỉ đọc `.env` lúc khởi động).
 
@@ -179,7 +192,7 @@ Chưa làm ở M1: giao diện web (M2–M3), trang quản trị (M3b), OG ảnh
 | M2 | 25/11–02/12 | Frontend phòng tự do: kéo thả, xếp lớp, mũi tên ‹ ›, dải chọn, tự lưu | **Xong** (18/11, nhánh `m2-frontend`) |
 | M3 | 02–07/12 | Bạn bè treo lời nhắn; chủ cây đọc, khoá, đếm ngược; chia sẻ, OG | **Xong** (21/11, PR #3; thiệp/ảnh PR #5, #6 ngày 24/11) |
 | M3b | 05–08/12 | Trang quản trị P0 + Google cho chủ cây | **Xong** (24/11, PR #7) |
-| M4 | 07–10/12 | Hoàn thiện, triển khai Azure (kèm Blob cho ảnh, câu trung thực về riêng tư trong chính sách; bật IPv6 inbound cho App Service nếu gói B1 cho phép — kiểm chi phí) | Khối 1 xong (27/11, nhánh `m4-khoi1`), chờ thử tay; khối 2 chưa làm |
+| M4 | 07–10/12 | Hoàn thiện, triển khai Azure (kèm Blob cho ảnh, câu trung thực về riêng tư trong chính sách; bật IPv6 inbound cho App Service nếu gói B1 cho phép — kiểm chi phí) | Khối 1 xong (PR #9); khối 2 code xong (29/11, nhánh `m4-khoi2`), chờ tạo tài nguyên Azure |
 | M5 | 10–12/12 | Chạy thử kín | |
 | M6 | 15/12 | Ra mắt công khai | |
 | M7–M10 | 16/12–07/01/2027 | Theo dõi, mở quà 24/12, thông báo tải ảnh, kết thúc, xoá dữ liệu | |
@@ -213,7 +226,7 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 
 **Kỹ thuật**
 - TypeScript, React 19 + Vite, Fastify 5, PostgreSQL 16 + Drizzle, pnpm monorepo.
-- Azure: App Service B1 + PostgreSQL Flexible B1ms, credit ~50 USD, ước tính ~35 USD nếu chạy 01/12–07/01. Dev trên máy bằng Docker trước.
+- Azure: App Service B1 + PostgreSQL Flexible B1ms, vùng **Japan East** (Azure for Students chặn Southeast Asia, chốt 29/11), credit ~50 USD, ước tính ~35 USD nếu chạy 01/12–07/01. Dev trên máy bằng Docker trước.
 - Chạy thử kín 10–12/12, ra mắt 15/12. Tên miền `*.azurewebsites.net`.
 - Migration: SQL viết tay là gốc, Drizzle chỉ để có kiểu. `packages/shared` giữ `.mjs` + JSDoc.
 - Giới hạn tần suất bằng PostgreSQL, **không Redis**.
@@ -258,6 +271,10 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 - **Chủ dự án gộp PR trên GitHub:** `main` trên máy không tự cập nhật — `git fetch` rồi `git merge --ff-only origin/main` trước khi tách nhánh mới.
 - **Lớp hiệu ứng điểm nhắn** không được tên `.ring`/`.drop-in`/`.ornament` trong `app.css` (trùng `room-animations.css`, test chặn) → dùng `gs-ring`/`gs-drop` và đặt hoạt ảnh trên `<svg>` con.
 
+- **`@fontsource/<phông>/vietnamese-400.css` + `latin-400.css` không có `unicode-range`:** file nạp sau đè hẳn file trước, chữ có dấu rơi về phông hệ thống. Nạp file theo độ đậm (`400.css`, `700.css`).
+- **Azure for Students chỉ cho 5 vùng** (eastasia, japaneast, indonesiacentral, centralindia, indiasouthcentral) — kiểm `az policy assignment list` trước khi chọn vùng.
+- **`az` gọi từ Git Bash:** đặt `MSYS_NO_PATHCONV=1` (không thì `/subscriptions/...` bị đổi thành đường dẫn Windows), bỏ `` ở đầu ra `-o tsv`, truyền JSON cho `az rest` qua file `@...`.
+
 ## Tài nguyên
 
 - **Canvas thiết kế** (duyệt đồ hoạ, không dùng khi chạy): https://claude.ai/artifact/F3Xp3vGQisXLRZziocfvyX — các bảng Main, Bộ cây thông, Phụ kiện treo, Phòng tự do, Bộ phụ kiện. Mã sinh ở `tools/design-canvas/`.
@@ -265,6 +282,7 @@ Không tự thay đổi; muốn đổi thì đề xuất với chủ dự án.
 
 ## Nhật ký
 
+- **29/11/2026** — M4 khối 2 (nhánh `m4-khoi2`, đặc tả 6.10): workflow `.github/workflows/ci-cd.yml` (PR chỉ kiểm tra; push `main` kiểm tra + e2e rồi triển khai zip qua OIDC managed identity, kiểm khói `/healthz`); `infra/dong-goi.sh` (`pnpm deploy` node_modules phẳng + web, ~136 MB, chạy thử được); `infra/tao-azure.sh` + `infra/README.md`; tạm cho `FAKE_NOW` khi production. Chốt: CI/CD toàn bộ `main`; giữ `azurewebsites.net`; vùng Japan East; tự thử NOTICE/ENDED trên Azure bằng `FAKE_NOW` rồi gỡ trước 10/12. Trước đó sửa từ lượt thử tay khối 1: phông tiếng Việt (nạp file `@fontsource` theo độ đậm có `unicode-range`) và biểu ngữ NOTICE đẩy trang tràn màn hình (e2e kiểm không tràn).
 - **24/11/2026 (lượt 3)** — M3b xong (nhánh `m3b`): giao diện `/quan-tri` (tải riêng, đăng nhập Google, Tổng quan tự cập nhật 60 giây, Báo cáo, Tra cứu phòng, Nhật ký) và email hỗ trợ (`SUPPORT_EMAIL`: chân trang chủ, khi PIN khoá đến hết ngày, Google không phải chủ cây / chưa có cây, "Không mở được cây này."). 247 test server, 460 test web.
 - **24/11/2026 (lượt 2)** — M3b (nhánh `m3b`): xong server quản trị (đăng nhập Google + phiên 12 giờ + CSRF + nhật ký, Tổng quan có khối máy chủ, migration 0005 `photo_bytes` + `error_counts`, báo cáo, tra cứu phòng, nhật ký) và nút Google thật cho chủ cây. Dừng trước Task 7 (web quản trị) để chủ dự án kiểm tra.
 - **24/11/2026** — Chủ dự án thử tay xong phần thiệp, ảnh kèm, tải ảnh; đã gộp vào `main` (PR #4 `fix-luong-sau-m2`, PR #5, #6 `thiep-anh-kem`). Chốt: tải ảnh cũ lỗi vẫn mở bảng sửa (không ảnh, có thông báo). Tiếp theo: M3b.
